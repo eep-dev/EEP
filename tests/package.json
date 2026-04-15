@@ -1,0 +1,19 @@
+{
+    "name": "@eep-dev/schema-tests",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Schema validation and performance benchmark tests for EEP JSON schemas.",
+    "license": "Apache-2.0",
+    "type": "module",
+    "scripts": {
+        "test": "vitest run",
+        "bench": "vitest bench"
+    },
+    "devDependencies": {
+        "@types/node": "^25.3.3",
+        "ajv": "^8.17.0",
+        "ajv-formats": "^3.0.0",
+        "typescript": "^5.3.0",
+        "vitest": "^3.0.0"
+    }
+}

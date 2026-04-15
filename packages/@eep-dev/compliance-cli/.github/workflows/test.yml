@@ -1,0 +1,22 @@
+name: "@eep-dev/compliance-cli Tests"
+
+on:
+  push:
+    paths: ['EEP/packages/@eep-dev/compliance-cli/**']
+  pull_request:
+    paths: ['EEP/packages/@eep-dev/compliance-cli/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: EEP/packages/@eep-dev/compliance-cli
+        run: npm ci
+      - name: Test
+        working-directory: EEP/packages/@eep-dev/compliance-cli
+        run: npx vitest run

@@ -1,0 +1,537 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/eep-manifest.json",
+    "title": "EEP Manifest",
+    "description": "The /.well-known/eep.json manifest declaring an entity's EEP capabilities",
+    "type": "object",
+    "required": [
+        "did",
+        "eep_version",
+        "layers",
+        "supported_content_types",
+        "pqc_ready",
+        "x402_enabled"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "did": {
+            "type": "string",
+            "description": "W3C Decentralized Identifier of the entity",
+            "pattern": "^did:[a-z]+:.+"
+        },
+        "eep_version": {
+            "type": "string",
+            "description": "EEP specification version this entity is currently operating at (e.g. '0.1').",
+            "pattern": "^\\d+\\.\\d+"
+        },
+        "eep_versions": {
+            "type": "array",
+            "description": "List of EEP specification versions this entity supports. Agents send EEP-Version header; publisher confirms or returns HTTP 505. (§5.4, G21).",
+            "items": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+"
+            },
+            "minItems": 1,
+            "examples": [
+                [
+                    "0.1",
+                    "1.0"
+                ]
+            ]
+        },
+        "preferred_version": {
+            "type": "string",
+            "description": "The EEP version this entity prefers when a client sends multiple accepted versions.",
+            "pattern": "^\\d+\\.\\d+"
+        },
+        "layers": {
+            "type": "object",
+            "required": [
+                "layer1"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "layer1": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Layer 1 REST state endpoint URL"
+                },
+                "layer2_sse": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Layer 2a SSE stream URL"
+                },
+                "layer2_webhook": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Layer 2b webhook subscription endpoint URL"
+                },
+                "layer3_ws": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Layer 3 WebSocket pulse URL"
+                }
+            }
+        },
+        "supported_content_types": {
+            "type": "array",
+            "description": "MIME types the entity can return via Content Negotiation",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "examples": [
+                    "application/json",
+                    "text/markdown",
+                    "text/toon"
+                ]
+            }
+        },
+        "gates_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Gate configuration endpoint URL"
+        },
+        "services_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Service catalog endpoint URL"
+        },
+        "capabilities_query_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Dynamic Capability Discovery endpoint (G5)"
+        },
+        "reputation": {
+            "type": "object",
+            "description": "ERC-8004 on-chain reputation binding (ref28)",
+            "required": [
+                "contract",
+                "chain"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "contract": {
+                    "type": "string",
+                    "description": "ERC-721 contract address",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                },
+                "chain": {
+                    "type": "string",
+                    "description": "Blockchain network",
+                    "examples": [
+                        "ethereum",
+                        "base",
+                        "polygon"
+                    ]
+                },
+                "scan_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "8004Scan URL for this agent record"
+                }
+            }
+        },
+        "pqc_ready": {
+            "type": "boolean",
+            "description": "Post-Quantum Cryptography readiness flag (NIST FIPS 203/204/205 — ref26)"
+        },
+        "pqc_algorithms": {
+            "type": "array",
+            "description": "Supported PQC algorithms",
+            "items": {
+                "type": "string",
+                "examples": [
+                    "ML-KEM-768",
+                    "ML-DSA-65",
+                    "SLH-DSA-128s"
+                ]
+            }
+        },
+        "signing_algorithms": {
+            "type": "array",
+            "description": "Ordered list of signing algorithm identifiers supported by this publisher for DID-based proof verification, from most preferred to least preferred. Agents MUST select the strongest mutually supported algorithm. When multiple algorithms are shared, the agent picks the publisher's highest-preference match. If no overlap exists, the agent MUST abort and return an error. Per Whitepaper §10.9 (crypto-agility) and NIST FIPS 204/205. Classical algorithms (EdDSA, ES256K) remain valid; PQC algorithms supplement them via hybrid signatures. (A1).",
+            "minItems": 1,
+            "items": {
+                "type": "string",
+                "enum": [
+                    "EdDSA",
+                    "ES256K",
+                    "ES256",
+                    "ML-DSA-65",
+                    "ML-DSA-87",
+                    "SLH-DSA-128s",
+                    "hybrid-EdDSA-ML-DSA-65",
+                    "hybrid-EdDSA-ML-DSA-87"
+                ]
+            },
+            "examples": [
+                [
+                    "EdDSA",
+                    "ES256K"
+                ],
+                [
+                    "hybrid-EdDSA-ML-DSA-65",
+                    "EdDSA"
+                ],
+                [
+                    "ML-DSA-65",
+                    "EdDSA",
+                    "ES256K"
+                ]
+            ]
+        },
+        "x402_enabled": {
+            "type": "boolean",
+            "description": "Whether this entity accepts x402 protocol payments (ref27)"
+        },
+        "x402": {
+            "type": "object",
+            "description": "x402 payment rail configuration",
+            "additionalProperties": false,
+            "properties": {
+                "facilitator_url": {
+                    "type": "string",
+                    "format": "uri"
+                },
+                "payment_rails": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": [
+                        [
+                            "x402/usdc",
+                            "x402/eth"
+                        ]
+                    ]
+                },
+                "network": {
+                    "type": "string",
+                    "examples": [
+                        "base",
+                        "ethereum",
+                        "polygon"
+                    ]
+                }
+            }
+        },
+        "compliance": {
+            "type": "object",
+            "description": "Regulatory compliance declarations",
+            "additionalProperties": false,
+            "properties": {
+                "eu_ai_act": {
+                    "type": "boolean",
+                    "description": "Entity complies with EU AI Act obligations (ref30)"
+                },
+                "gdpr": {
+                    "type": "boolean",
+                    "description": "Entity is GDPR-compliant"
+                },
+                "dora": {
+                    "type": "boolean",
+                    "description": "Entity is compliant with EU DORA (Digital Operational Resilience Act, EU 2022/2554)"
+                },
+                "eidas2": {
+                    "type": "boolean",
+                    "description": "Entity's credential stack is architecturally aligned with eIDAS 2.0 (EU 2024/1183) W3C VC wallet requirements"
+                },
+                "anp_compatible": {
+                    "type": "boolean",
+                    "description": "Semantically compatible with W3C ANP metadata (ref29)"
+                },
+                "dpv_purpose": {
+                    "type": "string",
+                    "description": "W3C DPV purpose URI",
+                    "examples": [
+                        "https://w3id.org/dpv#ServiceProvision"
+                    ]
+                },
+                "dpv_retention": {
+                    "type": "string",
+                    "description": "W3C DPV retention policy URI"
+                }
+            }
+        },
+        "data_residency": {
+            "type": "string",
+            "description": "Data residency constraint. Declares where publisher stores and processes data received from agent interactions. ISO 3166-1 region or country code — see also GDPR/DORA requirements. (§14.2, G22).",
+            "examples": [
+                "EU-only",
+                "DE",
+                "US",
+                "US,CA",
+                "Worldwide"
+            ]
+        },
+        "payment_networks": {
+            "type": "array",
+            "description": "Multi-chain payment configuration. Each entry declares a payment address on one blockchain network. Agents with multi-chain wallets may select the cheapest/fastest. (§8.3, G22).",
+            "items": {
+                "type": "object",
+                "required": [
+                    "chain",
+                    "address"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "chain": {
+                        "type": "string",
+                        "description": "Blockchain network identifier.",
+                        "examples": [
+                            "base",
+                            "ethereum",
+                            "solana",
+                            "polygon"
+                        ]
+                    },
+                    "address": {
+                        "type": "string",
+                        "description": "Payment address or smart contract on this chain."
+                    },
+                    "min_confirmations": {
+                        "type": "integer",
+                        "description": "Minimum on-chain confirmation blocks before payment is considered final.",
+                        "minimum": 0,
+                        "examples": [
+                            1,
+                            6,
+                            12
+                        ]
+                    }
+                }
+            }
+        },
+        "pricing_mode": {
+            "type": "string",
+            "description": "Pricing discovery mode for this entity's services. fixed: static price list; negotiable: bilateral counter-offer; auction: open auction (RFP). (§7.3, G19/G22).",
+            "enum": [
+                "fixed",
+                "negotiable",
+                "auction"
+            ],
+            "default": "fixed"
+        },
+        "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO8601 timestamp of last manifest update"
+        },
+        "tls_mode": {
+            "type": "string",
+            "description": "Transport security mode for this endpoint per Whitepaper §9.1. Declares whether this publisher requires standard TLS or mutual TLS (mTLS). Agents MUST check this field before connecting and present DID-backed client certificates when mTLS or mTLS-required is declared. (§9.1, G34).",
+            "enum": [
+                "standard",
+                "mTLS",
+                "mTLS-required"
+            ],
+            "default": "standard",
+            "examples": [
+                "standard",
+                "mTLS",
+                "mTLS-required"
+            ]
+        },
+        "forward_secrecy_enforced": {
+            "type": "boolean",
+            "description": "Whether this publisher enforces Forward Secrecy (ECDHE/DHE key exchange) for all long-lived connections (SSE, WebSocket). Per EEP Whitepaper §10.1 and security.md §11, forward secrecy is mandatory for WS/SSE endpoints. Publishers SHOULD set this to true once they have verified their TLS configuration. Agents MAY refuse to connect to WS/SSE endpoints where this is false or absent. (G38).",
+            "default": true,
+            "examples": [
+                true,
+                false
+            ]
+        },
+        "discovery_hints": {
+            "type": "object",
+            "description": "Alternative discovery mechanism hints per Whitepaper §4.4 (DNS and Link Header Discovery). For IoT devices, constrained environments, or deployments where /.well-known/ endpoints are not accessible, publishers can declare alternative discovery paths. Agents that cannot reach /.well-known/eep.json SHOULD check DNS TXT records and Link headers before failing. See docs/guides/iot-discovery.md for implementation details.",
+            "additionalProperties": false,
+            "properties": {
+                "link_header_supported": {
+                    "type": "boolean",
+                    "description": "Whether this entity publishes a 'Link: <manifest-url>; rel=\"eep\"' header on its root HTTP response. Agents can discover EEP capability by inspecting any HTTP response from this entity. Per Whitepaper §4.4.",
+                    "default": false,
+                    "examples": [
+                        true
+                    ]
+                },
+                "dns_txt_record": {
+                    "type": "string",
+                    "description": "The DNS TXT record this entity publishes at _eep.{domain} for alternative discovery. Format: 'v=eep1; manifest={url}'. Agents MUST validate the manifest URL is HTTPS. Per Whitepaper §4.4 and SPECIFICATION.md §4.4.",
+                    "pattern": "^v=eep1;\\s*manifest=https://",
+                    "examples": [
+                        "v=eep1; manifest=https://api.example.com/.well-known/eep.json"
+                    ]
+                },
+                "beacon_interval_seconds": {
+                    "type": "integer",
+                    "description": "For IoT publishers that periodically broadcast their manifest URL via mDNS/DNS-SD or BLE Advertisement. Interval in seconds between broadcasts. Agents in constrained networks can listen for beacons instead of polling.",
+                    "minimum": 30,
+                    "maximum": 86400,
+                    "examples": [
+                        300,
+                        3600
+                    ]
+                }
+            }
+        },
+        "conformance_credential": {
+            "type": "object",
+            "description": "The EEP Conformance Credential issued by eep.dev's DID for this publisher. Allows agents to verify conformance tier on first contact without querying any registry. See schemas/v0.1/conformance.credential.json for the full schema and Whitepaper §10.2. The credential expires annually and must be renewed. Agents MUST verify the proof and validUntil before trusting the credential. (G39).",
+            "required": [
+                "type",
+                "issuer",
+                "validFrom",
+                "validUntil",
+                "credentialSubject",
+                "proof"
+            ],
+            "additionalProperties": true,
+            "properties": {
+                "type": {
+                    "type": "array",
+                    "description": "Must include 'VerifiableCredential' and a specific EEP conformance tier type.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": [
+                        [
+                            "VerifiableCredential",
+                            "EEPConformanceCredential_Full"
+                        ]
+                    ]
+                },
+                "issuer": {
+                    "description": "DID of the issuer. Must resolve to did:web:eep.dev for the credential to be trusted.",
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ],
+                    "examples": [
+                        "did:web:eep.dev"
+                    ]
+                },
+                "validFrom": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "validUntil": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "credentialSubject": {
+                    "type": "object",
+                    "required": [
+                        "id",
+                        "conformanceTier",
+                        "testedAt"
+                    ],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "DID of the publisher (must match this manifest's did)."
+                        },
+                        "conformanceTier": {
+                            "type": "string",
+                            "enum": [
+                                "Core",
+                                "Standard",
+                                "Full"
+                            ]
+                        },
+                        "eepVersion": {
+                            "type": "string"
+                        },
+                        "testedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "passedChecks": {
+                            "type": "integer"
+                        },
+                        "totalChecks": {
+                            "type": "integer"
+                        },
+                        "manifestUrl": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "sectorExtensions": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "proof": {
+                    "type": "object",
+                    "required": [
+                        "type",
+                        "created",
+                        "verificationMethod",
+                        "proofPurpose",
+                        "proofValue"
+                    ],
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        },
+                        "created": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "verificationMethod": {
+                            "type": "string"
+                        },
+                        "proofPurpose": {
+                            "type": "string",
+                            "const": "assertionMethod"
+                        },
+                        "proofValue": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "type": [
+                        "VerifiableCredential",
+                        "EEPConformanceCredential_Full"
+                    ],
+                    "issuer": "did:web:eep.dev",
+                    "validFrom": "2026-03-05T12:00:00Z",
+                    "validUntil": "2027-03-05T12:00:00Z",
+                    "credentialSubject": {
+                        "id": "did:web:api.publisher.example",
+                        "conformanceTier": "Full",
+                        "eepVersion": "0.1",
+                        "testedAt": "2026-03-05T10:30:00Z",
+                        "passedChecks": 47,
+                        "totalChecks": 47,
+                        "manifestUrl": "https://api.publisher.example/.well-known/eep.json"
+                    },
+                    "proof": {
+                        "type": "Ed25519Signature2020",
+                        "created": "2026-03-05T12:00:00Z",
+                        "verificationMethod": "did:web:eep.dev#key-1",
+                        "proofPurpose": "assertionMethod",
+                        "proofValue": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+                    }
+                }
+            ]
+        }
+    }
+}

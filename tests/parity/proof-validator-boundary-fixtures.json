@@ -1,0 +1,120 @@
+[
+  {
+    "name": "non_object_rejected",
+    "proof": "not-an-object",
+    "expected_valid": false
+  },
+  {
+    "name": "missing_type_rejected",
+    "proof": {
+      "token": "tok_123"
+    },
+    "expected_valid": false
+  },
+  {
+    "name": "valid_payment_token",
+    "proof": {
+      "type": "payment",
+      "token": "tok_123"
+    },
+    "expected_valid": true
+  },
+  {
+    "name": "expired_payment_rejected",
+    "proof": {
+      "type": "payment",
+      "token": "tok_123",
+      "expires_at": "2020-01-01T00:00:00Z"
+    },
+    "expected_valid": false
+  },
+  {
+    "name": "future_issued_rejected",
+    "proof": {
+      "type": "payment",
+      "token": "tok_123",
+      "issued_at": "2999-01-01T00:00:00Z"
+    },
+    "expected_valid": false
+  },
+  {
+    "name": "unknown_type_rejected",
+    "proof": {
+      "type": "magic"
+    },
+    "expected_valid": false
+  },
+  {
+    "name": "custom_x_type_accepted",
+    "proof": {
+      "type": "x-custom-proof",
+      "foo": "bar"
+    },
+    "expected_valid": true
+  },
+  {
+    "name": "x402_structured_valid",
+    "proof": {
+      "type": "payment",
+      "x402_payload": {
+        "payload": "{\"from\":\"0xabc\",\"to\":\"0xdef\",\"value\":100}",
+        "signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "network": "base"
+      }
+    },
+    "expected_valid": true
+  },
+  {
+    "name": "x402_invalid_signature_rejected",
+    "proof": {
+      "type": "payment",
+      "x402_payload": {
+        "payload": "{\"from\":\"0xabc\"}",
+        "signature": "not-hex-signature",
+        "network": "base"
+      }
+    },
+    "expected_valid": false
+  },
+  {
+    "name": "agreement_valid",
+    "proof": {
+      "type": "agreement",
+      "document_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      "signer_did": "did:web:agent.example.com",
+      "signature_algo": "EdDSA"
+    },
+    "expected_valid": true
+  },
+  {
+    "name": "data_request_valid",
+    "proof": {
+      "type": "data_request",
+      "verifiable_presentation": "eyJhbGciOiJFZERTQSJ9.eyJjbGFpbXMiOlsiZW1haWwiXX0.signature",
+      "claimed_fields": [
+        "email"
+      ]
+    },
+    "expected_valid": true
+  },
+  {
+    "name": "proof_of_intent_valid",
+    "proof": {
+      "type": "proof_of_intent",
+      "intent_document": {
+        "intent_id": "poi_001",
+        "agent_did": "did:web:agent.example.com",
+        "principal_did": "did:web:principal.example.com",
+        "action": "subscribe",
+        "scope": {
+          "resource": "content.papers.full_text",
+          "expires_at": "2999-01-01T00:00:00Z"
+        },
+        "principal_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    "expected_valid": true
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "eep-realworld-simulation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Current web (HTML) vs EEP live demo — Next.js provider + deterministic Google ADK agents",
+  "scripts": {
+    "install:provider": "cd provider && npm install",
+    "install:agent": "cd agent && (test -d .venv || python3 -m venv .venv) && .venv/bin/pip install -q -r requirements.txt && .venv/bin/python -m playwright install chromium",
+    "setup": "npm run install:provider && npm run install:agent",
+    "demo": "npm run setup && cd agent && PYTHONPATH=. .venv/bin/python run_demo.py",
+    "demo:only": "cd agent && PYTHONPATH=. .venv/bin/python run_demo.py"
+  }
+}

@@ -1,0 +1,22 @@
+name: "@eep-dev/signer Tests"
+
+on:
+  push:
+    paths: ['EEP/packages/@eep-dev/signer/**']
+  pull_request:
+    paths: ['EEP/packages/@eep-dev/signer/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: EEP/packages/@eep-dev/signer
+        run: npm ci
+      - name: Test
+        working-directory: EEP/packages/@eep-dev/signer
+        run: npx vitest run

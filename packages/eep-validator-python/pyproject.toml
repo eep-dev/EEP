@@ -1,0 +1,13 @@
+[project]
+name = "eep-validator"
+version = "0.1.0"
+description = "SSRF prevention and payload validation for EEP publishers"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

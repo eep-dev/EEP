@@ -1,0 +1,25 @@
+{
+  "name": "eep-api-node-reference",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@eep-dev/gates": "file:../../../packages/@eep-dev/gates",
+    "@eep-dev/signer": "file:../../../packages/@eep-dev/signer",
+    "ioredis": "^5.8.2",
+    "postgres": "^3.4.8",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^1.6.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  }
+}

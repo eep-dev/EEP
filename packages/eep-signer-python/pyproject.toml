@@ -1,0 +1,12 @@
+[project]
+name = "eep-signer"
+version = "0.1.0"
+description = "Standard Webhooks HMAC-SHA256 signing and verification for EEP"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

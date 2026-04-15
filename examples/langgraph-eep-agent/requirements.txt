@@ -1,0 +1,7 @@
+langgraph>=0.2
+langchain>=0.3
+langchain-anthropic>=0.3
+httpx>=0.27
+eep-gates
+eep-signer
+eep-validator

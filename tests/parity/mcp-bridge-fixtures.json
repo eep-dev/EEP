@@ -1,0 +1,30 @@
+{
+  "manifest_case": {
+    "config": {
+      "did": "did:web:bridge.eep.dev",
+      "baseUrl": "http://localhost:3001",
+      "base_url": "http://localhost:3001",
+      "mcpBaseUrl": "http://localhost:4100",
+      "mcp_base_url": "http://localhost:4100"
+    },
+    "introspection": {
+      "server": { "name": "test-mcp", "version": "1.0.0" },
+      "tools": [
+        { "name": "safe_tool", "annotations": { "price_usd": 1 } }
+      ],
+      "resources": [
+        { "uri": "res://a", "mimeType": "text/plain" }
+      ]
+    },
+    "expect": {
+      "did": "did:web:bridge.eep.dev",
+      "has_text_plain": true
+    }
+  },
+  "gate_case": {
+    "tool": "safe_tool",
+    "expect_missing_status": 402,
+    "expect_with_proof_status": 200,
+    "proofs": [{ "type": "payment", "token": "x402-token" }]
+  }
+}

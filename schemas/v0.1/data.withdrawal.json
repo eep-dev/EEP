@@ -1,0 +1,157 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/data.withdrawal.json",
+    "title": "EEP Data Withdrawal",
+    "description": "Schema for the EEP data withdrawal mechanism defined in Whitepaper §7.3 (Right of Withdrawal). An agent's operator may instruct it to withdraw a previously provided data claim via WebSocket `data.withdrawal` message OR via the dedicated REST endpoint `DELETE /data/claims/:claim_id`. This schema covers both the REST request body and the publisher's 202 Accepted response. Publishers MUST acknowledge within 24 hours and purge the withdrawn claim data while keeping the session token valid.",
+    "definitions": {
+        "WithdrawalRequest": {
+            "$id": "#WithdrawalRequest",
+            "title": "Data Withdrawal Request",
+            "description": "Body sent by the agent to DELETE /data/claims/:claim_id or as a WebSocket data.withdrawal message payload.",
+            "type": "object",
+            "required": [
+                "claim_id",
+                "agent_did",
+                "reason",
+                "issued_at",
+                "nonce",
+                "signature"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "claim_id": {
+                    "type": "string",
+                    "description": "Identifier of the specific data claim to withdraw. Must match a previously provided claim from a data_request gate exchange.",
+                    "examples": [
+                        "claim_org_type_20260305_abc123",
+                        "urn:eep:claim:01HN3QK7GX"
+                    ]
+                },
+                "agent_did": {
+                    "type": "string",
+                    "description": "DID of the requesting agent. Must match the DID that originally provided the claim.",
+                    "pattern": "^did:[a-z0-9]+:.+$",
+                    "examples": [
+                        "did:web:agent.acme.corp"
+                    ]
+                },
+                "publisher_did": {
+                    "type": "string",
+                    "description": "DID of the publisher holding the claim data. Used for targeted withdrawal in multi-publisher deployments.",
+                    "pattern": "^did:[a-z0-9]+:.+$"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Machine-readable reason code for the withdrawal. Logged by publisher for GDPR Art. 17 accountability.",
+                    "enum": [
+                        "gdpr_erasure",
+                        "ccpa_deletion",
+                        "purpose_fulfilled",
+                        "revoke_consent",
+                        "operator_instruction",
+                        "other"
+                    ]
+                },
+                "reason_detail": {
+                    "type": "string",
+                    "description": "Optional human-readable explanation for 'other' reason codes.",
+                    "maxLength": 512
+                },
+                "issued_at": {
+                    "type": "string",
+                    "description": "ISO 8601 UTC timestamp when this withdrawal request was created. Must be within 60 seconds per EEP replay prevention.",
+                    "format": "date-time",
+                    "examples": [
+                        "2026-03-05T14:00:00Z"
+                    ]
+                },
+                "nonce": {
+                    "type": "string",
+                    "description": "Single-use nonce. Publisher must verify this nonce was issued for this agent and mark it consumed to prevent replay.",
+                    "minLength": 16,
+                    "maxLength": 128
+                },
+                "signature": {
+                    "type": "string",
+                    "description": "EdDSA signature (base64url) by agent_did's private key over canonical JSON of all fields except 'signature'. Establishes non-repudiable withdrawal request.",
+                    "minLength": 16
+                }
+            }
+        },
+        "WithdrawalAcknowledgement": {
+            "$id": "#WithdrawalAcknowledgement",
+            "title": "Data Withdrawal Acknowledgement (202 Accepted)",
+            "description": "HTTP 202 Accepted response body when deletion is asynchronous. Publisher commits to completing withdrawal within expected_completion_at.",
+            "type": "object",
+            "required": [
+                "withdrawal_id",
+                "claim_id",
+                "status",
+                "acknowledged_at",
+                "expected_completion_at"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "withdrawal_id": {
+                    "type": "string",
+                    "description": "Unique identifier for this withdrawal request. Agent can poll GET /data/claims/:claim_id/status using this ID.",
+                    "examples": [
+                        "withdrawal_01HN3QK7GX",
+                        "urn:eep:withdrawal:2026-03-05T14:00:00Z:abc123"
+                    ]
+                },
+                "claim_id": {
+                    "type": "string",
+                    "description": "The claim_id being withdrawn (echoed for confirmation)."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Current status of the withdrawal.",
+                    "enum": [
+                        "pending",
+                        "processing",
+                        "completed",
+                        "failed"
+                    ]
+                },
+                "acknowledged_at": {
+                    "type": "string",
+                    "description": "ISO 8601 UTC timestamp when the publisher acknowledged the withdrawal request.",
+                    "format": "date-time"
+                },
+                "expected_completion_at": {
+                    "type": "string",
+                    "description": "ISO 8601 UTC timestamp by which the publisher commits to completing deletion. Per Whitepaper §7.3: default window is 24 hours.",
+                    "format": "date-time"
+                },
+                "publisher_signature": {
+                    "type": "string",
+                    "description": "EdDSA signature by publisher_did over canonical JSON of this document. Makes the acknowledgement tamper-evident and legally binding.",
+                    "minLength": 16
+                }
+            }
+        }
+    },
+    "examples": [
+        {
+            "$comment": "Example 1: REST withdrawal request body",
+            "withdrawal_request": {
+                "claim_id": "claim_org_type_20260305_abc123",
+                "agent_did": "did:web:agent.acme.corp",
+                "publisher_did": "did:web:data.example.org",
+                "reason": "gdpr_erasure",
+                "issued_at": "2026-03-05T14:00:00Z",
+                "nonce": "nOncE-1a2b3c4d5e6f7g8h",
+                "signature": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+            },
+            "acknowledgement_202": {
+                "withdrawal_id": "withdrawal_01HN3QK7GX",
+                "claim_id": "claim_org_type_20260305_abc123",
+                "status": "pending",
+                "acknowledged_at": "2026-03-05T14:00:01Z",
+                "expected_completion_at": "2026-03-06T14:00:01Z",
+                "publisher_signature": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+            }
+        }
+    ]
+}

@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://eep.dev/schemas/v0.1/event.envelope.json",
+  "title": "EEP Event Envelope",
+  "description": "Schema for a valid EEP/CloudEvents v1.0.2 event. All EEP events MUST conform to this schema. This is a superset of the CloudEvents v1.0.2 envelope with EEP-specific extensions. See SPECIFICATION.md §13 for the canonical event type registry.",
+  "type": "object",
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "description": "CloudEvents spec version. MUST be '1.0'.",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this event. Used for deduplication. Publishers MUST guarantee uniqueness within a source. Subscribers MUST use this field to implement idempotent processing.",
+      "minLength": 1,
+      "maxLength": 128,
+      "examples": [
+        "01HN3QK7GX-1708123456000"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "description": "The URI/DID of the entity that originated this event. For EEP events, this SHOULD be a valid DID.",
+      "minLength": 1,
+      "examples": [
+        "did:web:example.com:u:acme-corp"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "description": "The event type in reverse-domain dot notation. Format: {reverse-domain}.{entity-type}.{action}. Well-known EEP event types are listed in eep_known_event_types below and documented normatively in SPECIFICATION.md §13.",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)+$",
+      "minLength": 5,
+      "examples": [
+        "com.example.entity.updated",
+        "com.example.trust.changed",
+        "com.example.session.revoked",
+        "com.example.agent.task.completed",
+        "com.example.trust.signal.added"
+      ]
+    },
+    "time": {
+      "type": "string",
+      "description": "RFC 3339 / ISO 8601 timestamp of when the event occurred. MUST be in UTC.",
+      "format": "date-time",
+      "examples": [
+        "2026-02-22T14:30:00Z"
+      ]
+    },
+    "datacontenttype": {
+      "type": "string",
+      "description": "MIME type of the data field. MUST be 'application/json' for EEP events.",
+      "const": "application/json"
+    },
+    "data": {
+      "type": "object",
+      "description": "The event payload. Structure varies by event type. Refer to the Event Catalog in SPECIFICATION.md §13 for the normative schema of each event type."
+    },
+    "eep_version": {
+      "type": "string",
+      "description": "EEP specification version that governs this event's format.",
+      "pattern": "^\\d+\\.\\d+(-[a-z]+)?$",
+      "examples": [
+        "0.1",
+        "1.0"
+      ]
+    },
+    "eep_subscription_id": {
+      "type": "string",
+      "description": "The ID of the subscription this event was delivered for. Present in webhook and SSE deliveries, absent in audit logs.",
+      "examples": [
+        "sub_01HN3QK7GX"
+      ]
+    },
+    "eep_trust_score": {
+      "type": "integer",
+      "description": "A snapshot of the source entity's trust score at the time this event was emitted. Allows subscribers to contextualize events without requiring a separate trust lookup.",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "eep_actor_type": {
+      "type": "string",
+      "description": "Describes what category of actor triggered this event.",
+      "enum": [
+        "human",
+        "agent",
+        "system",
+        "cron"
+      ],
+      "examples": [
+        "human"
+      ]
+    },
+    "eep_tier": {
+      "type": "string",
+      "description": "The access tier under which this event was delivered. Allows subscribers to know whether they are receiving full or filtered content. Absent means no gating is applied.",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "examples": [
+        "public",
+        "premium",
+        "academic"
+      ]
+    },
+    "eep_reputation_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "On-chain ERC-8004 reputation score of the source entity at event time (0-100)"
+    },
+    "eep_on_chain_did": {
+      "type": "string",
+      "description": "On-chain DID linked to the entity via ERC-8004 NFT token",
+      "examples": [
+        "did:web:api.example.com:u:acme-corp"
+      ]
+    },
+    "eep_known_event_types": {
+      "$comment": "NORMATIVE REFERENCE — not a data field. This enum lists all canonical EEP event type suffixes as defined in SPECIFICATION.md §13 (Event Type Registry). The full type value prefixes these with a reverse-domain (e.g., 'com.example.session.revoked'). Publishers MAY define custom event types but MUST NOT reuse these suffixes with different semantics.",
+      "type": "string",
+      "description": "NORMATIVE EVENT TYPE REGISTRY (SPECIFICATION.md §13). The suffix portion of canonical EEP event types. Publishers use these as the action portion of their typed events.",
+      "enum": [
+        "entity.updated",
+        "entity.state.changed",
+        "trust.changed",
+        "trust.signal.added",
+        "trust.signal.removed",
+        "trust.signal.revoked",
+        "session.created",
+        "session.renewed",
+        "session.revoked",
+        "agent.task.created",
+        "agent.task.started",
+        "agent.task.completed",
+        "agent.task.failed",
+        "agent.task.delegated",
+        "data.withdrawal.requested",
+        "data.withdrawal.acknowledged",
+        "data.withdrawal.completed",
+        "commerce.rfp.open",
+        "commerce.rfp.bid",
+        "commerce.rfp.closed",
+        "commerce.agreement.proposed",
+        "commerce.agreement.signed",
+        "commerce.payment.received",
+        "commerce.payment.confirmed",
+        "gate.access.granted",
+        "gate.access.denied",
+        "gate.access.expired"
+      ],
+      "examples": [
+        "session.revoked",
+        "trust.signal.revoked",
+        "agent.task.completed",
+        "data.withdrawal.completed"
+      ]
+    }
+  }
+}

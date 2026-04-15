@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/setup/v0.1/eep-setup.schema.json",
+  "title": "EEP Setup Config",
+  "type": "object",
+  "required": [
+    "setup_schema_version",
+    "mode",
+    "identity",
+    "conformance",
+    "entities",
+    "discovery",
+    "delivery",
+    "gates",
+    "services",
+    "security",
+    "pulse",
+    "compliance",
+    "infra",
+    "bridge",
+    "adapters"
+  ],
+  "properties": {
+    "setup_schema_version": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["init", "inject"]
+    },
+    "identity": {
+      "type": "object",
+      "required": ["org_name", "domain", "did", "base_url", "eep_versions", "content_types"],
+      "properties": {
+        "org_name": { "type": "string" },
+        "domain": { "type": "string" },
+        "did": { "type": "string" },
+        "base_url": { "type": "string" },
+        "eep_versions": { "type": "array", "items": { "type": "string" } },
+        "content_types": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "required": ["target_tier", "environment", "runtime"],
+      "properties": {
+        "target_tier": { "type": "string", "enum": ["Core", "Standard", "Full"] },
+        "environment": { "type": "string", "enum": ["development", "staging", "production"] },
+        "runtime": { "type": "string" }
+      }
+    },
+    "adapters": {
+      "type": "object",
+      "required": ["auth", "database", "event_bus", "framework"],
+      "properties": {
+        "auth": { "type": "object" },
+        "database": { "type": "object" },
+        "event_bus": { "type": "object" },
+        "framework": { "type": "object" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

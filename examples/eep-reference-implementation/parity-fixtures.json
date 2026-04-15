@@ -1,0 +1,11 @@
+{
+  "manifest_expect": {
+    "eep_version": "0.1",
+    "x402_enabled": true,
+    "supports_json": "application/json"
+  },
+  "gate_expect": {
+    "denied_status": 402,
+    "allowed_status": 200
+  }
+}

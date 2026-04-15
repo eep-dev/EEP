@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/gate.451-response.json",
+    "title": "EEP Gate 451 Legally Restricted Response",
+    "description": "Returned when a resource is unavailable for legal reasons (EU AI Act, DORA, judicial orders, etc.)",
+    "type": "object",
+    "required": [
+        "error",
+        "resource",
+        "reason"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "error": {
+            "type": "string",
+            "const": "legally_restricted",
+            "description": "Fixed error code for HTTP 451 legal restriction"
+        },
+        "resource": {
+            "type": "string",
+            "description": "The resource path that is legally restricted"
+        },
+        "reason": {
+            "type": "string",
+            "description": "Human-readable description of the legal restriction"
+        },
+        "legal_basis": {
+            "type": "string",
+            "description": "Legal instrument imposing the restriction",
+            "examples": [
+                "EU AI Act Art. 6 Annex III",
+                "DORA Art. 28",
+                "GDPR Art. 17"
+            ]
+        },
+        "jurisdiction": {
+            "type": "string",
+            "description": "Geographic or legal jurisdiction",
+            "examples": [
+                "EU",
+                "US",
+                "UK",
+                "DE"
+            ]
+        },
+        "contact": {
+            "type": "string",
+            "description": "Contact address (email or URL) for legal queries"
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@eep-dev/mcp-bridge",
+  "version": "0.1.0",
+  "description": "MCP to EEP bridge: manifest/service translation, gate synthesis, and HTTP bridge server.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "eep-mcp-bridge": "./dist/cli.js"
+  },
+  "scripts": {
+    "pretest": "npm --prefix ../gates run build",
+    "prebuild": "npm --prefix ../gates run build",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@eep-dev/gates": "file:../gates"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^1.6.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

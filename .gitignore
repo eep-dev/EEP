@@ -1,0 +1,111 @@
+# ─── Dependencies & package managers ─────────────────────────────
+node_modules/
+**/node_modules/
+.pnpm-store/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ─── Build outputs ─────────────────────────────────────────────────
+dist/
+**/dist/
+build/
+**/build/
+*.tsbuildinfo
+*.js.map
+.next/
+out/
+**/.next/
+**/out/
+.turbo/
+
+# ─── Test & coverage (JS/TS) ──────────────────────────────────────
+coverage/
+**/coverage/
+.nyc_output/
+htmlcov/
+**/.vitest/
+**/test-results/
+**/playwright-report/
+**/blob-report/
+**/playwright/.cache/
+
+# ─── Test & coverage (Python) ───────────────────────────────────────
+.pytest_cache/
+**/.pytest_cache/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.mypy_cache/
+**/.mypy_cache/
+.ruff_cache/
+**/.ruff_cache/
+.hypothesis/
+**/.hypothesis/
+.tox/
+**/.tox/
+.coverage
+.coverage.*
+**/.coverage
+*.egg-info/
+**/*.egg-info/
+.eggs/
+**/pip-wheel-metadata/
+venv/
+.venv/
+**/venv/
+**/.venv/
+
+# ─── Environment & secrets (never commit) ─────────────────────────
+.env
+.env.*
+!.env.example
+!.env*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+**/secrets/
+*.secret
+**/service-account*.json
+
+# ─── LaTeX (docs/*.tex builds) ─────────────────────────────────────
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.xdv
+# Uncomment if PDFs are generated in CI only and should not be tracked:
+# docs/*.pdf
+
+# ─── OS & editors ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+*~
+.idea/
+*.sublime-*
+
+# ─── Internal / optional (do not publish accidental snapshots) ─────
+docs/audit/
+
+# ─── Misc caches & temp ────────────────────────────────────────────
+.cache/
+**/.cache/
+tmp/
+temp/
+*.tmp
+.parcel-cache/

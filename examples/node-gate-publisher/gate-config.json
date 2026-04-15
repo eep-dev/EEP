@@ -1,0 +1,48 @@
+{
+    "default_tier": "public",
+    "tiers": {
+        "public": {
+            "label": "Public",
+            "requirements": [],
+            "access": [
+                "profile.summary",
+                "profile.capabilities"
+            ]
+        },
+        "verified": {
+            "label": "Verified Agents",
+            "requirements": [
+                {
+                    "type": "trust",
+                    "min_score": 50
+                }
+            ],
+            "access": [
+                "profile.*",
+                "events.public",
+                "content.summaries.*"
+            ]
+        },
+        "premium": {
+            "label": "Premium Access",
+            "requirements": [
+                {
+                    "type": "payment",
+                    "amount": 10,
+                    "currency": "usd",
+                    "per": "month",
+                    "payment_methods": [
+                        "https://pay.example.com/checkout/premium"
+                    ]
+                },
+                {
+                    "type": "trust",
+                    "min_score": 30
+                }
+            ],
+            "access": [
+                "*"
+            ]
+        }
+    }
+}

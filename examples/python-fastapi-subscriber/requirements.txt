@@ -1,0 +1,8 @@
+# EEP Python FastAPI Subscriber Example
+# Install: pip install -r requirements.txt
+# Run:     EEP_WEBHOOK_SECRET=your_secret uvicorn server:app --port 3000
+
+fastapi>=0.104.0
+uvicorn>=0.24.0
+httpx>=0.25.0
+httpx-sse>=0.4.0

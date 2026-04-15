@@ -1,0 +1,33 @@
+{
+  "name": "eep-realworld-provider",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:next\" \"npm:dev:eep\"",
+    "dev:next": "next dev -p 3401",
+    "dev:eep": "tsx eep-server/server.ts",
+    "build": "next build",
+    "start": "concurrently -k \"npm:start:next\" \"npm:start:eep\"",
+    "start:next": "next start -p 3401",
+    "start:eep": "NODE_ENV=production tsx eep-server/server.ts"
+  },
+  "dependencies": {
+    "@eep-dev/gates": "file:../../packages/@eep-dev/gates",
+    "concurrently": "^9.1.2",
+    "express": "^4.21.2",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tweetnacl": "^1.0.3",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

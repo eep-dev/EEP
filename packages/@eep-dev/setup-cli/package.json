@@ -1,0 +1,23 @@
+{
+  "name": "@eep-dev/setup-cli",
+  "version": "0.1.0",
+  "description": "Self-installing setup and injection wizard for Entity Engagement Protocol deployments.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "eep-setup": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^1.6.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

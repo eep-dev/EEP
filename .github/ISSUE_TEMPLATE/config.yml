@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/eep-dev/EEP/blob/main/SECURITY.md
+    about: Report privately per SECURITY.md — do not open a public issue for security defects.
+  - name: Protocol Q&A
+    url: https://github.com/eep-dev/EEP/discussions
+    about: Ask questions about the specification or adoption before filing a feature request.

@@ -1,0 +1,37 @@
+{
+    "name": "@eep-dev/gates",
+    "version": "0.1.0",
+    "description": "General-purpose access control, commerce negotiation, and service discovery for EEP. Defines gates (tier-based access with extensible requirement types), 402 responses, payment proofs, commerce negotiation state machine, and service catalog validation.",
+    "type": "module",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "default": "./dist/index.js"
+        }
+    },
+    "license": "Apache-2.0",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run"
+    },
+    "keywords": [
+        "eep",
+        "entity-engagement-protocol",
+        "gates",
+        "access-control",
+        "commerce",
+        "monetization",
+        "marketplace",
+        "service-discovery"
+    ],
+    "devDependencies": {
+        "@types/node": "^25.3.5",
+        "@vitest/coverage-v8": "^1.6.1",
+        "typescript": "^5.3.0",
+        "vitest": "^1.0.0"
+    }
+}

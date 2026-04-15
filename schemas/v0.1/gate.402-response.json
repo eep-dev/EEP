@@ -1,0 +1,111 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/gate.402-response.json",
+    "title": "EEP Access Restriction Response (402)",
+    "description": "Schema for the HTTP 402 response body returned when an agent requests a resource that requires a higher tier. The response is machine-readable so agents can programmatically determine what requirements to satisfy.",
+    "type": "object",
+    "required": [
+        "error",
+        "resource",
+        "current_tier",
+        "required_tier",
+        "unmet_requirements"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "error": {
+            "type": "string",
+            "description": "Error code. Always 'access_restricted'.",
+            "const": "access_restricted"
+        },
+        "resource": {
+            "type": "string",
+            "description": "The resource pattern that was requested but not accessible.",
+            "examples": [
+                "profile.contact",
+                "content.papers.full_text",
+                "events.premium"
+            ]
+        },
+        "current_tier": {
+            "type": "string",
+            "description": "The tier the agent currently has access to.",
+            "examples": [
+                "public",
+                "free"
+            ]
+        },
+        "required_tier": {
+            "type": "string",
+            "description": "The minimum tier required to access the requested resource."
+        },
+        "unmet_requirements": {
+            "type": "array",
+            "description": "List of requirements the agent has not yet satisfied. Each entry includes the requirement type, the specific fields needed, and an optional resolution hint for the agent.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "type"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "The requirement type that was not met."
+                    },
+                    "resolution_hint": {
+                        "type": "string",
+                        "description": "A human/agent-readable hint on how to satisfy this requirement.",
+                        "maxLength": 512,
+                        "examples": [
+                            "Pay $0.10 via the payment_methods URL",
+                            "Present a VC of type AcademicAffiliation",
+                            "Your trust score is 32; minimum required is 50",
+                            "Follow this entity to gain access"
+                        ]
+                    }
+                },
+                "additionalProperties": true
+            }
+        },
+        "available_tiers": {
+            "type": "object",
+            "description": "Map of tiers that would grant access to the requested resource. Includes their labels, requirements, and access patterns so agents can choose which tier to satisfy.",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "requirements": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "access": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "gates_config_url": {
+            "type": "string",
+            "description": "URL where the full gate configuration can be retrieved.",
+            "format": "uri",
+            "examples": [
+                "https://api.example.com/eep/gates/did:web:example.com:u:alice"
+            ]
+        },
+        "retry_after": {
+            "type": "integer",
+            "description": "Optional: seconds to wait before retrying (e.g., if a time-based requirement will be met soon).",
+            "minimum": 0
+        }
+    }
+}

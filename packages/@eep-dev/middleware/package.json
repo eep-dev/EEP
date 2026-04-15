@@ -1,0 +1,51 @@
+{
+  "name": "@eep-dev/middleware",
+  "version": "0.1.0",
+  "description": "Framework adapters and high-level server wrappers for integrating EEP into existing applications.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/eep-server.d.ts",
+      "default": "./dist/core/eep-server.js"
+    },
+    "./express": {
+      "types": "./dist/adapters/express.d.ts",
+      "default": "./dist/adapters/express.js"
+    },
+    "./fastify": {
+      "types": "./dist/adapters/fastify.d.ts",
+      "default": "./dist/adapters/fastify.js"
+    },
+    "./hono": {
+      "types": "./dist/adapters/hono.d.ts",
+      "default": "./dist/adapters/hono.js"
+    },
+    "./koa": {
+      "types": "./dist/adapters/koa.d.ts",
+      "default": "./dist/adapters/koa.js"
+    }
+  },
+  "scripts": {
+    "pretest": "npm --prefix ../gates run build",
+    "prebuild": "npm --prefix ../gates run build",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@eep-dev/gates": "file:../gates"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^1.6.1",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

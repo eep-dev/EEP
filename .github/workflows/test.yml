@@ -1,0 +1,337 @@
+name: EEP Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  dependency-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Build @eep-dev/gates (for examples and cross-impl)
+        working-directory: packages/@eep-dev/gates
+        run: |
+          npm ci
+          npm run build
+
+      - name: npm high-severity audit gate
+        run: |
+          set -euo pipefail
+          for dir in \
+            "packages/@eep-dev/gates" \
+            "packages/@eep-dev/signer" \
+            "packages/@eep-dev/validator" \
+            "packages/@eep-dev/compliance-cli" \
+            "packages/@eep-dev/setup-cli" \
+            "packages/@eep-dev/middleware" \
+            "tests" \
+            "examples/node-gate-publisher"
+          do
+            echo "Auditing $dir"
+            (cd "$dir" && npm ci && npm audit --omit=dev --audit-level=high)
+          done
+          echo "Auditing packages/@eep-dev/discovery"
+          (cd "packages/@eep-dev/discovery" && npm install && npm audit --omit=dev --audit-level=high)
+          echo "Auditing packages/@eep-dev/mcp-bridge"
+          (cd "packages/@eep-dev/mcp-bridge" && npm install && npm audit --omit=dev --audit-level=high)
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: pip vulnerability audit gate
+        run: |
+          python -m venv .audit-venv
+          . .audit-venv/bin/activate
+          pip install --upgrade pip pip-audit
+          pip-audit -r tests/cross-impl/requirements.txt
+          pip install \
+            ./packages/eep-gates-python \
+            ./packages/eep-signer-python \
+            ./packages/eep-validator-python \
+            ./packages/eep-compliance-cli-python \
+            ./packages/eep-discovery-python \
+            ./packages/eep-mcp-bridge-python \
+            ./packages/eep-middleware-python
+          pip-audit
+
+  test-schemas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx vitest run
+
+  test-validator:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/validator
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx vitest run --coverage
+
+  test-signer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/signer
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx vitest run --coverage
+
+  test-gates:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/gates
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx vitest run --coverage
+
+  test-compliance-cli:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/compliance-cli
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx vitest run --coverage
+
+  test-discovery:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/discovery
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npx vitest run --coverage
+
+  test-mcp-bridge:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/mcp-bridge
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Build @eep-dev/gates (required by mcp-bridge)
+        working-directory: packages/@eep-dev/gates
+        run: |
+          npm ci
+          npm run build
+      - run: npm install
+      - run: npx vitest run --coverage
+
+  test-setup-cli:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/setup-cli
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npx vitest run --coverage
+
+  test-middleware:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/middleware
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Build @eep-dev/gates (required by middleware)
+        working-directory: packages/@eep-dev/gates
+        run: |
+          npm ci
+          npm run build
+      - run: npm install
+      - run: npx vitest run --coverage
+
+  # ── Python packages ──────────────────────────────────────────
+
+  test-signer-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-signer-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install pytest
+      - run: PYTHONPATH=. python -m pytest tests/ -v
+
+  test-validator-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-validator-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install pytest pytest-asyncio
+      - run: PYTHONPATH=. python -m pytest tests/ -v
+
+  test-gates-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-gates-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+      - run: PYTHONPATH=. python -m pytest tests/ -v
+
+  test-compliance-cli-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-compliance-cli-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install httpx pytest
+      - run: PYTHONPATH=. python -m pytest tests/ -v
+
+  test-discovery-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-discovery-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install pytest
+      - run: PYTHONPATH=. python -m pytest tests/ -v
+
+  test-mcp-bridge-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-mcp-bridge-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+      - run: PYTHONPATH=. python -m pytest tests/ -q --no-header --no-summary
+
+  test-middleware-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/eep-middleware-python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+      - run: python -m pytest -q
+
+  test-cross-impl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # @eep-dev/gates ships TypeScript only; dist/ is gitignored. The example resolves
+      # file:../../packages/@eep-dev/gates → dist/index.js must exist before start.
+      - name: Build @eep-dev/gates
+        working-directory: packages/@eep-dev/gates
+        run: |
+          npm ci
+          npm run build
+
+      - name: Start Node gate publisher example
+        working-directory: examples/node-gate-publisher
+        run: |
+          npm install
+          npx tsx server.ts > /tmp/eep-gate-publisher.log 2>&1 &
+          echo "PUBLISHER_PID=$!" >> $GITHUB_ENV
+
+      - name: Wait for publisher readiness
+        run: |
+          for i in {1..30}; do
+            if curl -fsS "http://localhost:3002/.well-known/eep.json" > /dev/null; then
+              echo "Publisher is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Publisher failed to start"
+          cat /tmp/eep-gate-publisher.log || true
+          exit 1
+
+      - name: Run cross-implementation protocol tests
+        run: |
+          pip install -r tests/cross-impl/requirements.txt
+          EEP_BASE_URL=http://localhost:3002 python -m pytest tests/cross-impl -v
+
+      - name: Stop publisher
+        if: always()
+        run: |
+          if [ -n "${PUBLISHER_PID:-}" ]; then
+            kill "$PUBLISHER_PID" || true
+          fi

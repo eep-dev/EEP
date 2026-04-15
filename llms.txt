@@ -1,0 +1,38 @@
+# EEP llms.txt — Concise Overview for Agents (v0.1)
+# Generated: 2026-04-15T19:31:24Z
+
+EEP (Entity Engagement Protocol) is an open standard for push-based, verifiable communication between digital entities and agents.
+It defines three layers: Layer 1 (REST state resolution/discovery), Layer 2 (SSE + webhooks signal stream), Layer 3 (WebSocket pulse).
+Core promises: documented wire format, libraries, and compliance tooling. No ranking/traffic claims.
+
+## Repository Inventory (from README.md)
+- Normative spec: docs/current/SPECIFICATION.md
+- Schemas: schemas/v0.1/
+- TS packages: packages/@eep-dev/* (@eep-dev/signer, validator, gates, middleware, mcp-bridge, compliance-cli, setup-cli)
+- Python parity: packages/eep-*-python/
+- Compliance CLI: packages/@eep-dev/compliance-cli (with --report-html, --report-json, --report-md)
+- Setup CLI: npx @eep-dev/setup-cli (init, inject, apply --production)
+- Reference stack: examples/eep-reference-implementation/ (Node+Python+Postgres+Redis)
+- Realworld demo: realworld-simulation/ (npm run demo)
+- LangGraph/Claude example: examples/langgraph-eep-agent/
+- Interactive Playground: eep-site/app/playground (browser validation + signing)
+- Tests: test.sh, tests/cross-impl/, tests/parity/
+
+## Conformance Levels
+- Core: discovery, subscription, webhook, HMAC, CloudEvents
+- Standard: + SSE, rate limits
+- Full: + manifest fields, 402/403 gates, registry economics
+Use: npx @eep-dev/compliance-cli --target <url> --report-html report.html
+
+## Key Guides (selected)
+- how-to-setup-cli.md: init/inject/apply/verify
+- integrate-eep-after-setup-cli.md: wiring middleware after artifacts
+- five-minute-proof.md: quick validation
+- testing-and-validation.md, langgraph-eep-agent.md, mcp-eep-bridge.md
+- realworld-simulation.md: Old Web vs EEP comparison
+
+Security contact: hello@eep.dev (subject [Security])
+License: Apache 2.0
+See full details in llms-full.txt or SPECIFICATION.md.
+
+For complete normative spec and all guides, consult llms-full.txt.

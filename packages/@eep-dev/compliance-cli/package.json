@@ -1,0 +1,29 @@
+{
+    "name": "@eep-dev/compliance-cli",
+    "version": "0.1.0",
+    "description": "End-to-end EEP conformance testing CLI for any EEP-compatible platform.",
+    "main": "src/index.ts",
+    "bin": {
+        "eep-compliance": "./src/index.ts"
+    },
+    "license": "Apache-2.0",
+    "type": "module",
+    "scripts": {
+        "start": "node --experimental-strip-types src/index.ts",
+        "test": "vitest run"
+    },
+    "devDependencies": {
+        "@types/node": "^25.3.5",
+        "@vitest/coverage-v8": "^4.0.18",
+        "vitest": "^4.0.0"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "keywords": [
+        "eep",
+        "compliance",
+        "webhooks",
+        "testing"
+    ]
+}

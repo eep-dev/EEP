@@ -1,0 +1,595 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/ws-message.json",
+    "title": "EEP WebSocket Message",
+    "description": "Schema for all messages sent over the EEP Network Pulse (WebSocket) layer. Both client-to-server and server-to-client messages MUST conform to this schema. See SPECIFICATION.md §6.",
+    "type": "object",
+    "required": [
+        "v",
+        "type",
+        "action"
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "v": {
+            "type": "integer",
+            "description": "Protocol version. Clients MUST disconnect if they receive a version they do not support.",
+            "const": 1
+        },
+        "type": {
+            "type": "string",
+            "description": "The message category.",
+            "enum": [
+                "entity",
+                "a2a",
+                "system",
+                "chat",
+                "commerce"
+            ]
+        },
+        "action": {
+            "type": "string",
+            "description": "The specific action within the message type.",
+            "minLength": 1,
+            "maxLength": 64,
+            "examples": [
+                "replay",
+                "auth_expiring",
+                "auth_refresh",
+                "auth_refreshed",
+                "error",
+                "subscribe",
+                "unsubscribe",
+                "event",
+                "data_withdrawal",
+                "session_refresh",
+                "session_revoked",
+                "commerce.rfp.open",
+                "commerce.rfp.bid.submit",
+                "commerce.rfp.bid.received",
+                "commerce.rfp.closed",
+                "commerce.dispute.open",
+                "commerce.dispute.evidence",
+                "commerce.dispute.resolved"
+            ]
+        },
+        "seq": {
+            "type": "integer",
+            "description": "Monotonically increasing sequence number per channel. Used for ordering and gap detection. See SPECIFICATION.md §6.3.",
+            "minimum": 0
+        },
+        "data": {
+            "type": "object",
+            "description": "The message payload. Structure varies by type and action."
+        },
+        "error": {
+            "type": "object",
+            "description": "Error details, present only in system.error messages.",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Machine-readable error code.",
+                    "examples": [
+                        "invalid_message",
+                        "auth_required",
+                        "rate_limited"
+                    ]
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Human-readable error description."
+                }
+            },
+            "required": [
+                "code",
+                "message"
+            ]
+        }
+    },
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "system"
+                    },
+                    "action": {
+                        "const": "auth_expiring"
+                    }
+                },
+                "required": [
+                    "type",
+                    "action"
+                ]
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "expires_in"
+                        ],
+                        "properties": {
+                            "expires_in": {
+                                "type": "integer",
+                                "description": "Seconds until the current JWT expires.",
+                                "minimum": 0
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "system"
+                    },
+                    "action": {
+                        "const": "auth_refresh"
+                    }
+                },
+                "required": [
+                    "type",
+                    "action"
+                ]
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "token"
+                        ],
+                        "properties": {
+                            "token": {
+                                "type": "string",
+                                "description": "The new JWT token.",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "system"
+                    },
+                    "action": {
+                        "const": "replay"
+                    }
+                },
+                "required": [
+                    "type",
+                    "action"
+                ]
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "from_seq"
+                        ],
+                        "properties": {
+                            "from_seq": {
+                                "type": "integer",
+                                "description": "Request replay of all messages from this sequence number.",
+                                "minimum": 0
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "action": {
+                        "const": "data_withdrawal"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            },
+            "then": {
+                "description": "Agent requests withdrawal of previously shared claim data. Publisher must acknowledge within 24h (§7.3 Right of Withdrawal, Whitepaper G17).",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "claim_id",
+                            "agent_did",
+                            "reason"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "claim_id": {
+                                "type": "string",
+                                "description": "Identifier of the claim to be withdrawn."
+                            },
+                            "agent_did": {
+                                "type": "string",
+                                "description": "DID of the requesting agent. Must match the original data_request submitter.",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "reason": {
+                                "type": "string",
+                                "description": "W3C DPV reason for withdrawal (e.g. dpv:WithdrawConsent) or human-readable string."
+                            },
+                            "signed_request": {
+                                "type": "string",
+                                "description": "Optional EdDSA signature over claim_id+agent_did+reason to prove withdrawal intent."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "action": {
+                        "const": "session_revoked"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            },
+            "then": {
+                "description": "Publisher revokes an agent's session in real time. The agent MUST stop using the session token immediately. See SPECIFICATION.md §11.7 (G25).",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "session_id",
+                            "agent_did",
+                            "reason",
+                            "revoked_at"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "session_id": {
+                                "type": "string",
+                                "description": "Identifier of the session token being revoked. Corresponds to the 'context_id' in the session token."
+                            },
+                            "agent_did": {
+                                "type": "string",
+                                "description": "DID of the agent whose session is being revoked.",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "publisher_did": {
+                                "type": "string",
+                                "description": "DID of the publisher issuing the revocation (for verification).",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "reason": {
+                                "type": "string",
+                                "description": "Machine-readable or human-readable reason for revocation.",
+                                "examples": [
+                                    "agreement_violation",
+                                    "payment_failed",
+                                    "operator_request",
+                                    "security_incident",
+                                    "session_expired"
+                                ]
+                            },
+                            "revoked_at": {
+                                "type": "string",
+                                "description": "ISO 8601 UTC timestamp of the revocation.",
+                                "format": "date-time"
+                            },
+                            "re_auth_required": {
+                                "type": "boolean",
+                                "description": "If true, the agent may re-authenticate by re-satisfying the gate requirements. If false, the agent is permanently blocked.",
+                                "default": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "action": {
+                        "const": "commerce.rfp.open"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            },
+            "then": {
+                "description": "Publisher opens a Request-for-Proposals auction. Interested agents may submit bids before close_time. See SPECIFICATION.md §6.5.3 (G28).",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "rfp_id",
+                            "publisher_did",
+                            "description",
+                            "mechanism",
+                            "close_time"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "rfp_id": {
+                                "type": "string",
+                                "description": "Unique identifier for this auction / RFP round."
+                            },
+                            "publisher_did": {
+                                "type": "string",
+                                "description": "DID of the publisher opening the auction.",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Human-readable description of the resource being auctioned."
+                            },
+                            "mechanism": {
+                                "type": "string",
+                                "description": "Auction mechanism type.",
+                                "enum": [
+                                    "first_price",
+                                    "vickrey",
+                                    "reverse"
+                                ]
+                            },
+                            "close_time": {
+                                "type": "string",
+                                "description": "ISO 8601 UTC timestamp when the auction closes. No bids accepted after this time.",
+                                "format": "date-time"
+                            },
+                            "reserve_price": {
+                                "type": "number",
+                                "description": "Minimum acceptable bid (in USD-equivalent). Bids below this are automatically rejected.",
+                                "minimum": 0
+                            },
+                            "currency": {
+                                "type": "string",
+                                "description": "Currency for bid amounts.",
+                                "default": "USD",
+                                "examples": [
+                                    "USD",
+                                    "USDC",
+                                    "SOL"
+                                ]
+                            },
+                            "manifest_hash": {
+                                "type": "string",
+                                "description": "SHA-256 hash of the publisher manifest update that committed these auction parameters. Prevents last-minute manipulation.",
+                                "pattern": "^sha256:[a-f0-9]{64}$"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "action": {
+                        "const": "commerce.rfp.bid.submit"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            },
+            "then": {
+                "description": "Agent submits a bid for an open RFP auction. Must be received before close_time. See SPECIFICATION.md §6.5.3 (G28).",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "rfp_id",
+                            "bidder_did",
+                            "bid_amount",
+                            "bid_currency",
+                            "signed_bid"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "rfp_id": {
+                                "type": "string",
+                                "description": "ID of the RFP being bid on."
+                            },
+                            "bidder_did": {
+                                "type": "string",
+                                "description": "DID of the bidding agent.",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "bid_amount": {
+                                "type": "number",
+                                "description": "Bid amount in bid_currency.",
+                                "exclusiveMinimum": 0
+                            },
+                            "bid_currency": {
+                                "type": "string",
+                                "description": "Currency of the bid.",
+                                "examples": [
+                                    "USD",
+                                    "USDC",
+                                    "SOL"
+                                ]
+                            },
+                            "signed_bid": {
+                                "type": "string",
+                                "description": "EdDSA signature over rfp_id+bidder_did+bid_amount+bid_currency by the bidder's DID key, preventing bid repudiation."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "action": {
+                        "const": "commerce.rfp.closed"
+                    }
+                },
+                "required": [
+                    "action"
+                ]
+            },
+            "then": {
+                "description": "Publisher closes the RFP auction and announces the winner. The winner receives an AllocationReceipt VC. See SPECIFICATION.md §6.5.3 (G28).",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "rfp_id",
+                            "winner_did",
+                            "winning_bid",
+                            "closed_at",
+                            "allocation_receipt_vc"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "rfp_id": {
+                                "type": "string",
+                                "description": "ID of the closed auction."
+                            },
+                            "winner_did": {
+                                "type": "string",
+                                "description": "DID of the winning bidder.",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "winning_bid": {
+                                "type": "number",
+                                "description": "Winning bid amount.",
+                                "exclusiveMinimum": 0
+                            },
+                            "total_bids": {
+                                "type": "integer",
+                                "description": "Total number of bids received (informational).",
+                                "minimum": 1
+                            },
+                            "closed_at": {
+                                "type": "string",
+                                "description": "ISO 8601 UTC timestamp when the auction was closed.",
+                                "format": "date-time"
+                            },
+                            "allocation_receipt_vc": {
+                                "type": "object",
+                                "description": "W3C Verifiable Credential (EEPAllocationReceipt) issued to the winner. Contains the agreed terms and access entitlement duration."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "commerce"
+                    },
+                    "action": {
+                        "const": "commerce.dispute.open"
+                    }
+                },
+                "required": [
+                    "type",
+                    "action"
+                ]
+            },
+            "then": {
+                "description": "Subscriber opens a post-payment dispute (SPEC §15.4.1).",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "negotiation_id",
+                            "subscriber_did",
+                            "reason_code"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "negotiation_id": {
+                                "type": "string"
+                            },
+                            "subscriber_did": {
+                                "type": "string",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            },
+                            "reason_code": {
+                                "type": "string",
+                                "description": "Machine-readable reason (e.g. sla_violation, stream_stopped)."
+                            },
+                            "evidence": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "URIs or content hashes supporting the dispute."
+                            },
+                            "requested_remedy": {
+                                "type": "string",
+                                "enum": [
+                                    "refund",
+                                    "service_resume",
+                                    "reputation_penalty"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "commerce"
+                    },
+                    "action": {
+                        "const": "commerce.dispute.resolved"
+                    }
+                },
+                "required": [
+                    "type",
+                    "action"
+                ]
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "required": [
+                            "negotiation_id",
+                            "outcome"
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "negotiation_id": {
+                                "type": "string"
+                            },
+                            "outcome": {
+                                "type": "string",
+                                "enum": [
+                                    "refunded",
+                                    "rejected",
+                                    "penalty_applied",
+                                    "dismissed"
+                                ]
+                            },
+                            "publisher_did": {
+                                "type": "string",
+                                "pattern": "^did:[a-z0-9]+:.+$"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "name": "@eep-dev/discovery",
+    "version": "0.1.0",
+    "description": "EEP discovery utilities — manifest validation, Link header parsing, DNS TXT record parsing",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage",
+        "test:watch": "vitest"
+    },
+    "keywords": [
+        "eep",
+        "discovery",
+        "manifest",
+        "well-known"
+    ],
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "@types/node": "^25.3.5",
+        "@vitest/coverage-v8": "^3.0.0",
+        "vitest": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}

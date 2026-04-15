@@ -1,0 +1,223 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/agent.wallet.json",
+    "title": "EEP Agent Wallet Binding Declaration",
+    "description": "Schema for the Agent Wallet Binding Declaration — a signed document declaring how an agent's operational DID is bound to its cryptographic key store. Three binding models are defined per Whitepaper §8: operator-derived (BIP-32 HD), hardware-isolated (TEE/HSM), and OS-keychain (Secure Enclave / Android Keystore / Windows CNG). This document is stored in the agent's local secure configuration and can be presented to publishers requiring it.",
+    "type": "object",
+    "required": [
+        "agent_did",
+        "binding_model",
+        "key_type",
+        "created_at",
+        "rotation_policy"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "agent_did": {
+            "type": "string",
+            "description": "The operational DID derived from this wallet. This is the identity the agent uses in all EEP interactions.",
+            "pattern": "^did:[a-z0-9]+:.+$",
+            "examples": [
+                "did:web:agent.acme.corp:assistant"
+            ]
+        },
+        "binding_model": {
+            "type": "string",
+            "description": "The key binding model. 'operator_derived' = BIP-32 HD derivation from operator master seed. 'hardware_isolated' = TEE/HSM-bound key, never extractable. 'os_keychain' = OS Secure Enclave / Keystore / CNG.",
+            "enum": [
+                "operator_derived",
+                "hardware_isolated",
+                "os_keychain"
+            ]
+        },
+        "key_type": {
+            "type": "string",
+            "description": "The cryptographic key type used for this wallet's DID private key.",
+            "enum": [
+                "Ed25519",
+                "secp256k1",
+                "P-256",
+                "ML-DSA-44",
+                "ML-DSA-65",
+                "ML-DSA-87"
+            ]
+        },
+        "created_at": {
+            "type": "string",
+            "description": "ISO 8601 UTC timestamp when this wallet binding was created.",
+            "format": "date-time"
+        },
+        "rotation_policy": {
+            "type": "object",
+            "description": "Key rotation policy. EEP recommends 90-day proactive rotation.",
+            "required": [
+                "max_age_days"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "max_age_days": {
+                    "type": "integer",
+                    "description": "Maximum key age in days before rotation is required. Recommended: 90.",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "examples": [
+                        90
+                    ]
+                },
+                "auto_rotate": {
+                    "type": "boolean",
+                    "description": "If true, the agent automatically rotates the key when max_age_days is reached without human confirmation.",
+                    "default": false
+                },
+                "next_rotation_at": {
+                    "type": "string",
+                    "description": "ISO 8601 UTC timestamp of the next scheduled rotation (informational).",
+                    "format": "date-time"
+                }
+            }
+        },
+        "delegation_scope": {
+            "type": "object",
+            "description": "If this is a delegated session key, this block describes the scope granted by the master DID. Absent for master keys.",
+            "required": [
+                "master_did",
+                "permitted_gate_types",
+                "max_payment_amount_usd",
+                "expires_at"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "master_did": {
+                    "type": "string",
+                    "description": "The master DID that signed the delegation credential.",
+                    "pattern": "^did:[a-z0-9]+:.+$"
+                },
+                "delegation_credential_id": {
+                    "type": "string",
+                    "description": "W3C VC ID of the Delegation Proof credential issued by the master DID."
+                },
+                "permitted_gate_types": {
+                    "type": "array",
+                    "description": "Gate types this session key is permitted to satisfy.",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "payment",
+                            "credential",
+                            "identity",
+                            "agreement",
+                            "data_request",
+                            "proof_of_intent",
+                            "trust"
+                        ]
+                    },
+                    "minItems": 1
+                },
+                "permitted_endpoints": {
+                    "type": "array",
+                    "description": "Optional allowlist of endpoint URL patterns this key may interact with.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": [
+                        [
+                            "https://api.example.com/*",
+                            "https://data.org/v1/*"
+                        ]
+                    ]
+                },
+                "max_payment_amount_usd": {
+                    "type": "number",
+                    "description": "Maximum payment amount in USD-equivalent that this session key may authorize per transaction.",
+                    "minimum": 0
+                },
+                "expires_at": {
+                    "type": "string",
+                    "description": "ISO 8601 UTC expiry time of this delegation scope. Session keys should have short validity (e.g., 8h).",
+                    "format": "date-time"
+                }
+            }
+        },
+        "operator_derived_config": {
+            "type": "object",
+            "description": "Present only when binding_model = 'operator_derived'. BIP-32 derivation configuration.",
+            "required": [
+                "derivation_path"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "derivation_path": {
+                    "type": "string",
+                    "description": "BIP-32 HD derivation path used to derive this agent's key from the operator master seed.",
+                    "pattern": "^m(/[0-9]+'?)+$",
+                    "examples": [
+                        "m/44'/60'/0'/0/0",
+                        "m/44'/60'/1'/0/0"
+                    ]
+                },
+                "master_did": {
+                    "type": "string",
+                    "description": "The operator's master DID from which this agent key is derived.",
+                    "pattern": "^did:[a-z0-9]+:.+$"
+                }
+            }
+        },
+        "hardware_config": {
+            "type": "object",
+            "description": "Present only when binding_model = 'hardware_isolated'. TEE/HSM configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "hardware_type": {
+                    "type": "string",
+                    "description": "The hardware security technology used.",
+                    "enum": [
+                        "tpm_2.0",
+                        "aws_nitro_enclaves",
+                        "azure_confidential_computing",
+                        "gcp_confidential_vm",
+                        "hsm_pkcs11",
+                        "sgx",
+                        "trustzone"
+                    ]
+                },
+                "attestation_endpoint": {
+                    "type": "string",
+                    "description": "URL where remote attestation reports can be fetched to verify TEE integrity.",
+                    "format": "uri"
+                }
+            }
+        },
+        "os_keychain_config": {
+            "type": "object",
+            "description": "Present only when binding_model = 'os_keychain'. OS keychain configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "platform": {
+                    "type": "string",
+                    "description": "The OS keychain technology.",
+                    "enum": [
+                        "apple_secure_enclave",
+                        "android_keystore",
+                        "windows_cng",
+                        "linux_tpm"
+                    ]
+                },
+                "biometric_required": {
+                    "type": "boolean",
+                    "description": "If true, biometric authentication is required to access this key.",
+                    "default": false
+                }
+            }
+        },
+        "operator_did": {
+            "type": "string",
+            "description": "DID of the human or organization that operates and controls this agent.",
+            "pattern": "^did:[a-z0-9]+:.+$"
+        },
+        "pqc_ready": {
+            "type": "boolean",
+            "description": "Indicates whether this wallet is configured for hybrid post-quantum signing (EdDSA + ML-DSA).",
+            "default": false
+        }
+    }
+}

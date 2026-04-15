@@ -1,0 +1,27 @@
+{
+  "ok": false,
+  "output_dir": "/Users/ugur/Desktop/workspace/more.md/EEP/packages/@eep-dev/setup-cli/eep-generated",
+  "checks": [
+    {
+      "file": ".well-known/eep.json",
+      "exists": false
+    },
+    {
+      "file": "gate-config.json",
+      "exists": false
+    },
+    {
+      "file": "service-catalog.json",
+      "exists": false
+    },
+    {
+      "file": "openapi-eep.json",
+      "exists": false
+    },
+    {
+      "file": "adapter-config.json",
+      "exists": false
+    }
+  ],
+  "score_100": 0
+}

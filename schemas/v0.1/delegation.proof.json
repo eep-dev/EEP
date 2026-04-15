@@ -1,0 +1,186 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/delegation.proof.json",
+    "title": "EEP Delegation Proof Verifiable Credential",
+    "description": "A W3C Verifiable Credential issued by an owner DID to an agent DID, defining the permitted actions, endpoints, and spend limits for the delegation. Must be presented alongside the agent's proof for any delegated gate interaction. (§13 Agent Delegation Chains, Whitepaper).",
+    "type": "object",
+    "required": [
+        "@context",
+        "type",
+        "issuer",
+        "issuanceDate",
+        "credentialSubject",
+        "proof"
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "@context": {
+            "type": "array",
+            "description": "JSON-LD context array. Must contain W3C VC context and EEP context.",
+            "items": {
+                "type": "string"
+            },
+            "contains": {
+                "const": "https://www.w3.org/2018/credentials/v1"
+            },
+            "minItems": 1,
+            "examples": [
+                [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "https://eep.dev/contexts/v0.1"
+                ]
+            ]
+        },
+        "type": {
+            "type": "array",
+            "description": "VC type array. Must contain both VerifiableCredential and EEPDelegationProof.",
+            "items": {
+                "type": "string"
+            },
+            "contains": {
+                "const": "EEPDelegationProof"
+            },
+            "examples": [
+                [
+                    "VerifiableCredential",
+                    "EEPDelegationProof"
+                ]
+            ]
+        },
+        "issuer": {
+            "type": "string",
+            "description": "DID of the entity delegating authority (the owner or parent agent).",
+            "pattern": "^did:[a-z0-9]+:.+$"
+        },
+        "issuanceDate": {
+            "type": "string",
+            "description": "ISO 8601 datetime when this delegation credential was issued.",
+            "format": "date-time"
+        },
+        "expirationDate": {
+            "type": "string",
+            "description": "ISO 8601 datetime when this delegation expires. Agents presenting expired delegation credentials must be rejected.",
+            "format": "date-time"
+        },
+        "credentialSubject": {
+            "type": "object",
+            "required": [
+                "id",
+                "permitted_actions"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "DID of the delegate (the agent being granted authority).",
+                    "pattern": "^did:[a-z0-9]+:.+$"
+                },
+                "permitted_actions": {
+                    "type": "array",
+                    "description": "Explicit list of actions this agent may perform. Agents requesting actions outside this list must be rejected. Delegation credentials without explicit scope restrictions are rejected.",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "examples": [
+                            "gate:payment",
+                            "gate:credential",
+                            "subscribe:sse",
+                            "commerce:offer"
+                        ]
+                    }
+                },
+                "permitted_endpoints": {
+                    "type": "array",
+                    "description": "URL patterns the agent is permitted to call. Supports glob patterns (e.g., https://api.example.com/*).",
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": [
+                        [
+                            "https://api.example.com/*",
+                            "https://api.example.com/v1/data/*"
+                        ]
+                    ]
+                },
+                "max_payment_amount": {
+                    "type": "number",
+                    "description": "Maximum total payment amount (in currency_code units) the agent may authorise without additional delegation.",
+                    "minimum": 0
+                },
+                "currency_code": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code for max_payment_amount.",
+                    "pattern": "^[A-Z]{3}$"
+                },
+                "scope_hash": {
+                    "type": "string",
+                    "description": "SHA-256 hash of the canonical JSON serialization of this credentialSubject (excluding scope_hash). Used for tamper detection.",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                },
+                "operator_privacy_policy_hash": {
+                    "type": "string",
+                    "description": "SHA-256 of the Operator Privacy Policy document the delegator binds sub-agents to (SPEC §11.8). SHOULD be present when delegation may touch data_request gates.",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                },
+                "allowed_dpv_purposes": {
+                    "type": "array",
+                    "description": "W3C DPV purpose URIs the delegate may claim under data_request (subset of operator policy).",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^dpv:[A-Z][a-zA-Z]+$"
+                    },
+                    "minItems": 1
+                },
+                "max_retention_days": {
+                    "type": "integer",
+                    "description": "Maximum retention days the delegate may commit to on behalf of the operator.",
+                    "minimum": 0,
+                    "maximum": 3650
+                }
+            }
+        },
+        "proof": {
+            "type": "object",
+            "description": "W3C VC Linked Data Proof or JWT proof from the issuer DID key.",
+            "required": [
+                "type",
+                "verificationMethod",
+                "proofValue"
+            ],
+            "additionalProperties": true,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "examples": [
+                        "Ed25519Signature2020",
+                        "JsonWebSignature2020"
+                    ]
+                },
+                "created": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "verificationMethod": {
+                    "type": "string",
+                    "description": "DID key fragment URI of the verification key used to sign.",
+                    "examples": [
+                        "did:web:owner.acme.ai#key-1"
+                    ]
+                },
+                "proofPurpose": {
+                    "type": "string",
+                    "enum": [
+                        "assertionMethod",
+                        "authentication"
+                    ],
+                    "default": "assertionMethod"
+                },
+                "proofValue": {
+                    "type": "string",
+                    "description": "Multibase-encoded proof value.",
+                    "minLength": 10
+                }
+            }
+        }
+    }
+}

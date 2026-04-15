@@ -1,0 +1,72 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/gate.429-response.json",
+    "title": "EEP Rate-Limit Response (429)",
+    "description": "Schema for HTTP 429 Too Many Requests response body returned by EEP publishers implementing DID-based token-bucket rate limiting. See SPECIFICATION.md §3.4.6 and Whitepaper §10.5.",
+    "type": "object",
+    "required": [
+        "error",
+        "did_rate_limit_key",
+        "retry_after_seconds",
+        "window_reset_at",
+        "signed_challenge"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "error": {
+            "type": "string",
+            "description": "Machine-readable error code. Always 'rate_limited' for 429 responses.",
+            "const": "rate_limited"
+        },
+        "did_rate_limit_key": {
+            "type": "string",
+            "description": "The DID that was rate-limited. DID-based limiting (not IP-based) per EEP spec.",
+            "pattern": "^did:[a-z0-9]+:.+$",
+            "examples": [
+                "did:web:agent.example.com"
+            ]
+        },
+        "retry_after_seconds": {
+            "type": "integer",
+            "description": "Number of seconds the agent must wait before retrying. MUST match the Retry-After HTTP response header value.",
+            "minimum": 1,
+            "maximum": 86400
+        },
+        "window_reset_at": {
+            "type": "string",
+            "description": "ISO 8601 UTC timestamp when the rate-limit window resets.",
+            "format": "date-time",
+            "examples": [
+                "2026-03-05T13:00:00Z"
+            ]
+        },
+        "signed_challenge": {
+            "type": "string",
+            "description": "A publisher-signed challenge token the agent MUST include as the X-EEP-RL-Challenge header on its retry request. Prevents IP-rotation evasion. Format: base64url(nonce + '.' + publisher_did + '.' + expires_at + '.' + signature).",
+            "minLength": 16,
+            "maxLength": 512,
+            "examples": [
+                "v1.eyJub25jZSI6ImFiYzEyMyIsImV4cCI6MTc0MTM3MDQwMH0.MEQCIGFiY2Q...",
+                "v1.b64u_payload.b64u_signature"
+            ]
+        },
+        "limit_per_window": {
+            "type": "integer",
+            "description": "The total number of requests allowed per window for this DID (informational).",
+            "minimum": 0
+        },
+        "requests_made": {
+            "type": "integer",
+            "description": "Number of requests this DID has made in the current window (informational).",
+            "minimum": 0
+        },
+        "message": {
+            "type": "string",
+            "description": "Human-readable explanation of the rate limit.",
+            "maxLength": 256,
+            "examples": [
+                "DID did:web:agent.example.com has exceeded the rate limit of 100 requests per minute."
+            ]
+        }
+    }
+}

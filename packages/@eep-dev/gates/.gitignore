@@ -1,0 +1,4 @@
+dist/
+# Never emit tsc output into src/ — it breaks Vitest V8 coverage (resolves .js before .ts).
+src/**/*.js
+src/**/*.d.ts

@@ -1,0 +1,65 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/gate.403-response.json",
+    "title": "EEP Gate 403 Forbidden Response",
+    "description": "Returned when a credential, agreement, identity, or allowlist gate prevents access",
+    "type": "object",
+    "required": [
+        "error",
+        "resource",
+        "current_tier",
+        "required_tier",
+        "unmet_requirements"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "error": {
+            "type": "string",
+            "const": "access_forbidden",
+            "description": "Fixed error code distinguishing from payment restriction (402)"
+        },
+        "resource": {
+            "type": "string",
+            "description": "The resource path or pattern that was requested"
+        },
+        "current_tier": {
+            "type": "string",
+            "description": "The tier the requesting agent currently holds"
+        },
+        "required_tier": {
+            "type": "string",
+            "description": "The minimum tier needed to access the resource"
+        },
+        "unmet_requirements": {
+            "type": "array",
+            "description": "List of specific requirements not satisfied",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": [
+                    "type"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "examples": [
+                            "credential",
+                            "identity",
+                            "allowlist",
+                            "reciprocal"
+                        ]
+                    },
+                    "resolution_hint": {
+                        "type": "string",
+                        "description": "Machine-readable instruction for how to satisfy this requirement"
+                    }
+                }
+            }
+        },
+        "gates_config_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to full gate configuration for the entity"
+        }
+    }
+}

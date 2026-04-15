@@ -1,0 +1,115 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/operator.spending-policy.json",
+    "title": "EEP Operator Spending Policy Profile",
+    "description": "Signed document defining an agent's spending constraints. Consulted before any payment gate interaction to ensure the agent acts within operator-defined financial limits. (§8.4, Whitepaper).",
+    "type": "object",
+    "required": [
+        "operator_did",
+        "version",
+        "issued_at"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "operator_did": {
+            "type": "string",
+            "description": "DID of the human/organizational operator that authored this spending policy.",
+            "pattern": "^did:[a-z0-9]+:.+$"
+        },
+        "version": {
+            "type": "string",
+            "description": "Monotonically increasing version identifier.",
+            "examples": [
+                "1",
+                "2"
+            ]
+        },
+        "issued_at": {
+            "type": "string",
+            "description": "ISO 8601 datetime when this policy was issued.",
+            "format": "date-time"
+        },
+        "max_per_transaction": {
+            "type": "object",
+            "description": "Maximum allowed spend per single transaction by currency.",
+            "additionalProperties": {
+                "type": "number",
+                "minimum": 0
+            },
+            "examples": [
+                {
+                    "usd": 10.00,
+                    "eth": 0.005
+                }
+            ]
+        },
+        "max_per_hour": {
+            "type": "object",
+            "description": "Maximum cumulative spend per rolling 1-hour window by currency. Agent pauses if exceeded.",
+            "additionalProperties": {
+                "type": "number",
+                "minimum": 0
+            },
+            "examples": [
+                {
+                    "usd": 100.00
+                }
+            ]
+        },
+        "max_per_day": {
+            "type": "object",
+            "description": "Maximum cumulative spend per rolling 24-hour window by currency.",
+            "additionalProperties": {
+                "type": "number",
+                "minimum": 0
+            }
+        },
+        "approved_chains": {
+            "type": "array",
+            "description": "Blockchain networks the agent is permitted to transact on. Transactions on non-listed chains are refused.",
+            "items": {
+                "type": "string"
+            },
+            "examples": [
+                [
+                    "base",
+                    "solana",
+                    "ethereum"
+                ]
+            ]
+        },
+        "approved_recipient_categories": {
+            "type": "array",
+            "description": "Gate recipient categories the agent may pay. If set, any recipient not matching is refused without human confirmation.",
+            "items": {
+                "type": "string"
+            },
+            "examples": [
+                [
+                    "Full",
+                    "Standard",
+                    "eep.dev-verified"
+                ]
+            ]
+        },
+        "require_recipient_conformance_level": {
+            "type": "string",
+            "description": "Minimum EEP conformance level the recipient must hold before the agent may pay. Per Whitepaper §10.2: Core, Standard, or Full. The agent refuses payment to recipients below this tier without human confirmation.",
+            "enum": [
+                "Core",
+                "Standard",
+                "Full"
+            ]
+        },
+        "require_on_chain_confirmation": {
+            "type": "boolean",
+            "description": "If true, agent must wait for on-chain finality (using publisher's declared min_confirmations) before marking payment complete.",
+            "default": true
+        },
+        "operator_signature": {
+            "type": "string",
+            "description": "EdDSA signature by operator_did over canonical JSON of this document (excluding operator_signature).",
+            "minLength": 16
+        }
+    }
+}

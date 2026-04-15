@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a spec change, new package capability, or documentation improvement.
+labels: ['triage', 'enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Specification changes often need discussion first — see [GOVERNANCE.md](https://github.com/eep-dev/EEP/blob/main/GOVERNANCE.md). For questions, try [Discussions](https://github.com/eep-dev/EEP/discussions).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What limitation or pain point does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed direction
+      description: Sketch the change, API, or doc section — does not need to be final.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — what else did you evaluate?

@@ -1,0 +1,310 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://eep.dev/schemas/v0.1/service.listing.json",
+    "title": "EEP Service Listing",
+    "description": "Schema for an entity's service catalog. Entities publish machine-readable service listings that agents can discover, compare, and purchase. Service names, categories, pricing, and availability are fully entity-defined. The protocol defines the envelope; the content is up to the implementer.",
+    "type": "object",
+    "required": [
+        "entity_did",
+        "services"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "entity_did": {
+            "type": "string",
+            "description": "The DID of the entity offering these services.",
+            "examples": [
+                "did:web:example.com:u:alice"
+            ]
+        },
+        "services": {
+            "type": "array",
+            "description": "List of services offered by this entity.",
+            "maxItems": 100,
+            "items": {
+                "$ref": "#/definitions/service"
+            }
+        }
+    },
+    "definitions": {
+        "service": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "category",
+                "pricing",
+                "delivery"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique service identifier within this entity.",
+                    "pattern": "^svc_[a-zA-Z0-9_]{1,64}$",
+                    "examples": [
+                        "svc_consultation_30",
+                        "svc_premium_feed"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Human-readable service name (entity-defined).",
+                    "minLength": 1,
+                    "maxLength": 256
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed description of what the service provides.",
+                    "maxLength": 4096
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Service category. Standard categories are suggested but any string is accepted. Agents match on tags and text search, not just category enums.",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "examples": [
+                        "consulting",
+                        "data_feed",
+                        "api_access",
+                        "content",
+                        "computation",
+                        "training",
+                        "verification",
+                        "integration"
+                    ]
+                },
+                "tags": {
+                    "type": "array",
+                    "description": "Entity-defined tags for discovery. Used in search queries.",
+                    "items": {
+                        "type": "string",
+                        "maxLength": 64
+                    },
+                    "maxItems": 20,
+                    "examples": [
+                        [
+                            "ai",
+                            "strategy",
+                            "consulting",
+                            "30min"
+                        ]
+                    ]
+                },
+                "pricing": {
+                    "type": "object",
+                    "description": "Pricing for this service. Uses the same pricing model schema as commerce negotiations.",
+                    "required": [
+                        "model",
+                        "currency"
+                    ],
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "pattern": "^(fixed|per_request|per_event|subscription|metered|tiered_volume|free|x-[a-z][a-z0-9_-]*)$"
+                        },
+                        "amount": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "currency": {
+                            "type": "string",
+                            "pattern": "^[a-z]{3}$"
+                        },
+                        "period": {
+                            "type": "string",
+                            "enum": [
+                                "hour",
+                                "day",
+                                "week",
+                                "month",
+                                "year"
+                            ]
+                        },
+                        "unit": {
+                            "type": "string"
+                        },
+                        "rate": {
+                            "type": "number",
+                            "minimum": 0
+                        }
+                    }
+                },
+                "availability": {
+                    "type": "object",
+                    "description": "When this service is available.",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "Availability mode.",
+                            "enum": [
+                                "always",
+                                "schedule",
+                                "on_demand",
+                                "limited"
+                            ]
+                        },
+                        "timezone": {
+                            "type": "string",
+                            "description": "IANA timezone for schedule-based availability.",
+                            "examples": [
+                                "UTC",
+                                "America/New_York",
+                                "Europe/Istanbul"
+                            ]
+                        },
+                        "schedule": {
+                            "type": "object",
+                            "description": "Weekly schedule (for 'schedule' type). Keys are day abbreviations.",
+                            "patternProperties": {
+                                "^(mon|tue|wed|thu|fri|sat|sun)$": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "start": {
+                                                "type": "string",
+                                                "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+                                            },
+                                            "end": {
+                                                "type": "string",
+                                                "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "slots_remaining": {
+                            "type": "integer",
+                            "description": "Remaining slots for 'limited' type.",
+                            "minimum": 0
+                        },
+                        "next_available": {
+                            "type": "string",
+                            "description": "Next available time (ISO 8601).",
+                            "format": "date-time"
+                        }
+                    }
+                },
+                "delivery": {
+                    "type": "string",
+                    "description": "How the service is delivered after purchase.",
+                    "enum": [
+                        "realtime",
+                        "async",
+                        "scheduled",
+                        "sse",
+                        "webhook",
+                        "download",
+                        "a2a_task"
+                    ]
+                },
+                "gate_requirements": {
+                    "type": "array",
+                    "description": "Optional additional requirements beyond payment to access this service. Uses the same requirement types as gate configuration.",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "type"
+                        ],
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    },
+                    "maxItems": 5
+                },
+                "negotiable": {
+                    "type": "boolean",
+                    "description": "Whether the entity is open to price negotiation via commerce messages.",
+                    "default": false
+                },
+                "rating": {
+                    "$ref": "#/definitions/rating"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Listing status.",
+                    "enum": [
+                        "active",
+                        "paused",
+                        "sold_out",
+                        "coming_soon"
+                    ],
+                    "default": "active"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "metadata": {
+                    "type": "object",
+                    "description": "Entity-defined metadata.",
+                    "additionalProperties": true,
+                    "maxProperties": 20
+                }
+            }
+        },
+        "rating": {
+            "type": "object",
+            "description": "Aggregated rating for this service.",
+            "properties": {
+                "score": {
+                    "type": "number",
+                    "description": "Average rating score (1.0 to 5.0).",
+                    "minimum": 1.0,
+                    "maximum": 5.0
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "Total number of reviews.",
+                    "minimum": 0
+                }
+            }
+        },
+        "review": {
+            "type": "object",
+            "description": "A single review submitted by a subscriber.",
+            "required": [
+                "reviewer_did",
+                "score"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique review identifier."
+                },
+                "reviewer_did": {
+                    "type": "string",
+                    "description": "DID of the reviewer."
+                },
+                "score": {
+                    "type": "integer",
+                    "description": "Rating score (1-5).",
+                    "minimum": 1,
+                    "maximum": 5
+                },
+                "comment": {
+                    "type": "string",
+                    "description": "Optional review text.",
+                    "maxLength": 2048
+                },
+                "service_id": {
+                    "type": "string",
+                    "description": "The service being reviewed."
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        }
+    }
+}
