@@ -1,0 +1,51 @@
+{
+  "$schema": "https://eep.dev/schema/adopters.v0.json",
+  "version": "0.1",
+  "adopters": [
+    {
+      "id": "eep-monorepo",
+      "name": "EEP (Entity Engagement Protocol)",
+      "kind": "source",
+      "description": "Protocol specification, JSON schemas, TypeScript and Python reference packages, tests, and documentation.",
+      "url": "https://github.com/eep-dev/EEP",
+      "source": "https://github.com/eep-dev/EEP",
+      "conformance": "n/a (tooling and spec; not a live API product)"
+    },
+    {
+      "id": "eep-reference-implementation",
+      "name": "EEP reference stack (Docker)",
+      "kind": "reference",
+      "description": "Node + Python + Postgres + Redis example deployment for behavior and parity testing (informally eep-api).",
+      "url": null,
+      "source": "https://github.com/eep-dev/EEP/tree/main/examples/eep-reference-implementation",
+      "conformance": "core"
+    },
+    {
+      "id": "eep-mcp-bridge",
+      "name": "@eep-dev/mcp-bridge",
+      "kind": "integration",
+      "description": "MCP tool runtime to EEP HTTP bridge (manifest, services, gates, tool call forwarding).",
+      "url": null,
+      "source": "https://github.com/eep-dev/EEP/tree/main/packages/%40eep-dev/mcp-bridge",
+      "conformance": "n/a (library)"
+    },
+    {
+      "id": "langgraph-eep-agent",
+      "name": "LangGraph EEP agent example",
+      "kind": "example",
+      "description": "Example agent subscribing to EEP with gate handling and HMAC verification.",
+      "url": null,
+      "source": "https://github.com/eep-dev/EEP/tree/main/examples/langgraph-eep-agent",
+      "conformance": "n/a (example client)"
+    },
+    {
+      "id": "eep-site",
+      "name": "eep.dev site",
+      "kind": "site",
+      "description": "Landing site, documentation mirror, and interactive playground (when published to eep.dev).",
+      "url": "https://eep.dev",
+      "source": "https://github.com/eep-dev/eep-site",
+      "conformance": "n/a (documentation)"
+    }
+  ]
+}

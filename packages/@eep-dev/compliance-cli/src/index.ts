@@ -633,6 +633,82 @@ async function runTests() {
         logSkip('HTTP 402 payment gate response', 'no --entity specified');
     }
 
+    // Content gate enforcement probe — POST /eep/gates/:did/verify-proof with
+    // an empty proofs array should return 402 for any gated resource. We use
+    // `content.*` as a generic resource path that most gate configs will map.
+    if (ENTITY && ENTITY.startsWith('did:')) {
+        try {
+            const url = `${TARGET}/eep/gates/${encodeURIComponent(ENTITY)}/verify-proof`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resource: 'content.*', proofs: [] }),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (res.status === 402) {
+                logPass('content-gate-enforces-402', 'verify-proof without proofs → 402');
+            } else if (res.status === 200) {
+                const json = (await res.json().catch(() => null)) as { access?: string } | null;
+                if (json?.access === 'granted') {
+                    logSkip('content-gate-enforces-402', 'entity has no gated resources (200 granted)');
+                } else {
+                    logSkip('content-gate-enforces-402', `HTTP 200 but no grant body`);
+                }
+            } else {
+                logSkip('content-gate-enforces-402', `HTTP ${res.status}`);
+            }
+        } catch (e) {
+            logSkip('content-gate-enforces-402', `request failed: ${String(e).slice(0, 80)}`);
+        }
+    } else {
+        logSkip('content-gate-enforces-402', 'no did: --entity specified');
+    }
+
+    // x402 round-trip probe — POST /eep/payment/challenge must return a
+    // signed envelope (`challenge` JWS + `pay_to` + `exp`).
+    if (ENTITY && ENTITY.startsWith('did:')) {
+        try {
+            const url = `${TARGET}/eep/payment/challenge`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pay_to_did: ENTITY,
+                    resource: 'content.*',
+                    amount: 1,
+                    currency: 'usd',
+                }),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (res.status === 201) {
+                const json = (await res.json().catch(() => null)) as
+                    | { challenge?: string; exp?: number; pay_to?: unknown }
+                    | null;
+                if (
+                    json &&
+                    typeof json.challenge === 'string' &&
+                    /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(json.challenge) &&
+                    typeof json.exp === 'number' &&
+                    json.pay_to
+                ) {
+                    logPass('x402-round-trip (challenge)', 'signed challenge envelope returned');
+                } else {
+                    logFail('x402-round-trip (challenge)', 'body missing challenge/exp/pay_to');
+                }
+            } else if (res.status === 404) {
+                logSkip('x402-round-trip (challenge)', 'entity not found on target');
+            } else if (res.status === 503) {
+                logSkip('x402-round-trip (challenge)', 'x402 disabled on target');
+            } else {
+                logSkip('x402-round-trip (challenge)', `HTTP ${res.status}`);
+            }
+        } catch (e) {
+            logSkip('x402-round-trip (challenge)', `request failed: ${String(e).slice(0, 80)}`);
+        }
+    } else {
+        logSkip('x402-round-trip (challenge)', 'no did: --entity specified');
+    }
+
     // WebSocket pulse endpoint (short probe)
     try {
         const wsUrl = TARGET.replace(/^http/, 'ws') + '/eep/pulse';

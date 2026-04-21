@@ -1005,7 +1005,7 @@ Superset of Core. Suitable for: B2B data APIs, financial feeds, subscription ser
 - [x] All Core requirements above, plus:
 - [x] Webhook subscription endpoint (`POST /eep/subscribe`) with full lifecycle (create/pause/resume/delete)
 - [x] WebSub intent verification before activating any webhook subscription
-- [x] HMAC-SHA256 signature on all webhook deliveries (`X-EEP-Signature` header)
+- [x] HMAC-SHA256 signature on all webhook deliveries (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature` per §5)
 - [x] Exponential backoff retry policy for failed webhook deliveries (min 5 attempts, max 24h window)
 - [x] `credential` gate: W3C VC 2.0 presentation verification from named issuer DID
 - [x] `payment` gate: on-chain transaction hash verification with configurable confirmation threshold

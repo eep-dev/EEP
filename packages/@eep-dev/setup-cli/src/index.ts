@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { realpathSync } from "node:fs";
 import { cwd, exit } from "node:process";
+import { fileURLToPath } from "node:url";
 import { runApply } from "./commands/apply.js";
 import { runDoctor } from "./commands/doctor.js";
 import { runInit } from "./commands/init.js";
@@ -11,6 +13,11 @@ import type { CommandContext, CommandResult } from "./commands/types.js";
 import { runUpgrade } from "./commands/upgrade.js";
 import { runVerify } from "./commands/verify.js";
 import { runWatch } from "./commands/watch.js";
+
+export { runInject } from "./commands/inject.js";
+export { runApply } from "./commands/apply.js";
+export { runVerify } from "./commands/verify.js";
+export { applyFrameworkPatchers } from "./inject/patchers/index.js";
 
 export type CommandName =
   | "init"
@@ -82,7 +89,8 @@ export async function runCli(argv: string[], out = process.stdout, err = process
 }
 
 /* c8 ignore start */
-const isMainModule = process.argv[1]?.endsWith("index.js") ?? false;
+const isMainModule =
+  Boolean(process.argv[1]) && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]!);
 if (isMainModule) {
   runCli(process.argv).then((code) => exit(code));
 }

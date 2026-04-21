@@ -1,0 +1,27 @@
+---
+description: User wants Entity Engagement Protocol (EEP) in this repo—webhooks, SSE, gates, or “make this API work with agents” using eep-dev/agent-adopt
+globs:
+  - "**/eep-setup.json"
+  - "**/eep-generated/**"
+  - "**/EEP_ADOPTION_REPORT.md"
+---
+
+# EEP in this repo (Cursor)
+
+If they are in **their** app root (not the eep-dev/EEP clone), wire EEP with the published CLI. Normative background when needed: [AGENTS.md in the EEP repo](https://github.com/eep-dev/EEP/blob/main/AGENTS.md).
+
+1. From the app root:
+
+   ```bash
+   npx @eep-dev/agent-adopt --project . --no-compliance
+   ```
+
+2. If they give a live API base URL (staging/production), you can add checks:
+
+   ```bash
+   npx @eep-dev/agent-adopt --project . --compliance-target "https://…" --compliance-entity u/…
+   ```
+
+3. After `eep-generated/` looks good, add runtime deps: Node → `@eep-dev/middleware` and `@eep-dev/gates`; Python → `eep-middleware-python`. Follow the EEP guide [integrate-eep-after-setup-cli](https://github.com/eep-dev/EEP/blob/main/docs/guides/integrate-eep-after-setup-cli.md). The adopt tool may have dropped `eep.express.wiring.ts` or `eep_fastapi_wiring.py`—treat that as a starting point, not a full prod setup.
+
+EEP is about **pushes, signed deliveries, and gates**. MCP is about **invoking tools**. Same stack can use both; EEP is not a drop-in for MCP and the other way around.

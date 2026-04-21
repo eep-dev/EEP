@@ -1,0 +1,27 @@
+{
+  "name": "@eep-dev/agent-adopt",
+  "version": "0.1.0",
+  "description": "One-shot EEP adoption for app repos: inject, apply, verify, optional framework patch, report.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "eep-adopt": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@eep-dev/setup-cli": "file:../setup-cli"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -9,12 +9,13 @@ bash test.sh
 
 This runs schema validation tests and package test suites (core TS/Python packages and `tests/cross-impl` against `http://localhost:3002`; start **`examples/node-gate-publisher`** first or cross-impl fails).
 
-**Not in `test.sh` (run separately or rely on CI):** `packages/@eep-dev/middleware`, `packages/@eep-dev/mcp-bridge`, `packages/@eep-dev/setup-cli`, `packages/eep-middleware-python`, `packages/eep-mcp-bridge-python`. GitHub Actions runs these in [.github/workflows/test.yml](.github/workflows/test.yml). Locally:
+**Not in `test.sh` (run separately or rely on CI):** `packages/@eep-dev/middleware`, `packages/@eep-dev/mcp-bridge`, `packages/@eep-dev/setup-cli`, `packages/@eep-dev/agent-adopt` (no separate test suite yet; depends on `setup-cli`), `packages/eep-middleware-python`, `packages/eep-mcp-bridge-python`. GitHub Actions runs these in [.github/workflows/test.yml](.github/workflows/test.yml). Locally:
 
 ```bash
 (cd packages/@eep-dev/middleware && npm install && npm test)
 (cd packages/@eep-dev/mcp-bridge && npm install && npm test)
 (cd packages/@eep-dev/setup-cli && npm install && npm test)
+(cd packages/@eep-dev/agent-adopt && npm install && npm run build)
 (cd packages/eep-middleware-python && PYTHONPATH=. python3 -m pytest tests/ -q)
 (cd packages/eep-mcp-bridge-python && PYTHONPATH=. python3 -m pytest tests/ -q)
 ```

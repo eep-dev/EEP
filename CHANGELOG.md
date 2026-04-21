@@ -2,6 +2,14 @@
 
 All notable changes to this repository are documented here. The format is loosely based on Keep a Changelog.
 
+## Unreleased
+
+- **Spec §14.2 (Standard checklist)** — Clarified that webhook HMAC for outbound deliveries uses **Standard Webhooks** header names (`webhook-signature`, etc., per §5), consistent with the compliance runner and the rest of the normative text.
+- **`@eep-dev/agent-adopt`** — New package: chains `setup-cli` inject/apply/verify, optional Express/FastAPI patchers, optional live `compliance-cli`, writes `EEP_ADOPTION_REPORT.md`. See [AGENTS.md](./AGENTS.md).
+- **`@eep-dev/setup-cli`** — Exports `runInject`, `runApply`, `runVerify`, `applyFrameworkPatchers`; adds `src/inject/patchers/` (Express/FastAPI best-effort). **Fix:** `eep-setup` side-effect entry only when the **resolved** main script matches this package (avoids hijacking `index.js` when imported by `agent-adopt`).
+- **Docs** — [docs/strategy/](./docs/strategy/) (adoption strategy, unmet-needs map, launch playbook, registry seed, distribution checklist, screencast runbook). **Registry:** [registry/adopters.json](./registry/adopters.json). **Badge:** [assets/badges/eep-compatible.svg](./assets/badges/eep-compatible.svg).
+- **Integrations** — Thin harness docs: [integrations/openclaw-bundle/](./integrations/openclaw-bundle/), [integrations/cursor-rule/](./integrations/cursor-rule/), [integrations/claude-code-skill/](./integrations/claude-code-skill/).
+
 ## v0.1 (tooling and examples — 2026-04-15)
 
 - **Interactive playground** — browser-based EEP event validator and webhook signer at `eep-site/app/playground/` (Web Crypto HMAC-SHA256, client-side schema validation against `event.envelope.json`).

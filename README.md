@@ -6,6 +6,7 @@
 [![CloudEvents](https://img.shields.io/badge/CloudEvents-v1.0.2-orange)](https://cloudevents.io)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](./LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](./CODE_OF_CONDUCT.md)
+[![EEP compatible](./assets/badges/eep-compatible.svg)](./docs/current/SPECIFICATION.md)
 
 ## Stability (v0.1)
 
@@ -32,6 +33,9 @@ If you are deciding whether to star, fork, or integrate, here is what is actuall
 | MCP bridge (tool runtime ↔ EEP) | [`@eep-dev/mcp-bridge`](./packages/@eep-dev/mcp-bridge/) + [`eep-mcp-bridge-python`](./packages/eep-mcp-bridge-python/) |
 | HTTP middleware for existing APIs | [`@eep-dev/middleware`](./packages/@eep-dev/middleware/) + [`eep-middleware-python`](./packages/eep-middleware-python/) |
 | Project wizard (`init` / `inject` / `apply` / `verify`) | [`@eep-dev/setup-cli`](./packages/@eep-dev/setup-cli/) |
+| **Agent adopt** (inject → apply → verify → report) | [`@eep-dev/agent-adopt`](./packages/@eep-dev/agent-adopt/) — see [AGENTS.md](./AGENTS.md) |
+| Adopters (seed list, static JSON) | [registry/adopters.json](./registry/adopters.json) — [eep.dev/adopters](https://eep.dev/adopters) |
+| Day-0 strategy & distribution | [docs/strategy/](./docs/strategy/) |
 | Docker reference stack (Node + Python + Postgres + Redis) | [examples/eep-reference-implementation/](./examples/eep-reference-implementation/) |
 | Scripted “Old Web vs EEP” terminal demo | [realworld-simulation/](./realworld-simulation/) (`npm run demo`) |
 | LangGraph/Claude agent example | [examples/langgraph-eep-agent/](./examples/langgraph-eep-agent/) |
@@ -194,6 +198,7 @@ Shipped as npm packages (TypeScript, Node 18+ where noted) with Python counterpa
 - **`@eep-dev/mcp-bridge`** / **`eep-mcp-bridge`**: bridge MCP tool traffic with EEP.
 - **`@eep-dev/middleware`** / **`eep-middleware-python`**: drop-in HTTP adapters (Express, Fastify, Hono, Koa; FastAPI, Flask, Django).
 - **`@eep-dev/setup-cli`**: project detection, codegen, verify/doctor/watch.
+- **`@eep-dev/agent-adopt`**: one-shot `inject` + `apply` + `verify`, optional framework patch, `EEP_ADOPTION_REPORT.md`.
 
 ### [@eep-dev/signer](./packages/@eep-dev/signer/)
 

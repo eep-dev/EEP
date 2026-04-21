@@ -102,6 +102,12 @@ Thumbs.db
 # ─── Internal / optional (do not publish accidental snapshots) ─────
 docs/audit/
 
+# Root-level smoke from `npx @eep-dev/agent-adopt` (when run in EEP clone root; do not track)
+/EEP_ADOPTION_REPORT.md
+/eep-compliance-staging.md
+
+# (If you need strategy docs only locally, add: docs/strategy/ — otherwise keep them versioned)
+
 # ─── Misc caches & temp ────────────────────────────────────────────
 .cache/
 **/.cache/

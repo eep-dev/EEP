@@ -118,6 +118,9 @@ For institution/project onboarding and automation-first rollout:
 
 - `docs/guides/enterprise-implementation-playbook.md`
 - `docs/guides/agent-onboarding.md`
+- `docs/strategy/` — day-0 GTM, unmet-needs map, distribution checklist, screencast runbook
+- `registry/adopters.json` — public seed list (static; eep.dev/adopters)
+- [AGENTS.md](../AGENTS.md) — coding-agent entry (repo root)
 
 ---
 

@@ -172,6 +172,20 @@ jobs:
       - run: npm install
       - run: npx vitest run --coverage
 
+  test-agent-adopt:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/@eep-dev/agent-adopt
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm run build
+      - run: node dist/index.js --help
+
   test-middleware:
     runs-on: ubuntu-latest
     defaults:
