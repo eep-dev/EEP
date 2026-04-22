@@ -182,6 +182,13 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+      # @eep-dev/setup-cli ships `types` from dist/; dist/ is gitignored. tsc in agent-adopt
+      # must see ../setup-cli/dist (same pattern as test-cross-impl + @eep-dev/gates).
+      - name: Build @eep-dev/setup-cli (required by agent-adopt)
+        working-directory: packages/@eep-dev/setup-cli
+        run: |
+          npm install
+          npm run build
       - run: npm install
       - run: npm run build
       - run: node dist/index.js --help

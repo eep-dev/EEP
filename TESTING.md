@@ -14,7 +14,7 @@ This runs schema validation tests and package test suites (core TS/Python packag
 ```bash
 (cd packages/@eep-dev/middleware && npm install && npm test)
 (cd packages/@eep-dev/mcp-bridge && npm install && npm test)
-(cd packages/@eep-dev/setup-cli && npm install && npm test)
+(cd packages/@eep-dev/setup-cli && npm install && npm run build && npm test)
 (cd packages/@eep-dev/agent-adopt && npm install && npm run build)
 (cd packages/eep-middleware-python && PYTHONPATH=. python3 -m pytest tests/ -q)
 (cd packages/eep-mcp-bridge-python && PYTHONPATH=. python3 -m pytest tests/ -q)

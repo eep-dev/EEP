@@ -6,10 +6,11 @@ One-shot CLI for **adopting EEP** in an existing application repository: runs **
 
 Published (when available): `npm install -g @eep-dev/agent-adopt` or use `npx @eep-dev/agent-adopt`.
 
-From this monorepo:
+From this monorepo, build **`@eep-dev/setup-cli` first** (types and runtime come from `dist/`, not committed to git), then this package:
 
 ```bash
-cd packages/@eep-dev/agent-adopt && npm install && npm run build
+cd packages/@eep-dev/setup-cli && npm install && npm run build
+cd ../agent-adopt && npm install && npm run build
 node dist/index.js --project /path/to/app --no-compliance
 ```
 

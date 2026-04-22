@@ -60,7 +60,8 @@ jobs:
         working-directory: packages/@eep-dev/middleware
 
       - name: Test @eep-dev/setup-cli
-        run: npm install && npx vitest run --reporter=dot
+        # build produces dist/; agent-adopt's tsc resolves @eep-dev/setup-cli types from dist/
+        run: npm install && npm run build && npx vitest run --reporter=dot
         working-directory: packages/@eep-dev/setup-cli
 
       - name: Build @eep-dev/agent-adopt
