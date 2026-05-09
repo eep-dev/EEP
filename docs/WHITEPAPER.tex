@@ -126,7 +126,7 @@
 
 The internet was built for human eyes. Visual layouts, interactive buttons, unstructured text. Thirty years of design choices that made complete sense when the reader was a person. But as Large Language Models transition from chatbots to autonomous agents that plan and execute tasks, this human-centric infrastructure is breaking down. Right now, agents are forced to scrape and guess their way through bloated HTML. It's slow, it breaks constantly and it burns massive amounts of compute and tokens.
 
-The Entity Engagement Protocol (EEP) does more than fix the data format problem. It defines the infrastructure layer for an entire \textbf{Agent Ecosystem}: a network of interdependent agents, entities and data providers that must continuously interact to create and transfer value. Within this ecosystem, access to data and services is never strictly binary (public or private). Instead, access is governed by programmable, machine-verifiable requirements: payment, trust credentials, signed agreements, or data exchange. EEP unifies these access patterns in one network-layer specification so agents and publishers can rely on a single machine-readable contract.
+The Entity Engagement Protocol (EEP) does more than fix the data format problem. It defines the infrastructure layer for an entire \textbf{Agent Ecosystem}: a network of interdependent agents, entities and data providers that must continuously interact to create and transfer value. Within this ecosystem, access to data and services is never strictly binary (public or private). Instead, access is governed by programmable, machine-verifiable requirements: payment, trust credentials, signed agreements or data exchange. EEP unifies these access patterns in one network-layer specification so agents and publishers can rely on a single machine-readable contract.
 
 Internally, EEP uses a three-layer stack: Layer 1 for static state (structured data like JSON, Markdown and TOON), Layer 2 for real-time streaming (Server-Sent Events and Webhooks) and Layer 3 for bidirectional negotiation (WebSockets for commerce). Built on Decentralized Identifiers (DIDs) \cite{ref5} and W3C Verifiable Credentials 2.0 \cite{ref10}, it provides the trust and sovereignty that machine-to-machine interaction requires. The open-source project complements the normative specification with a dual-runtime reference deployment, the \texttt{eep-setup} artifact generator, Node and Python middleware, machine-readable setup and compliance reports and operator documentation for fast proofs and CI verification. The reference implementation, middleware libraries and the \texttt{@eep-dev/setup-cli} package (\texttt{eep-setup}) are released under the \textbf{Apache License, version 2.0}, in line with the normative specification repository. This paper explains why this infrastructure is urgently needed, how it works and what it unlocks. In practice, many privacy and AI-governance obligations map to concrete protocol artifacts (declared purposes, retention limits, delegation proofs, signed commerce events) rather than narrative assurances alone, which is what we mean by compliance-oriented design at the wire level.
 
@@ -251,7 +251,7 @@ Importantly, \texttt{eep.dev} is not a mandatory dependency. The well-known mani
 
 \subsection{DNS and Link Header Discovery}
 
-For environments where the \texttt{/.well-known/} path is not accessible (e.g., non-web entities like IoT devices), EEP also supports discovery through HTTP \texttt{Link} headers with \texttt{rel=``eep''}, or through DNS TXT records of the form:
+For environments where the \texttt{/.well-known/} path is not accessible (e.g., non-web entities like IoT devices), EEP also supports discovery through HTTP \texttt{Link} headers with \texttt{rel=``eep''} or through DNS TXT records of the form:
 
 \begin{lstlisting}[language=EEPJson,style=eepcode]
 _eep.example.com. 300 IN TXT "v=eep1; manifest=https://api.example.com/.well-known/eep.json"
@@ -266,7 +266,7 @@ As EEP adoption grows globally, it is unrealistic and undesirable for \texttt{ee
 EEP defines a \textbf{Registry Federation Protocol} for this scenario. Any registry wishing to federate with the EEP ecosystem must:
 
 \begin{enumerate}
-    \item Publish its own registry manifest at \texttt{/.well-known/eep-registry.json}, declaring its DID, its trust criteria, its conformance tier requirements and the scope of entities it registers (by geography, sector, or capability).
+    \item Publish its own registry manifest at \texttt{/.well-known/eep-registry.json}, declaring its DID, its trust criteria, its conformance tier requirements and the scope of entities it registers (by geography, sector or capability).
     \item Register itself at \texttt{eep.dev/registries}, where the EEP Standards Committee issues it a \textbf{Registry Federation Credential}: a Verifiable Credential confirming it operates according to the EEP Registry Federation Protocol.
     \item Implement a cross-registry resolution API: when an agent queries a federated registry for an entity not in its own index, the registry must attempt to resolve via peered registries before returning a not-found response.
 \end{enumerate}
@@ -374,7 +374,7 @@ When an agent initiates a request, it includes an \texttt{EEP-Version} header li
 EEP distinguishes two classes of change:
 \begin{itemize}
     \item \textbf{Non-breaking:} New optional fields, new event types, new gate requirement types. Older agents safely ignore unknown fields. No version bump required in the minor range.
-    \item \textbf{Breaking:} Changes to the gate challenge format, session token structure, or signature algorithm requirements. These increment the major version once EEP reaches 1.x. Until then, breaking changes are reflected in draft increments; a publisher supporting multiple draft lines must maintain both stacks in parallel during the deprecation window (minimum 12 months). Ecosystem-facing notice of a breaking change in the \texttt{0.x} line follows \texttt{GOVERNANCE.md} (advance notice before consumers are expected to migrate); the 12-month figure is a minimum overlap for operators who run dual implementations, not a substitute for that notice cadence.
+    \item \textbf{Breaking:} Changes to the gate challenge format, session token structure or signature algorithm requirements. These increment the major version once EEP reaches 1.x. Until then, breaking changes are reflected in draft increments; a publisher supporting multiple draft lines must maintain both stacks in parallel during the deprecation window (minimum 12 months). Ecosystem-facing notice of a breaking change in the \texttt{0.x} line follows \texttt{GOVERNANCE.md} (advance notice before consumers are expected to migrate); the 12-month figure is a minimum overlap for operators who run dual implementations, not a substitute for that notice cadence.
 \end{itemize}
 
 This negotiation happens autonomously on every first-contact request. No human configuration is required.
@@ -388,7 +388,7 @@ These are relationships, not transactions. EEP defines a \textbf{Session Persist
 
 \subsection{Session Tokens and Relationship Context}
 
-After an agent completes a gate requirement (credential, agreement, data exchange, or payment), the publisher issues a signed \textbf{Session Token}: a short-lived JWT-like structure signed by the publisher's DID private key. The session token carries:
+After an agent completes a gate requirement (credential, agreement, data exchange or payment), the publisher issues a signed \textbf{Session Token}: a short-lived JWT-like structure signed by the publisher's DID private key. The session token carries:
 
 \begin{itemize}
     \item The agent's DID (the session is bound to this identity).
@@ -443,7 +443,7 @@ When a publisher configures a \texttt{data\_request} gate requirement, it must i
 }
 \end{lstlisting}
 
-The agent receives this declaration before sharing anything. It can autonomously evaluate the declared purpose against its owner's pre-configured privacy preferences (e.g., ``never share contact info for marketing purposes'') and either satisfy the request, partially satisfy it with available claims, or refuse and accept the access denial, all without human intervention.
+The agent receives this declaration before sharing anything. It can autonomously evaluate the declared purpose against its owner's pre-configured privacy preferences (e.g., ``never share contact info for marketing purposes'') and either satisfy the request, partially satisfy it with available claims or refuse and accept the access denial, all without human intervention.
 
 \subsection{Data Minimization as a Protocol Constraint}
 
@@ -458,7 +458,7 @@ EEP enforces data minimization through two rules that are normative, not advisor
 
 An agent's owner may instruct it to withdraw a previously provided data claim. The agent sends a signed \texttt{data.withdrawal} message to the entity's Layer 3 WebSocket endpoint or via a dedicated REST endpoint (\texttt{DELETE /data/claims/:claim\_id}). The publisher must acknowledge the withdrawal within a protocol-defined window (default: 24 hours). If the publisher holds an active session token from the requesting agent, the session remains valid, but the withdrawn claim's data must be purged. The agent logs the withdrawal as an auditable event.
 
-This gives agents and by extension their owners, a programmatic right of withdrawal that doesn't require a cookie banner, a legal team, or an email to \texttt{privacy@company.com}.
+This gives agents and by extension their owners, a programmatic right of withdrawal that doesn't require a cookie banner, a legal team or an email to \texttt{privacy@company.com}.
 
 \subsection{Operator Policy Profiles}
 
@@ -477,7 +477,7 @@ An agent acting within this profile is fully autonomous. One that encounters a r
 % ═══════════════════════════════════════════════════════════════════
 \section{The Agent Economy: Commerce, Agreements and Ecosystem Access}
 
-If agents are going to do actual economic labor, they need to pay for resources, negotiate contracts and hold capital. But money is only one form of access. Equally important is the ability to sign a legal agreement, prove trustworthiness, or exchange data as currency. Traditional infrastructure handles none of these autonomously. EEP does.
+If agents are going to do actual economic labor, they need to pay for resources, negotiate contracts and hold capital. But money is only one form of access. Equally important is the ability to sign a legal agreement, prove trustworthiness or exchange data as currency. Traditional infrastructure handles none of these autonomously. EEP does.
 
 Micropayments, negotiated quotes and auctions (Section~8.5) use the same machine-readable rails for a two-person project as for a global API program: discovery and settlement ride the protocol, not a bespoke sales relationship. That matters for competition: niche publishers can list priced access without building a custom payments integration for every buyer.
 
@@ -485,7 +485,7 @@ Because EEP's entire authorization layer is built on cryptographic \textbf{proof
 
 \subsection{Gated Access: A Multi-Dimensional Requirement System}
 
-When an agent requests a gated resource without the right credentials, EEP returns a structured HTTP error: \texttt{402 Payment Required} for payment gates (natively aligned with the x402 protocol \cite{ref27}), \texttt{403 Forbidden} for credential or agreement gates, or \texttt{451 Unavailable For Legal Reasons} for legally restricted resources. In every case the response body is a machine-readable JSON object that spells out exactly what is missing:
+When an agent requests a gated resource without the right credentials, EEP returns a structured HTTP error: \texttt{402 Payment Required} for payment gates (natively aligned with the x402 protocol \cite{ref27}), \texttt{403 Forbidden} for credential or agreement gates or \texttt{451 Unavailable For Legal Reasons} for legally restricted resources. In every case the response body is a machine-readable JSON object that spells out exactly what is missing:
 
 \begin{lstlisting}[language=EEPJson,style=eepcode]
 {
@@ -535,10 +535,10 @@ The agent reads this, satisfies each requirement autonomously and retries. The p
 The requirement types EEP defines are:
 
 \begin{itemize}
-    \item \textbf{\texttt{credential}:} A W3C Verifiable Credential issued by a specified DID. Used to gate by affiliation, role, or certification (e.g., ``you must present a credential from a licensed research institution'').
+    \item \textbf{\texttt{credential}:} A W3C Verifiable Credential issued by a specified DID. Used to gate by affiliation, role or certification (e.g., ``you must present a credential from a licensed research institution'').
     \item \textbf{\texttt{identity}:} Proof of control over a specific DID or DID family. Used when the publisher needs to know exactly who is asking.
     \item \textbf{\texttt{agreement}:} The agent must cryptographically sign the SHA-256 hash of a specific license document (e.g., a Creative Commons non-commercial license) using its DID private key. The signature is included in the retry request as a Verifiable Presentation. This makes legally binding, machine-enforceable usage restrictions possible at scale.
-    \item \textbf{\texttt{data\_request}:} A quid-pro-quo access pattern. The publisher requests specific Verifiable Presentations about the requesting agent or its owner (e.g., industry sector, intended use case, or owner email) before returning the requested data. The agent packages the requested claims as a signed VP and includes it in the retry. This enables voluntary, consent-based data exchanges without a centralized broker.
+    \item \textbf{\texttt{data\_request}:} A quid-pro-quo access pattern. The publisher requests specific Verifiable Presentations about the requesting agent or its owner (e.g., industry sector, intended use case or owner email) before returning the requested data. The agent packages the requested claims as a signed VP and includes it in the retry. This enables voluntary, consent-based data exchanges without a centralized broker.
     \item \textbf{\texttt{payment}:} A verifiable proof of micropayment, typically a transaction hash from a smart contract on a compatible L1/L2 network (e.g., Solana, Base, Ethereum).
     \item \textbf{\texttt{combined}:} Any or all of the above, with AND/OR logic defined by the publisher.
 \end{itemize}
@@ -552,7 +552,7 @@ Consider a dataset published by a university research lab. The lab wants it avai
 
 Under EEP, the dataset endpoint is configured with an \texttt{agreement} requirement pointing to the license document's hash. When an agent requests the data without a valid agreement proof, it receives \texttt{403 Forbidden} with the hash and missing-requirement details. The agent fetches the license, surfaces a plain-language summary to its operator if needed, signs the hash with its DID private key and retries. The signature is on-chain, auditable and permanent. Enforcement becomes a solvable problem.
 
-The license text itself can spell out citation obligations: for example required canonical URLs, attribution strings, or constraints on how excerpts surface in generated summaries. That does not force a particular LLM product to display a link in every user-facing paragraph, but it does give publishers a cryptographic precondition: the automaton agrees to terms \emph{before} the bytes flow. Where generative interfaces erode referral traffic and attribution \cite{ref34,ref35}, machine-enforceable agreement gates are a technical complement to editorial and commercial strategy.
+The license text itself can spell out citation obligations: for example required canonical URLs, attribution strings or constraints on how excerpts surface in generated summaries. That does not force a particular LLM product to display a link in every user-facing paragraph, but it does give publishers a cryptographic precondition: the automaton agrees to terms \emph{before} the bytes flow. Where generative interfaces erode referral traffic and attribution \cite{ref34,ref35}, machine-enforceable agreement gates are a technical complement to editorial and commercial strategy.
 
 \subsection{Quid-Pro-Quo Data Exchange in Practice}
 
@@ -575,8 +575,8 @@ EEP defines three price discovery modes that publishers can declare in their man
 
 \begin{itemize}
     \item \textbf{Fixed pricing} (\texttt{pricing\_mode: fixed}): The publisher declares a fixed price per unit of access. No negotiation; agent either pays or doesn't. Suitable for high-volume, low-complexity data feeds.
-    \item \textbf{Negotiated pricing} (\texttt{pricing\_mode: negotiable}): Bilateral negotiation via the commerce state machine. The publisher's agent evaluates offers against a private utility function (current load, relationship history, DID trust score) and responds. Suitable for premium, high-value, or bespoke services.
-    \item \textbf{Auction pricing} (\texttt{pricing\_mode: auction}): The publisher broadcasts a request for proposals via a Layer 2 \texttt{commerce.rfp.open} event. Multiple consumer agents submit bids. The publisher's agent selects the winning bid according to a declared auction mechanism (first-price sealed-bid, Vickrey, or reverse auction for compute buyers). The result is broadcast as a \texttt{commerce.rfp.closed} event with the winning DID. Suitable for scarce compute resources and dynamic GPU markets \cite{ref19}.
+    \item \textbf{Negotiated pricing} (\texttt{pricing\_mode: negotiable}): Bilateral negotiation via the commerce state machine. The publisher's agent evaluates offers against a private utility function (current load, relationship history, DID trust score) and responds. Suitable for premium, high-value or bespoke services.
+    \item \textbf{Auction pricing} (\texttt{pricing\_mode: auction}): The publisher broadcasts a request for proposals via a Layer 2 \texttt{commerce.rfp.open} event. Multiple consumer agents submit bids. The publisher's agent selects the winning bid according to a declared auction mechanism (first-price sealed-bid, Vickrey or reverse auction for compute buyers). The result is broadcast as a \texttt{commerce.rfp.closed} event with the winning DID. Suitable for scarce compute resources and dynamic GPU markets \cite{ref19}.
 \end{itemize}
 
 For auction scenarios, EEP requires the publisher to commit to the auction parameters (reserve price, mechanism type, close time) in a signed manifest update before opening the auction. This prevents last-minute manipulation. The winning agent receives a signed \textbf{Allocation Receipt}: a Verifiable Credential confirming its winning bid and the agreed terms. This receipt can be presented as a proof of entitlement for the duration of the allocation period.
@@ -598,7 +598,7 @@ Every EEP-capable agent holds an \textbf{Agent Wallet}: a cryptographic key stor
 
 \begin{itemize}
     \item \textbf{Operator-derived.} The agent's key pair is derived deterministically from the operator's master seed using BIP-32 hierarchical deterministic derivation. The operator retains the master seed and can regenerate any agent key. This suits enterprise fleets managed centrally.
-    \item \textbf{Hardware-isolated.} The agent's private key is generated inside a Trusted Execution Environment (TEE) or Hardware Security Module (HSM) and never leaves the secure boundary. The operator cannot export the key, only revoke it. This suits high-value or regulated agents such as financial, legal, or healthcare agents, where even the operator should not have ongoing signing access.
+    \item \textbf{Hardware-isolated.} The agent's private key is generated inside a Trusted Execution Environment (TEE) or Hardware Security Module (HSM) and never leaves the secure boundary. The operator cannot export the key, only revoke it. This suits high-value or regulated agents such as financial, legal or healthcare agents, where even the operator should not have ongoing signing access.
     \item \textbf{OS keychain (non-custodial).} For lightweight agents on consumer hardware, the key is stored in the OS keychain (Secure Enclave on Apple silicon, Android Keystore, Windows CNG). The agent signs locally; the key never touches the network \cite{ref23}.
 \end{itemize}
 
@@ -691,7 +691,7 @@ The normative specification, reference stacks, SDKs and operator tooling are rel
 
 \subsection{Protocol Evolution: The EEP Improvement Proposal Process}
 
-EEP uses an improvement proposal process modeled on the RFC and EIP (Ethereum Improvement Proposal) traditions. Any party, whether an individual developer, an organization, or a working group, can author an \textbf{EEP Improvement Proposal (EEIP)} to propose changes to the protocol specification. The proposal lifecycle has five stages:
+EEP uses an improvement proposal process modeled on the RFC and EIP (Ethereum Improvement Proposal) traditions. Any party, whether an individual developer, an organization or a working group, can author an \textbf{EEP Improvement Proposal (EEIP)} to propose changes to the protocol specification. The proposal lifecycle has five stages:
 
 \begin{enumerate}
     \item \textbf{Draft:} The proposal is published (as a structured document) to the public EEIP repository at \texttt{eep.dev/proposals}. It must specify the problem, the proposed solution, the affected protocol layers, backward compatibility analysis and a reference implementation.
@@ -717,7 +717,7 @@ The committee does not control implementations. It controls only the specificati
 
 \subsection{Handling Bad Actors}
 
-When a publisher is found to be abusing the ecosystem by serving malicious payloads, issuing fraudulent gate requirements, misrepresenting their identity, or violating signed agreements, EEP's response is layered:
+When a publisher is found to be abusing the ecosystem by serving malicious payloads, issuing fraudulent gate requirements, misrepresenting their identity or violating signed agreements, EEP's response is layered:
 
 \begin{enumerate}
     \item \textbf{On-chain DID revocation:} The compromised or malicious DID is revoked in its authoritative registry. All compliant EEP agents will check the DID Document before accepting any proof and will reject the revoked identity automatically.
@@ -801,7 +801,7 @@ A minimal Express example (\texttt{examples/eep-middleware-express-mini/}) demon
 
 \subsection{Documentation and ``Five-Minute'' Onboarding}
 
-Operator-facing guides complement the specification: a full setup tutorial (monorepo vs.\ published npm install paths), a post-CLI integration guide (wiring identity, HTTP surface and adapters), a \textbf{five-minute proof} document (reference Compose stack, CLI-only flow, or minimal Express middleware), guides for \textbf{EEP-ready verification} in CI, an \textbf{implementation matrix} (Node and Python parity), explicit \textbf{complementary positioning} relative to MCP and A2A and an \textbf{adoption metrics} template for internal tracking (with optional public listings in \texttt{ADOPTERS.md} at the repository root). These artefacts reduce time-to-first-working endpoint and make success measurable.
+Operator-facing guides complement the specification: a full setup tutorial (monorepo vs.\ published npm install paths), a post-CLI integration guide (wiring identity, HTTP surface and adapters), a \textbf{five-minute proof} document (reference Compose stack, CLI-only flow or minimal Express middleware), guides for \textbf{EEP-ready verification} in CI, an \textbf{implementation matrix} (Node and Python parity), explicit \textbf{complementary positioning} relative to MCP and A2A and an \textbf{adoption metrics} template for internal tracking (with optional public listings in \texttt{ADOPTERS.md} at the repository root). These artefacts reduce time-to-first-working endpoint and make success measurable.
 
 \subsection{Relationship to Conformance Testing}
 
@@ -885,9 +885,9 @@ This prevents payload injection attacks where a network adversary injects fabric
 
 EEP publishers are required to implement token-bucket rate limiting per DID, not per IP. Because agents may share IP addresses (in containerized or serverless environments), IP-based rate limiting is both over-blocking and easy to evade. DID-based rate limiting ties resource consumption directly to a cryptographic identity that can be challenged, revoked and held accountable.
 
-Creating a new DID is cheap, so an attacker could in principle mint many DIDs and attempt a Sybil-style abuse of per-DID buckets. Implementations SHOULD mitigate this by combining DID-based limits with additional signals: for example, \textbf{stricter default buckets} for DIDs with no prior successful interactions, no Verifiable Credentials and no on-chain or registry-backed reputation; optional \textbf{progressive trust}, where standard limits unlock only after a Trust Anchor VC, a conformance credential, or a successful micropayment gate proof; and \textbf{cost floors} (proof-of-payment or proof-of-work challenges) on high-cost endpoints before full quota applies. Publishers remain free to set policy; the protocol expectation is that production deployments do not treat ``new DID'' as equivalent to ``established subscriber'' for quota purposes.
+Creating a new DID is cheap, so an attacker could in principle mint many DIDs and attempt a Sybil-style abuse of per-DID buckets. Implementations SHOULD mitigate this by combining DID-based limits with additional signals: for example, \textbf{stricter default buckets} for DIDs with no prior successful interactions, no Verifiable Credentials and no on-chain or registry-backed reputation; optional \textbf{progressive trust}, where standard limits unlock only after a Trust Anchor VC, a conformance credential or a successful micropayment gate proof; and \textbf{cost floors} (proof-of-payment or proof-of-work challenges) on high-cost endpoints before full quota applies. Publishers remain free to set policy; the protocol expectation is that production deployments do not treat ``new DID'' as equivalent to ``established subscriber'' for quota purposes.
 
-\textbf{Cold-start graduation.} Well-intentioned new agents SHOULD be able to move from restricted buckets to normal limits without human babysitting where policy allows: present a Trust Anchor or conformance VC, complete a publisher/registry \emph{genesis} challenge attested by VC, or satisfy a micropayment/stake floor tied to the DID. Advertised graduation paths SHOULD be machine-testable.
+\textbf{Cold-start graduation.} Well-intentioned new agents SHOULD be able to move from restricted buckets to normal limits without human babysitting where policy allows: present a Trust Anchor or conformance VC, complete a publisher/registry \emph{genesis} challenge attested by VC or satisfy a micropayment/stake floor tied to the DID. Advertised graduation paths SHOULD be machine-testable.
 
 Publishers must respond to rate-limited agents with \texttt{HTTP 429 Too Many Requests} including a \texttt{Retry-After} header and a signed challenge that the agent must include in its next request to prove it hasn't simply rotated its IP address.
 
@@ -907,7 +907,7 @@ When an agent submits a payment proof (a transaction hash) as a gate requirement
 EEP does not define which blockchain to use; that is a publisher decision. It does require that publishers declare their accepted networks and minimum confirmation requirements in the entity's Layer 1 state document, allowing agents to select the appropriate chain and wait for the correct finality threshold before submitting proof.
 
 \paragraph{High-frequency settlement without L1 latency for every tick.}
-Waiting for deep L1 confirmations on every micro-call is incompatible with millisecond API matching. Deployments therefore SHOULD use faster rails the publisher lists as first-class: L2 rollups, app chains, state/payment-channel style constructions, or custodial settlement services---provided the publisher declares the acceptable proof type (e.g., channel attestation, rollup receipt, or clearing-house signature) and verification rules in the same Layer~1 payment metadata agents already use for transaction-hash proofs. The protocol stays proof-agnostic; operators choose which verifiable receipts count as ``paid'' for a gate tier.
+Waiting for deep L1 confirmations on every micro-call is incompatible with millisecond API matching. Deployments therefore SHOULD use faster rails the publisher lists as first-class: L2 rollups, app chains, state/payment-channel style constructions or custodial settlement services---provided the publisher declares the acceptable proof type (e.g., channel attestation, rollup receipt or clearing-house signature) and verification rules in the same Layer~1 payment metadata agents already use for transaction-hash proofs. The protocol stays proof-agnostic; operators choose which verifiable receipts count as ``paid'' for a gate tier.
 
 \subsection{Identity Revocation and Key Rotation}
 
@@ -920,7 +920,7 @@ For agents operating in long-lived deployments, EEP recommends proactive key rot
 
 \subsection{Agent Delegation Chains and Impersonation Prevention}
 
-In the Agent Ecosystem, a manager agent may act on behalf of its owner, or may delegate sub-tasks to specialized sub-agents. This creates delegation chains that must be verifiable end-to-end. EEP defines a \textbf{Delegation Proof} format: a Verifiable Credential issued by the owner's DID to the agent's DID, specifying the permitted actions, permitted endpoints and expiry time.
+In the Agent Ecosystem, a manager agent may act on behalf of its owner or may delegate sub-tasks to specialized sub-agents. This creates delegation chains that must be verifiable end-to-end. EEP defines a \textbf{Delegation Proof} format: a Verifiable Credential issued by the owner's DID to the agent's DID, specifying the permitted actions, permitted endpoints and expiry time.
 
 When a delegated agent presents a gate requirement proof, it must attach its Delegation Proof alongside its own DID signature. The publisher verifies the chain from the presented acting DID back to the owner DID and confirms the requested action falls within the delegated scope. Delegation credentials without explicit scope restrictions are rejected. This prevents a compromised sub-agent from claiming unlimited authority on behalf of its owner.
 
@@ -942,7 +942,7 @@ EEP is designed for a protocol lifetime exceeding a decade. Therefore:
     \item EEP's signature algorithm negotiation is extensible. Publishers declare their supported signing algorithms in the Layer 1 state document. Agents select the strongest mutually supported algorithm. When post-quantum algorithms become practically deployable, adding them requires updating the algorithm list, not changing the protocol.
     \item EEP recommends that high-sensitivity implementations begin deploying \textbf{hybrid signatures} now: a classical EdDSA signature alongside an \texttt{ML-DSA} signature on the same payload. Either signature alone verifies today; both are needed in a post-quantum future.
     \item For transport, \texttt{ML-KEM} can be deployed as a TLS hybrid key exchange alongside ECDHE today, requiring no protocol changes.
-    \item Hybrid signatures and PQ-hybrid TLS materially increase bytes on the wire compared with EdDSA-only or classical TLS alone. In the same way the protocol critiques unnecessary HTML payload volume, deployments should treat PQ-hybrid paths as a \textbf{policy and tier decision}: default Core/Standard paths can remain classical algorithms for bandwidth-sensitive surfaces; Full-conformance profiles, regulated finance, or long-archival evidence are the natural homes for mandatory hybrid proofs, so agents avoid paying a ``quantum tax'' on every routine Layer~1 read.
+    \item Hybrid signatures and PQ-hybrid TLS materially increase bytes on the wire compared with EdDSA-only or classical TLS alone. In the same way the protocol critiques unnecessary HTML payload volume, deployments should treat PQ-hybrid paths as a \textbf{policy and tier decision}: default Core/Standard paths can remain classical algorithms for bandwidth-sensitive surfaces; Full-conformance profiles, regulated finance or long-archival evidence are the natural homes for mandatory hybrid proofs, so agents avoid paying a ``quantum tax'' on every routine Layer~1 read.
     \item \textbf{Constrained devices (IoT / embedded):} battery-powered or microcontroller-class agents should default to classical algorithms for routine pulses and reserve PQ-hybrid proofs for high-value or policy-mandated interactions; operators should account for extra CPU time and payload size when setting spending, heartbeat and tier profiles.
 \end{itemize}
 
@@ -950,7 +950,7 @@ This ``crypto-agility'' approach means that EEP implementations can transition t
 
 \subsection{The Zero-Trust Enforcement Principle}
 
-Across all of the above, EEP operates on a single governing security principle: \textbf{no interaction is implicitly trusted}. There is no notion of an ``internal'' or ``trusted'' network segment. Every request, whether from an unknown agent, a known partner, or a previously authenticated session, must present verifiable proof appropriate to the requested resource tier.
+Across all of the above, EEP operates on a single governing security principle: \textbf{no interaction is implicitly trusted}. There is no notion of an ``internal'' or ``trusted'' network segment. Every request, whether from an unknown agent, a known partner or a previously authenticated session, must present verifiable proof appropriate to the requested resource tier.
 
 This is not paranoia. It is the only rational security model for a distributed ecosystem where participants are autonomous software entities operating across organizational and jurisdictional boundaries with no human in the loop. Implicit trust is a vulnerability. Cryptographic proof is the alternative.
 
@@ -983,7 +983,7 @@ EEP is agent-centric. It doesn't define social constructs (followers, likes, rep
 
 \subsection{EEP and Existing API Gateways}
 
-Organizations running Kong, Apigee, AWS API Gateway, or similar infrastructure don't need to replace them to adopt EEP. An EEP compatibility layer can be implemented as a thin middleware or sidecar that:
+Organizations running Kong, Apigee, AWS API Gateway or similar infrastructure don't need to replace them to adopt EEP. An EEP compatibility layer can be implemented as a thin middleware or sidecar that:
 
 \begin{itemize}
     \item Adds the \texttt{/.well-known/eep.json} manifest endpoint.
@@ -997,10 +997,10 @@ This means a company with an existing API can become EEP-compliant without rewri
 % ═══════════════════════════════════════════════════════════════════
 \section{Regulatory Compliance and EEP as a Global Standard}
 
-As autonomous agents move from developer tools to economic actors, regulators worldwide are paying attention. The EU's AI Act, the US Executive Order on AI Safety, GDPR, CCPA, the EU Data Governance Act and emerging sector-specific rules (e.g., DORA for financial services) all impose requirements on automated systems that handle personal data, make consequential decisions, or facilitate financial transactions. EEP is designed from the ground up to satisfy these requirements, not as an afterthought but as a structural property of the protocol.
+As autonomous agents move from developer tools to economic actors, regulators worldwide are paying attention. The EU's AI Act, the US Executive Order on AI Safety, GDPR, CCPA, the EU Data Governance Act and emerging sector-specific rules (e.g., DORA for financial services) all impose requirements on automated systems that handle personal data, make consequential decisions or facilitate financial transactions. EEP is designed from the ground up to satisfy these requirements, not as an afterthought but as a structural property of the protocol.
 
 \paragraph{Regulatory technology, not paperwork theater.}
-Where rules ask for purpose limitation, identity assurance, auditability, or evidence of agreement, EEP maps those duties to typed gates, signed artifacts, retention declarations and on-chain or off-chain receipts agents can verify. That is the ordinary meaning of \emph{regulatory technology} in this context: legal requirements expressed as structures conformance tooling can exercise. It does not replace counsel or jurisdictional interpretation, but it replaces ``trust us, we filed the PDF'' with controls you can test.
+Where rules ask for purpose limitation, identity assurance, auditability or evidence of agreement, EEP maps those duties to typed gates, signed artifacts, retention declarations and on-chain or off-chain receipts agents can verify. That is the ordinary meaning of \emph{regulatory technology} in this context: legal requirements expressed as structures conformance tooling can exercise. It does not replace counsel or jurisdictional interpretation, but it replaces ``trust us, we filed the PDF'' with controls you can test.
 
 \subsection{Compliance with Current Regulations}
 
@@ -1065,7 +1065,7 @@ EEP's premise is that machine consumers need explicit identity, push-based state
 
 HTTP gave the visual web a shared request model; DNS gave it names; TLS gave it transport integrity. They spread because they worked better than ad hoc alternatives. The same bar applies here: if agent-native interaction is cheaper and clearer than scraping the human web, adoption follows.
 
-Teams building shopping agents, tightening API boundaries, or running agent marketplaces keep hitting the same missing layer. EEP is aimed at that gap.
+Teams building shopping agents, tightening API boundaries or running agent marketplaces keep hitting the same missing layer. EEP is aimed at that gap.
 
 \section*{Acknowledgments}
 \addcontentsline{toc}{section}{Acknowledgments}
@@ -1090,7 +1090,7 @@ This section records \textbf{material changes to this whitepaper PDF} between da
 \end{itemize}
 
 \paragraph{Later versions.}
-Each future whitepaper release will add a new dated paragraph here (what changed in the narrative, figures, or cited requirements). Minor typo fixes may roll up under the same version until the next printed or archived edition.
+Each future whitepaper release will add a new dated paragraph here (what changed in the narrative, figures or cited requirements). Minor typo fixes may roll up under the same version until the next printed or archived edition.
 
 % ═══════════════════════════════════════════════════════════════════
 % Reference link targets cross-checked April 2026 (HTTP accessibility).
