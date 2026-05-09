@@ -17,14 +17,7 @@
     "pnpm": ">=9"
   },
   "packageManager": "pnpm@9.15.0",
-  "workspaces": [
-    "packages/@eep-dev/*",
-    "tests",
-    "examples/node-gate-publisher",
-    "examples/eep-middleware-express-mini",
-    "examples/node-express-subscriber",
-    "realworld-simulation"
-  ],
+  "//workspaces": "Workspace topology is declared in pnpm-workspace.yaml. We deliberately do NOT add an `npm` `workspaces` field here, because doing so makes npm v9+ treat each child package as a workspace member and expect a unified lockfile at this root, which breaks every per-package `npm ci` in CI (we ship per-package package-lock.json files).",
   "scripts": {
     "build": "pnpm -r --filter './packages/@eep-dev/*' run build",
     "test": "pnpm -r --filter './packages/@eep-dev/*' --filter './tests' run test",

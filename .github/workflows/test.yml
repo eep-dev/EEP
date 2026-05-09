@@ -406,14 +406,12 @@ jobs:
           node-version: '22'
 
       - name: Install codegen dependency
-        run: npm install --no-save json-schema-to-typescript@^15
+        run: npm install --no-save --no-package-lock json-schema-to-typescript@^15
 
-      - name: Regenerate and diff
-        run: |
-          set -euo pipefail
-          node scripts/codegen-schema-types.mjs
-          if ! git diff --exit-code -- tests/types/eep-schemas.d.ts; then
-            echo "::error::Generated schema types are out of date."
-            echo "          Run \`node scripts/codegen-schema-types.mjs\` and commit the result."
-            exit 1
-          fi
+      - name: Check generated schema types are up to date
+        # The script's --check mode generates the output to memory and
+        # exits non-zero if it differs from the committed
+        # tests/types/eep-schemas.d.ts. Crucially, it also fails if the
+        # committed file is missing — git diff alone would silently let
+        # an untracked file pass.
+        run: node scripts/codegen-schema-types.mjs --check
