@@ -2,17 +2,37 @@
   "name": "@eep-dev/agent-adopt",
   "version": "0.1.0",
   "description": "One-shot EEP adoption for app repos: inject, apply, verify, optional framework patch, report.",
+  "license": "Apache-2.0",
+  "author": "The EEP Authors and Contributors <hello@eep.dev> (https://eep.dev)",
+  "homepage": "https://github.com/eep-dev/EEP/tree/main/packages/@eep-dev/agent-adopt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eep-dev/EEP.git",
+    "directory": "packages/@eep-dev/agent-adopt"
+  },
+  "bugs": {
+    "url": "https://github.com/eep-dev/EEP/issues",
+    "email": "hello@eep.dev"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "eep-adopt": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
   },
-  "license": "Apache-2.0",
   "dependencies": {
     "@eep-dev/setup-cli": "file:../setup-cli"
   },
@@ -21,7 +41,8 @@
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },
-  "engines": {
-    "node": ">=18"
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

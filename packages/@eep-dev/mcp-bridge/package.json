@@ -2,6 +2,21 @@
   "name": "@eep-dev/mcp-bridge",
   "version": "0.1.0",
   "description": "MCP to EEP bridge: manifest/service translation, gate synthesis, and HTTP bridge server.",
+  "license": "Apache-2.0",
+  "author": "The EEP Authors and Contributors <hello@eep.dev> (https://eep.dev)",
+  "homepage": "https://github.com/eep-dev/EEP/tree/main/packages/@eep-dev/mcp-bridge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eep-dev/EEP.git",
+    "directory": "packages/@eep-dev/mcp-bridge"
+  },
+  "bugs": {
+    "url": "https://github.com/eep-dev/EEP/issues",
+    "email": "hello@eep.dev"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,6 +29,12 @@
   "bin": {
     "eep-mcp-bridge": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "pretest": "npm --prefix ../gates run build",
     "prebuild": "npm --prefix ../gates run build",
@@ -21,7 +42,6 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
-  "license": "Apache-2.0",
   "dependencies": {
     "@eep-dev/gates": "file:../gates"
   },
@@ -30,5 +50,9 @@
     "@vitest/coverage-v8": "^1.6.1",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

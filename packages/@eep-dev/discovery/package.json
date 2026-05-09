@@ -1,33 +1,57 @@
 {
-    "name": "@eep-dev/discovery",
-    "version": "0.1.0",
-    "description": "EEP discovery utilities — manifest validation, Link header parsing, DNS TXT record parsing",
-    "type": "module",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
-        }
-    },
-    "scripts": {
-        "build": "tsc",
-        "test": "vitest run",
-        "test:coverage": "vitest run --coverage",
-        "test:watch": "vitest"
-    },
-    "keywords": [
-        "eep",
-        "discovery",
-        "manifest",
-        "well-known"
-    ],
-    "license": "Apache-2.0",
-    "devDependencies": {
-        "@types/node": "^25.3.5",
-        "@vitest/coverage-v8": "^3.0.0",
-        "vitest": "^3.0.0",
-        "typescript": "^5.0.0"
+  "name": "@eep-dev/discovery",
+  "version": "0.1.0",
+  "description": "EEP discovery utilities \u2014 manifest validation, Link header parsing, DNS TXT record parsing",
+  "license": "Apache-2.0",
+  "author": "The EEP Authors and Contributors <hello@eep.dev> (https://eep.dev)",
+  "homepage": "https://github.com/eep-dev/EEP/tree/main/packages/@eep-dev/discovery#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eep-dev/EEP.git",
+    "directory": "packages/@eep-dev/discovery"
+  },
+  "bugs": {
+    "url": "https://github.com/eep-dev/EEP/issues",
+    "email": "hello@eep.dev"
+  },
+  "keywords": [
+    "eep",
+    "discovery",
+    "manifest",
+    "well-known"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^3.0.0",
+    "vitest": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

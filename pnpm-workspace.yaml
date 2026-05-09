@@ -1,0 +1,10 @@
+packages:
+  - 'packages/@eep-dev/*'
+  - 'tests'
+  - 'examples/node-gate-publisher'
+  - 'examples/eep-middleware-express-mini'
+  - 'examples/node-express-subscriber'
+  - 'examples/python-fastapi-subscriber'
+  - 'examples/python-gate-subscriber'
+  - 'examples/langgraph-eep-agent'
+  - 'realworld-simulation'

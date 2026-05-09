@@ -7,7 +7,28 @@ name = "eep-discovery"
 version = "0.1.0"
 description = "EEP discovery utilities — manifest validation, Link header parsing, DNS TXT record parsing"
 license = {text = "Apache-2.0"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://eep.dev"
+Source = "https://github.com/eep-dev/EEP"
+Issues = "https://github.com/eep-dev/EEP/issues"
+Documentation = "https://github.com/eep-dev/EEP#readme"
+Changelog = "https://github.com/eep-dev/EEP/blob/main/CHANGELOG.md"

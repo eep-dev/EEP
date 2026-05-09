@@ -1,0 +1,42 @@
+{
+  "name": "eep-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Entity Engagement Protocol — monorepo root. See README.md for an overview and packages/@eep-dev/* for the published artifacts.",
+  "license": "Apache-2.0",
+  "homepage": "https://eep.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eep-dev/EEP.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eep-dev/EEP/issues"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "workspaces": [
+    "packages/@eep-dev/*",
+    "tests",
+    "examples/node-gate-publisher",
+    "examples/eep-middleware-express-mini",
+    "examples/node-express-subscriber",
+    "realworld-simulation"
+  ],
+  "scripts": {
+    "build": "pnpm -r --filter './packages/@eep-dev/*' run build",
+    "test": "pnpm -r --filter './packages/@eep-dev/*' --filter './tests' run test",
+    "test:python": "bash scripts/test-python.sh",
+    "test:cross-impl": "bash scripts/test-cross-impl.sh",
+    "test:all": "pnpm run build && pnpm run test && pnpm run test:python",
+    "lint:check": "pnpm -r --filter './packages/@eep-dev/*' exec tsc --noEmit",
+    "audit:high": "bash scripts/audit-high.sh",
+    "fixtures:pack": "tar -czf eep-conformance-vectors.tar.gz -C tests conformance-fixtures",
+    "sbom": "npx @cyclonedx/cyclonedx-npm --output-file eep-sbom.cdx.json --output-format JSON"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
