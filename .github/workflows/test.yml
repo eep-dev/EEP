@@ -356,3 +356,64 @@ jobs:
           if [ -n "${PUBLISHER_PID:-}" ]; then
             kill "$PUBLISHER_PID" || true
           fi
+
+  # ────────────────────────────────────────────────────────────────────
+  # DCO sign-off check — every commit on `main` and every PR commit
+  # MUST carry a `Signed-off-by:` trailer per the Developer Certificate
+  # of Origin v1.1. See CONTRIBUTING.md § Sign-off.
+  # ────────────────────────────────────────────────────────────────────
+  dco-check:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6 # renovate: pin
+        with:
+          fetch-depth: 0
+
+      - name: Verify Signed-off-by on every PR commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          echo "Checking commits in ${BASE_SHA}..${HEAD_SHA}"
+          missing=0
+          for sha in $(git rev-list "${BASE_SHA}..${HEAD_SHA}"); do
+            author=$(git log -1 --pretty=format:'%an <%ae>' "$sha")
+            if ! git log -1 --pretty=format:'%B' "$sha" | grep -qiE "^Signed-off-by: .* <.*@.*>"; then
+              echo "::error::Commit $sha by $author is missing a Signed-off-by trailer."
+              echo "          Use \`git commit --amend -s\` or \`git rebase --signoff\` to fix."
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo "::error::$missing commit(s) without DCO sign-off. See CONTRIBUTING.md."
+            exit 1
+          fi
+
+  # ────────────────────────────────────────────────────────────────────
+  # Schema → types drift gate
+  # ────────────────────────────────────────────────────────────────────
+  schema-types-drift:
+    name: Schema types drift gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6 # renovate: pin
+
+      - uses: actions/setup-node@v6 # renovate: pin
+        with:
+          node-version: '22'
+
+      - name: Install codegen dependency
+        run: npm install --no-save json-schema-to-typescript@^15
+
+      - name: Regenerate and diff
+        run: |
+          set -euo pipefail
+          node scripts/codegen-schema-types.mjs
+          if ! git diff --exit-code -- tests/types/eep-schemas.d.ts; then
+            echo "::error::Generated schema types are out of date."
+            echo "          Run \`node scripts/codegen-schema-types.mjs\` and commit the result."
+            exit 1
+          fi

@@ -1,5 +1,9 @@
 name: EEP Release — Publish npm + PyPI
 
+# Triggered by version tags. Publish jobs are gated behind the `release`
+# environment, which requires manual reviewer approval before secrets or
+# OIDC tokens are issued. See RELEASING.md for the full release runbook.
+
 on:
   push:
     tags:
@@ -7,19 +11,20 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-*'     # pre-releases: v0.1.0-alpha.1
 
 permissions:
-  contents: write        # required for GitHub Release creation
-  id-token: write        # reserved for future PyPI trusted publishing migration
+  contents: read
 
 jobs:
   # ── Verify all tests pass before any publish step ─────────────────────────
   preflight:
     name: Preflight — all tests must pass
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6 # renovate: pin
 
       # TS packages
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6 # renovate: pin
         with:
           node-version: '22'
 
@@ -91,7 +96,7 @@ jobs:
           (cd "packages/@eep-dev/mcp-bridge" && npm install && npm audit --omit=dev --audit-level=high)
 
       # Python packages
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6 # renovate: pin
         with:
           python-version: '3.12'
 
@@ -179,15 +184,53 @@ jobs:
             kill "$PUBLISHER_PID" || true
           fi
 
+  # ── SBOM generation ───────────────────────────────────────────────────────
+  # Emits a CycloneDX SBOM for every published package. The artifact is
+  # uploaded to the GitHub Release and consumed by downstream provenance
+  # verifiers.
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: preflight
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6 # renovate: pin
+
+      - name: Generate CycloneDX SBOM (repository scope)
+        uses: anchore/sbom-action@v0 # renovate: pin
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: eep-sbom.cdx.json
+          artifact-name: eep-sbom.cdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4 # renovate: pin
+        with:
+          name: eep-sbom
+          path: eep-sbom.cdx.json
+          retention-days: 90
+
   # ── npm publish (TypeScript packages) ─────────────────────────────────────
+  # Requires manual approval via the `release` environment. Publishes with
+  # SLSA build provenance attestations (npm publish --provenance).
   publish-npm:
     name: Publish npm packages
     runs-on: ubuntu-latest
-    needs: preflight
+    needs:
+      - preflight
+      - sbom
+    environment:
+      name: release
+      url: https://www.npmjs.com/org/eep-dev
+    permissions:
+      contents: read
+      id-token: write   # required for npm provenance via OIDC
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6 # renovate: pin
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6 # renovate: pin
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -196,24 +239,13 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Publish @eep-dev/gates
-        run: |
-          npm ci
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public
-        working-directory: packages/@eep-dev/gates
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish @eep-dev/signer
         run: |
           npm ci
           npm run build
           npm pack --dry-run
           npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public
+          npm publish --access public --provenance
         working-directory: packages/@eep-dev/signer
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -224,18 +256,19 @@ jobs:
           npm run build
           npm pack --dry-run
           npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public
+          npm publish --access public --provenance
         working-directory: packages/@eep-dev/validator
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @eep-dev/compliance-cli
+      - name: Publish @eep-dev/gates
         run: |
           npm ci
+          npm run build
           npm pack --dry-run
           npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public
-        working-directory: packages/@eep-dev/compliance-cli
+          npm publish --access public --provenance
+        working-directory: packages/@eep-dev/gates
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -245,115 +278,173 @@ jobs:
           npm run build
           npm pack --dry-run
           npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public
+          npm publish --access public --provenance
         working-directory: packages/@eep-dev/discovery
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @eep-dev/middleware
+        # Depends on @eep-dev/gates (workspace) — build the local dist first.
+        run: |
+          (cd ../../packages/@eep-dev/gates && npm ci && npm run build)
+          npm install
+          npm run build
+          npm pack --dry-run
+          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
+          npm publish --access public --provenance
+        working-directory: packages/@eep-dev/middleware
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/mcp-bridge
         run: |
+          (cd ../../packages/@eep-dev/gates && npm ci && npm run build)
           npm install
           npm run build
           npm pack --dry-run
           npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public
+          npm publish --access public --provenance
         working-directory: packages/@eep-dev/mcp-bridge
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish @eep-dev/compliance-cli
+        run: |
+          npm ci
+          npm pack --dry-run
+          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
+          npm publish --access public --provenance
+        working-directory: packages/@eep-dev/compliance-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @eep-dev/setup-cli
+        run: |
+          npm install
+          npm run build
+          npm pack --dry-run
+          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
+          npm publish --access public --provenance
+        working-directory: packages/@eep-dev/setup-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @eep-dev/agent-adopt
+        run: |
+          # agent-adopt depends on @eep-dev/setup-cli; the just-published
+          # version is what consumers will install. For local pack/publish we
+          # use the workspace-built dist.
+          (cd ../../packages/@eep-dev/setup-cli && npm install && npm run build)
+          npm install
+          npm run build
+          npm pack --dry-run
+          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
+          npm publish --access public --provenance
+        working-directory: packages/@eep-dev/agent-adopt
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   # ── PyPI publish (Python packages via OIDC trusted publishing) ───────────
+  # Each PyPI project must have a Trusted Publisher configured pointing at
+  # this repo, this workflow, and the `release` environment. No PyPI token
+  # is used or required.
   publish-pypi:
     name: Publish PyPI packages
     runs-on: ubuntu-latest
-    needs: preflight
+    needs:
+      - preflight
+      - sbom
     environment:
-      name: pypi
-      url: https://pypi.org/p/eep-protocol
+      name: release
+      url: https://pypi.org/project/eep-gates/
+    permissions:
+      contents: read
+      id-token: write   # required for PyPI Trusted Publishing (OIDC)
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - eep-signer-python
+          - eep-validator-python
+          - eep-gates-python
+          - eep-discovery-python
+          - eep-compliance-cli-python
+          - eep-mcp-bridge-python
+          - eep-middleware-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6 # renovate: pin
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6 # renovate: pin
         with:
           python-version: '3.12'
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install --upgrade pip build
 
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Build and publish eep-gates-python
+      - name: Set version and build
+        working-directory: packages/${{ matrix.package }}
         run: |
-          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
+          # Update version in pyproject.toml from tag (idempotent, allows same).
+          python - <<'PY'
+          import os, pathlib, re
+          version = os.environ['VERSION']
+          path = pathlib.Path('pyproject.toml')
+          text = path.read_text()
+          new = re.sub(r'^version\s*=\s*".*?"', f'version = "{version}"', text, count=1, flags=re.M)
+          path.write_text(new)
+          PY
           python -m build
-          twine upload dist/*
-        working-directory: packages/eep-gates-python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
-      - name: Build and publish eep-signer-python
-        run: |
-          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
-          python -m build
-          twine upload dist/*
-        working-directory: packages/eep-signer-python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1 # renovate: pin
+        with:
+          packages-dir: packages/${{ matrix.package }}/dist/
 
-      - name: Build and publish eep-validator-python
-        run: |
-          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
-          python -m build
-          twine upload dist/*
-        working-directory: packages/eep-validator-python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
-      - name: Build and publish eep-compliance-cli-python
-        run: |
-          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
-          python -m build
-          twine upload dist/*
-        working-directory: packages/eep-compliance-cli-python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
-      - name: Build and publish eep-discovery-python
-        run: |
-          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
-          python -m build
-          twine upload dist/*
-        working-directory: packages/eep-discovery-python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
-      - name: Build and publish eep-mcp-bridge-python
-        run: |
-          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
-          python -m build
-          twine upload dist/*
-        working-directory: packages/eep-mcp-bridge-python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-
-  # ── GitHub Release creation ────────────────────────────────────────────────
+  # ── GitHub Release creation with cosign keyless signatures ────────────────
   create-github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs:
       - publish-npm
       - publish-pypi
+    environment:
+      name: release
+    permissions:
+      contents: write    # required for Release creation
+      id-token: write    # required for sigstore/cosign keyless signing
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6 # renovate: pin
         with:
           fetch-depth: 0
+
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@v4 # renovate: pin
+        with:
+          name: eep-sbom
+          path: ./release-artifacts
+
+      - name: Build whitepaper PDF
+        # Best-effort. Whitepaper is informational; failure should not block
+        # the release. We still ship release_notes.txt and SBOM.
+        continue-on-error: true
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends texlive-latex-base \
+            texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra \
+            latexmk
+          (cd docs && latexmk -pdf -interaction=nonstopmode WHITEPAPER.tex)
+          cp docs/WHITEPAPER.pdf ./release-artifacts/eep-whitepaper.pdf || true
+
+      - name: Build conformance fixtures tarball
+        run: |
+          if [ -d "tests/conformance-fixtures" ]; then
+            tar -czf ./release-artifacts/eep-conformance-vectors-${GITHUB_REF_NAME}.tar.gz \
+              -C tests conformance-fixtures
+          fi
 
       - name: Extract version and changelog
         id: meta
@@ -369,15 +460,34 @@ jobs:
               echo "No exact changelog section matched this tag. See CHANGELOG.md for details."
             } > release_notes.txt
           fi
-          echo "NOTES_FILE=release_notes.txt" >> $GITHUB_OUTPUT
+          cp release_notes.txt ./release-artifacts/
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3 # renovate: pin
+
+      - name: Sign release artifacts (sigstore keyless)
+        run: |
+          set -euo pipefail
+          cd ./release-artifacts
+          for f in *; do
+            if [ -f "$f" ] && [[ "$f" != *.sig && "$f" != *.pem ]]; then
+              echo "Signing $f"
+              cosign sign-blob --yes \
+                --output-signature "${f}.sig" \
+                --output-certificate "${f}.pem" \
+                "$f"
+            fi
+          done
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v3 # renovate: pin
         with:
           name: "EEP v${{ steps.meta.outputs.VERSION }}"
-          body_path: release_notes.txt
+          body_path: release-artifacts/release_notes.txt
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: false
+          files: |
+            release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":pinAllExceptPeerDependencies",
+    "helpers:pinGitHubActionDigests",
+    ":dependencyDashboard",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "timezone": "UTC",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "description": "Pin every GitHub Action to a commit SHA (resolves '# renovate: pin' markers).",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true,
+      "rangeStrategy": "pin"
+    },
+    {
+      "description": "Group GitHub Actions updates into a single PR.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "groupSlug": "github-actions"
+    },
+    {
+      "description": "Group npm devDependency typing/test bumps.",
+      "matchPackagePatterns": ["^@types/", "^vitest", "^@vitest/", "^typescript$"],
+      "groupName": "ts-tooling",
+      "groupSlug": "ts-tooling"
+    },
+    {
+      "description": "Hold back major bumps of TS/Node tooling we lock per RFC.",
+      "matchPackageNames": ["typescript", "@types/node", "vitest"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Group Python testing tooling.",
+      "matchPackagePatterns": ["^pytest", "^pytest-"],
+      "groupName": "python-test-tooling",
+      "groupSlug": "python-test-tooling"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "osvVulnerabilityAlerts": true
+}
