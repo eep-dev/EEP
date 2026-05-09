@@ -1,0 +1,87 @@
+# EEP CODEOWNERS
+#
+# Auto-assigns reviewers on every PR. The path patterns below MUST be
+# kept in sync with the package-maintainers table in MAINTAINERS.md.
+#
+# Until per-package leads are nominated, the core team owns every path.
+# When a lead is named in MAINTAINERS.md, replace the @eep-dev/core-team
+# group with the individual handle(s) in the relevant block here.
+#
+# Branch protection on `main` requires at least one CODEOWNERS approval
+# for protected paths (spec, schemas, workflows). Configure in repo
+# settings: "Require a pull request before merging" + "Require review
+# from Code Owners".
+
+# ────────────────────────────────────────────────────────────────────
+# Repo-wide fallback
+# ────────────────────────────────────────────────────────────────────
+*                                          @eep-dev/core-team
+
+# ────────────────────────────────────────────────────────────────────
+# Specification & schemas — high blast radius, ≥2 reviewers required
+# ────────────────────────────────────────────────────────────────────
+/docs/current/SPECIFICATION.md             @eep-dev/core-team
+/docs/current/                             @eep-dev/core-team
+/docs/eeips/                               @eep-dev/core-team
+/docs/standards/                           @eep-dev/core-team
+/schemas/                                  @eep-dev/core-team
+/registry/                                 @eep-dev/core-team
+
+# ────────────────────────────────────────────────────────────────────
+# Governance & legal documents
+# ────────────────────────────────────────────────────────────────────
+/LICENSE                                   @eep-dev/core-team
+/NOTICE                                    @eep-dev/core-team
+/GOVERNANCE.md                             @eep-dev/core-team
+/MAINTAINERS.md                            @eep-dev/core-team
+/CODE_OF_CONDUCT.md                        @eep-dev/core-team
+/SECURITY.md                               @eep-dev/core-team
+/CONTRIBUTING.md                           @eep-dev/core-team
+/RELEASING.md                              @eep-dev/core-team
+/ROADMAP.md                                @eep-dev/core-team
+/CITATION.cff                              @eep-dev/core-team
+/CHANGELOG.md                              @eep-dev/core-team
+/ADOPTERS.md                               @eep-dev/core-team
+/AGENTS.md                                 @eep-dev/core-team
+
+# ────────────────────────────────────────────────────────────────────
+# CI / supply chain — security-sensitive, core team only
+# ────────────────────────────────────────────────────────────────────
+/.github/workflows/                        @eep-dev/core-team
+/.github/CODEOWNERS                        @eep-dev/core-team
+/.github/dependabot.yml                    @eep-dev/core-team
+/.github/renovate.json                     @eep-dev/core-team
+
+# ────────────────────────────────────────────────────────────────────
+# TypeScript packages
+# ────────────────────────────────────────────────────────────────────
+/packages/@eep-dev/signer/                 @eep-dev/core-team
+/packages/@eep-dev/validator/              @eep-dev/core-team
+/packages/@eep-dev/gates/                  @eep-dev/core-team
+/packages/@eep-dev/discovery/              @eep-dev/core-team
+/packages/@eep-dev/middleware/             @eep-dev/core-team
+/packages/@eep-dev/mcp-bridge/             @eep-dev/core-team
+/packages/@eep-dev/compliance-cli/         @eep-dev/core-team
+/packages/@eep-dev/setup-cli/              @eep-dev/core-team
+/packages/@eep-dev/agent-adopt/            @eep-dev/core-team
+
+# ────────────────────────────────────────────────────────────────────
+# Python packages
+# ────────────────────────────────────────────────────────────────────
+/packages/eep-signer-python/               @eep-dev/core-team
+/packages/eep-validator-python/            @eep-dev/core-team
+/packages/eep-gates-python/                @eep-dev/core-team
+/packages/eep-discovery-python/            @eep-dev/core-team
+/packages/eep-middleware-python/           @eep-dev/core-team
+/packages/eep-mcp-bridge-python/           @eep-dev/core-team
+/packages/eep-compliance-cli-python/       @eep-dev/core-team
+
+# ────────────────────────────────────────────────────────────────────
+# Tests, examples, integrations
+# ────────────────────────────────────────────────────────────────────
+/tests/                                    @eep-dev/core-team
+/tests/conformance-fixtures/               @eep-dev/core-team
+/examples/                                 @eep-dev/core-team
+/integrations/                             @eep-dev/core-team
+/realworld-simulation/                     @eep-dev/core-team
+/scripts/                                  @eep-dev/core-team

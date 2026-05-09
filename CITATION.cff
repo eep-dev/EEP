@@ -1,0 +1,74 @@
+cff-version: 1.2.0
+message: "If you use the Entity Engagement Protocol (EEP) or its reference implementations in academic or industrial work, please cite it using the metadata in this file."
+title: "Entity Engagement Protocol (EEP)"
+abstract: >-
+  EEP is an open standard for push-based, verifiable communication between
+  digital entities (people, organizations, products, agents) and the
+  authorized subscribers that follow them. It defines discovery, signal
+  delivery (SSE and webhooks), an optional WebSocket pulse channel,
+  cryptographically signed events, and access gates for identity,
+  credentials, payment, and agreements. EEP is designed as
+  complementary infrastructure to MCP (agent ↔ tool), A2A
+  (agent ↔ agent collaboration), and ANP (decentralized agent networking).
+type: software
+license: Apache-2.0
+url: "https://eep.dev"
+repository-code: "https://github.com/eep-dev/EEP"
+version: 0.1.0
+keywords:
+  - entity engagement protocol
+  - eep
+  - agentic web
+  - webhooks
+  - server-sent events
+  - websockets
+  - cloudevents
+  - decentralized identifiers
+  - verifiable credentials
+  - mcp
+authors:
+  - family-names: Cekmez
+    given-names: Ugur
+    affiliation: "Munich University of Digital Technologies and Applied Sciences"
+    email: hello@eep.dev
+  - family-names: Yakupoglu
+    given-names: Yigit
+    affiliation: "Technic AI; Carnegie Mellon University"
+  - family-names: Foley
+    given-names: Jackson
+    affiliation: "ThriveLogic"
+  - family-names: Jaafari
+    given-names: Omid
+    affiliation: "SudoVision"
+  - family-names: Acikbas
+    given-names: Kasim
+    affiliation: "Ultralytics"
+  - family-names: Altuncu
+    given-names: Tarik
+    affiliation: "Imperial College London"
+  - family-names: Cimenoglu
+    given-names: Erdem
+    affiliation: "Siemens"
+  - family-names: Baytar
+    given-names: Berk
+    affiliation: "Chooch"
+  - name: "BeneluxSoft"
+    affiliation: "Belgium"
+  - name: "Munich University of Digital Technologies (MUDT)"
+preferred-citation:
+  type: article
+  title: "Entity Engagement Protocol: An Open Standard for Verifiable, Push-Based Agent–Entity Communication"
+  authors:
+    - family-names: Cekmez
+      given-names: Ugur
+      affiliation: "Munich University of Digital Technologies and Applied Sciences"
+  year: 2026
+  url: "https://github.com/eep-dev/EEP/blob/main/docs/WHITEPAPER.tex"
+  notes: "Whitepaper distributed with the EEP repository (docs/WHITEPAPER.tex). The published PDF is attached to GitHub Releases."
+identifiers:
+  - type: url
+    value: "https://eep.dev"
+    description: "Project landing page"
+  - type: url
+    value: "https://github.com/eep-dev/EEP"
+    description: "Source repository"
