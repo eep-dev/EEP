@@ -46,6 +46,49 @@ Please follow the **[Code of Conduct](./CODE_OF_CONDUCT.md)** in issues, discuss
 - Add comments for non-obvious logic
 - Update documentation when changing public APIs
 
+## Sign-off (Developer Certificate of Origin)
+
+EEP requires every commit to carry a `Signed-off-by:` trailer matching
+the [Developer Certificate of Origin v1.1](https://developercertificate.org/).
+This is a lightweight per-commit attestation that you have the right to
+submit the work under the project's Apache-2.0 license. To sign off,
+add `-s` to your commit:
+
+```bash
+git commit -s -m "feat: add new gate type"
+```
+
+CI verifies the trailer on every commit pushed to `main`. Branches
+without it cannot be merged. There is no separate Contributor License
+Agreement (CLA); the DCO trailer is the only mechanism we use.
+
+If you need to back-fill sign-off on a series of commits, use:
+
+```bash
+git rebase --signoff main
+```
+
+## Conformance fixtures
+
+If your change adds or modifies a normative requirement, please update
+or extend [tests/conformance-fixtures](./tests/conformance-fixtures/)
+in the same PR. Every fixture has both an input and an expected
+outcome, and is exercised by the TypeScript and Python test suites in
+parallel — both must agree before the PR can merge.
+
+## Schemas → types drift gate
+
+If you modify any file under `schemas/v0.1/`, regenerate the type
+surface in the same PR:
+
+```bash
+node scripts/codegen-schema-types.mjs
+git add tests/types/eep-schemas.d.ts
+```
+
+CI runs `node scripts/codegen-schema-types.mjs --check` and will fail
+if the schema and the generated types disagree.
+
 ## Pull Request Guidelines
 
 - Keep PRs focused — one feature or fix per PR

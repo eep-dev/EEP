@@ -14,6 +14,18 @@ The specification and reference packages are **v0.1**: the spec, schemas, CI and
 
 **Community and safety:** [Code of Conduct](./CODE_OF_CONDUCT.md) · [Security](./SECURITY.md) (reports: **hello@eep.dev** with `[Security]` in the subject) · [Releasing](./RELEASING.md) (maintainers)
 
+## Why EEP, and why not just MCP, A2A, webhooks, or ActivityPub?
+
+These standards solve different problems. EEP composes with all of them.
+
+- **MCP** lets an LLM *call a tool*. EEP lets an LLM *follow an entity over time* — discover it, subscribe, and react to verified events from it.
+- **A2A** lets two agents *collaborate on a task*. EEP defines how either agent learns that an entity changed at all.
+- **Plain webhooks** require a custom protocol per publisher (auth, signing, retries, replay window). EEP is one wire format with HMAC-signed delivery, SSE, and a 60-second replay window — implemented once, reusable everywhere.
+- **ActivityPub** federates accounts in a social graph. EEP delivers state-change events from any entity (person, org, agent, product, listing) to authorized subscribers, with optional payment / credential / identity gates.
+- **DIDs and Verifiable Credentials** identify *who* an entity is. EEP defines *what they tell their subscribers* and *how subscribers verify it*.
+
+If you are building anything labelled "agentic," EEP is the missing layer between *the agent knows about the world* (DIDs, MCP, your data store) and *the agent reacts when the world changes* (today: bespoke per-vendor integrations).
+
 ## Official repositories
 
 - Protocol and reference code: [github.com/eep-dev/EEP](https://github.com/eep-dev/EEP)
@@ -280,11 +292,12 @@ Publishers should enforce per-subscriber **429** limits with `Retry-After` and `
 
 EEP uses a BDFN model for **0.x** and plans a steering committee at **v1.0**. Details: [GOVERNANCE.md](./GOVERNANCE.md).
 
-- [Comprehensive implementation plan](./docs/plans/comprehensive-implementation-plan.md)
-- [Release readiness report (2026-04-13)](./docs/reports/2026-04-13-release-readiness.md) (audit log: tests, links, score)
-- [eep-site sync checklist](./docs/guides/eep-site-sync-checklist.md) (manual check against the landing-site repo)
-- [arXiv packaging notes](./docs/guides/arxiv-submission.md) (whitepaper)
-- [ADOPTERS.md](./ADOPTERS.md) (optional public list; PRs welcome)
+- [ROADMAP.md](./ROADMAP.md) — milestones for v0.2, v0.3, and v1.0 (TSC formation, IETF/W3C submission, foundation transition)
+- [MAINTAINERS.md](./MAINTAINERS.md) — current maintainer tiers and per-package ownership
+- [CHANGELOG.md](./CHANGELOG.md) — Keep-a-Changelog-style release notes
+- [eep-site sync checklist](./docs/guides/eep-site-sync-checklist.md) — keep landing-site copy in lockstep with the spec
+- [arXiv packaging notes](./docs/guides/arxiv-submission.md) — for the whitepaper
+- [ADOPTERS.md](./ADOPTERS.md) — optional public list; PRs welcome
 
 ## Roadmap and adoption
 

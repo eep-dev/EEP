@@ -282,11 +282,12 @@ Publishers should enforce per-subscriber **429** limits with `Retry-After` and `
 
 EEP uses a BDFN model for **0.x** and plans a steering committee at **v1.0**. Details: [GOVERNANCE.md](./GOVERNANCE.md).
 
-- [Comprehensive implementation plan](./docs/plans/comprehensive-implementation-plan.md)
-- [Release readiness report (2026-04-13)](./docs/reports/2026-04-13-release-readiness.md) (audit log: tests, links, score)
-- [eep-site sync checklist](./docs/guides/eep-site-sync-checklist.md) (manual check against the landing-site repo)
-- [arXiv packaging notes](./docs/guides/arxiv-submission.md) (whitepaper)
-- [ADOPTERS.md](./ADOPTERS.md) (optional public list; PRs welcome)
+- [ROADMAP.md](./ROADMAP.md) — milestones for v0.2, v0.3, and v1.0 (TSC formation, IETF/W3C submission, foundation transition)
+- [MAINTAINERS.md](./MAINTAINERS.md) — current maintainer tiers and per-package ownership
+- [CHANGELOG.md](./CHANGELOG.md) — Keep-a-Changelog-style release notes
+- [eep-site sync checklist](./docs/guides/eep-site-sync-checklist.md) — keep landing-site copy in lockstep with the spec
+- [arXiv packaging notes](./docs/guides/arxiv-submission.md) — for the whitepaper
+- [ADOPTERS.md](./ADOPTERS.md) — optional public list; PRs welcome
 
 ## Roadmap and adoption
 
