@@ -88,7 +88,7 @@ def test_signed_bundle_round_trips(entry: dict) -> None:
 
     if entry["id"] == "signature-wrong-secret":
         assert recorded_sig != recomputed
-    elif entry["id"] == "signature-multi-signature-header":
+    elif entry["id"] == "signature-multi-header":
         tokens = recorded_sig.split(" ")
         assert len(tokens) >= 2
         assert recomputed in tokens

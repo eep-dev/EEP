@@ -90,11 +90,22 @@ describe.each(jsonPair)('json-pair fixture: $id', (entry) => {
         expect(expected.valid).toBe(entry.asserts_valid);
     });
 
-    if (entry.schema) {
+    // Schema validation runs only when the fixture's `input.json` IS the
+    // document the schema describes. The `gates/*` fixtures are *scenarios*
+    // (request + gate_config + requested_scope) where the schema describes
+    // the *response body* the implementation should produce — validating
+    // the scenario against the response schema is meaningless. The
+    // response shapes themselves are covered by tests/test_schemas.test.ts.
+    if (entry.schema && entry.category !== 'gates') {
         it(`schema-validates against ${entry.schema}`, () => {
             const schemaPath = join(REPO_ROOT, entry.schema!);
             const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
-            const validator = ajv.compile(schema);
+            // Prefer the pre-loaded validator (added at module load) over a
+            // fresh compile, otherwise Ajv throws "schema with key or id
+            // <$id> already exists" when the same schema is compiled twice.
+            const validator =
+                (typeof schema.$id === 'string' ? ajv.getSchema(schema.$id) : undefined)
+                ?? ajv.compile(schema);
             const input = JSON.parse(readFileSync(join(FIXTURES_DIR, entry.input!), 'utf8'));
             const ok = validator(input);
             // We treat "asserts_valid" as the ground truth. If a fixture
@@ -115,6 +126,16 @@ describe.each(jsonPair)('json-pair fixture: $id', (entry) => {
                     expect(expected.reason).toBeTypeOf('string');
                 }
             }
+        });
+    }
+
+    // Always assert the named schema file exists, even when we don't
+    // attempt input-validation against it — implementations consuming the
+    // fixtures still depend on the path being live.
+    if (entry.schema) {
+        it(`references an existing schema file: ${entry.schema}`, () => {
+            const schemaPath = join(REPO_ROOT, entry.schema!);
+            expect(() => readFileSync(schemaPath, 'utf8')).not.toThrow();
         });
     }
 });
@@ -146,7 +167,7 @@ describe.each(signedBundles)('signed-bundle fixture: $id', (entry) => {
             // Recorded sig was produced with a different secret. The
             // recomputation with the verifier's secret MUST NOT match.
             expect(expectedSig).not.toBe(recomputed);
-        } else if (entry.id === 'signature-multi-signature-header') {
+        } else if (entry.id === 'signature-multi-header') {
             // The header is "FAKE REAL". The real one MUST match recompute.
             const tokens = expectedSig.split(' ');
             expect(tokens.length).toBeGreaterThanOrEqual(2);

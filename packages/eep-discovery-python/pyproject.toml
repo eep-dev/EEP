@@ -6,12 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "eep-discovery"
 version = "0.1.0"
 description = "EEP discovery utilities — manifest validation, Link header parsing, DNS TXT record parsing"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",

@@ -1,22 +1,18 @@
 {
+  "did": "did:web:test.eep.dev:o:acme",
   "eep_version": "0.1",
-  "publisher_did": "did:web:test.eep.dev:o:acme",
-  "endpoints": {
-    "discovery": "https://test.eep.dev/.well-known/eep.json",
-    "subscribe": "https://test.eep.dev/eep/subscribe",
-    "stream": "https://test.eep.dev/eep/stream",
-    "pulse": "wss://test.eep.dev/eep/pulse"
+  "eep_versions": ["0.1"],
+  "preferred_version": "0.1",
+  "layers": {
+    "layer1": "https://test.eep.dev/eep",
+    "layer2_sse": "https://test.eep.dev/eep/stream",
+    "layer2_webhook": "https://test.eep.dev/eep/subscribe",
+    "layer3_ws": "wss://test.eep.dev/eep/pulse"
   },
-  "supported_layers": ["state_resolution", "signal_stream", "network_pulse"],
-  "delivery_methods": ["sse", "webhook"],
-  "conformance_level": "Standard",
-  "rate_limits": {
-    "default_per_minute": 600,
-    "default_per_day": 100000
-  },
-  "auth": {
-    "schemes": ["bearer", "did_signed"],
-    "did_methods": ["did:web", "did:key"]
-  },
-  "issued_at": "2026-05-09T12:00:00Z"
+  "supported_content_types": [
+    "application/json",
+    "text/markdown"
+  ],
+  "pqc_ready": false,
+  "x402_enabled": false
 }

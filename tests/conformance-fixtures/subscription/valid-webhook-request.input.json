@@ -5,6 +5,5 @@
     "com.example.trust.changed"
   ],
   "delivery_method": "webhook",
-  "delivery_url": "https://subscriber.example.com/hooks/eep",
-  "auth_token": "Bearer SUBSCRIBER_API_KEY"
+  "delivery_url": "https://subscriber.example.com/hooks/eep"
 }

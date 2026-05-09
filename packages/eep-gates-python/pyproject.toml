@@ -7,12 +7,11 @@ name = "eep-gates"
 version = "0.1.0"
 description = "EEP Gates — Access control, commerce, and service discovery for the Entity Engagement Protocol"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
