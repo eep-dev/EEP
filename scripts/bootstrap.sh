@@ -26,9 +26,12 @@ echo " -> npm install in examples/node-gate-publisher"
 (cd "$ROOT_DIR/examples/node-gate-publisher" && npm install)
 
 echo ""
+echo "==> Setting up Python virtual environment"
+(test -d "$ROOT_DIR/.venv" || python3 -m venv "$ROOT_DIR/.venv")
+
 echo "==> Installing Python test dependencies"
-python3 -m pip install --upgrade pip
-python3 -m pip install \
+"$ROOT_DIR/.venv/bin/python" -m pip install --upgrade pip
+"$ROOT_DIR/.venv/bin/pip" install \
   pytest \
   pytest-asyncio \
   pydantic \
@@ -36,7 +39,7 @@ python3 -m pip install \
   pip-audit
 
 echo " -> cross-impl requirements"
-python3 -m pip install -r "$ROOT_DIR/tests/cross-impl/requirements.txt"
+"$ROOT_DIR/.venv/bin/pip" install -r "$ROOT_DIR/tests/cross-impl/requirements.txt"
 
 echo ""
 echo "==> Bootstrap completed successfully"
