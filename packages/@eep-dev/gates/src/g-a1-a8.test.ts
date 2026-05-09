@@ -336,13 +336,15 @@ describe('A6 — Publish Pipeline: .github/workflows/publish.yml', () => {
         expect(publishYml).toContain('npm publish --access public');
     });
 
-    it('publish-pypi job publishes all 4 Python packages', () => {
+    it('publish-pypi job publishes all Python packages via PyPI Trusted Publishing (OIDC)', () => {
         expect(publishYml).toContain('publish-pypi');
         expect(publishYml).toContain('eep-gates-python');
         expect(publishYml).toContain('eep-signer-python');
         expect(publishYml).toContain('eep-validator-python');
         expect(publishYml).toContain('eep-compliance-cli-python');
-        expect(publishYml).toContain('twine upload');
+        // Trusted Publishing replaced the previous `twine upload` flow; the
+        // OIDC action is the canonical PyPI publish primitive.
+        expect(publishYml).toContain('pypa/gh-action-pypi-publish');
     });
 
     it('create-github-release job creates a GitHub Release', () => {
@@ -355,13 +357,57 @@ describe('A6 — Publish Pipeline: .github/workflows/publish.yml', () => {
         expect(publishYml).toContain('needs: preflight');
     });
 
-    it('uses NPM_TOKEN and PYPI_TOKEN secrets', () => {
+    it('uses NPM_TOKEN for npm; PyPI uses OIDC, not a token', () => {
+        // npm still uses a classic auth token (Trusted Publishing for npm
+        // is in preview as of this writing), so NPM_TOKEN must still be
+        // referenced.
         expect(publishYml).toContain('NPM_TOKEN');
-        expect(publishYml).toContain('PYPI_TOKEN');
+        // PyPI was migrated to Trusted Publishing — the workflow MUST NOT
+        // reference a PyPI token any more. If this assertion regresses, the
+        // workflow has been silently re-tokenised; investigate before merging.
+        expect(publishYml).not.toContain('PYPI_TOKEN');
+        expect(publishYml).not.toContain('TWINE_PASSWORD');
     });
 
     it('handles pre-release tags differently', () => {
         expect(publishYml).toContain('prerelease:');
+    });
+
+    // ── Supply-chain hardening additions (added in the readiness audit) ──
+    // These assertions lock in the security primitives so that a future
+    // refactor cannot silently downgrade them.
+
+    it('every npm publish call carries SLSA build provenance', () => {
+        // Each `npm publish` line must have `--provenance`. We don't allow
+        // a publish line without it.
+        const lines = publishYml.split('\n').filter((l) => /\bnpm publish\b/.test(l) && !l.trim().startsWith('#'));
+        expect(lines.length).toBeGreaterThan(0);
+        for (const line of lines) {
+            expect(line).toContain('--provenance');
+        }
+    });
+
+    it('publish jobs run inside a manual-approval environment', () => {
+        // The `release` GitHub Environment is configured in repo settings
+        // with required reviewers, so a tag push cannot publish without
+        // explicit human sign-off.
+        expect(publishYml).toContain('environment:');
+        expect(publishYml).toContain('name: release');
+    });
+
+    it('emits a CycloneDX SBOM as a release artifact', () => {
+        expect(publishYml).toContain('anchore/sbom-action');
+    });
+
+    it('signs release artifacts with sigstore/cosign keyless OIDC', () => {
+        expect(publishYml).toContain('sigstore/cosign-installer');
+        expect(publishYml).toContain('cosign sign-blob');
+    });
+
+    it('grants id-token: write so OIDC tokens can be issued', () => {
+        // Required by both `npm publish --provenance` and PyPI Trusted
+        // Publishing, and by sigstore/cosign keyless signing.
+        expect(publishYml).toContain('id-token: write');
     });
 });
 
