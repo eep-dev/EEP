@@ -1,32 +1,60 @@
 {
-    "name": "@eep-dev/signer",
-    "version": "0.1.0",
-    "description": "Standard Webhooks HMAC-SHA256 signing and verification for EEP-compliant platforms.",
-    "type": "module",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
-        }
+  "name": "@eep-dev/signer",
+  "version": "0.1.0",
+  "description": "Standard Webhooks HMAC-SHA256 signing and verification for EEP-compliant platforms.",
+  "license": "Apache-2.0",
+  "author": "The EEP Authors and Contributors <hello@eep.dev> (https://eep.dev)",
+  "homepage": "https://github.com/eep-dev/EEP/tree/main/packages/@eep-dev/signer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eep-dev/EEP.git",
+    "directory": "packages/@eep-dev/signer"
+  },
+  "bugs": {
+    "url": "https://github.com/eep-dev/EEP/issues",
+    "email": "hello@eep.dev"
+  },
+  "keywords": [
+    "eep",
+    "entity-engagement-protocol",
+    "webhooks",
+    "hmac",
+    "signing"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
-    "license": "Apache-2.0",
-    "scripts": {
-        "build": "tsc",
-        "test": "vitest run"
-    },
-    "keywords": [
-        "eep",
-        "entity-engagement-protocol",
-        "webhooks",
-        "hmac",
-        "signing"
-    ],
-    "devDependencies": {
-        "@types/node": "^25.3.5",
-        "@vitest/coverage-v8": "^1.6.1",
-        "typescript": "^5.3.0",
-        "vitest": "^1.0.0"
+    "./web": {
+      "types": "./dist/web.d.ts",
+      "default": "./dist/web.js"
     }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^1.6.1",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }
