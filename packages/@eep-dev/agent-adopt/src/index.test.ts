@@ -8,9 +8,11 @@
  *
  * `@eep-dev/setup-cli` and `node:child_process.spawn` are mocked so the
  * test exercises only this package's logic. A scratch project
- * directory under `os.tmpdir()` stands in for the user's app.
+ * directory under `os.tmpdir()` stands in for the user's app — created
+ * fresh inside each test (not in a shared beforeEach) so a previous
+ * test's afterEach cleanup can never affect a later test's writes.
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,36 +32,59 @@ const childProcessMock = vi.hoisted(() => ({
 
 vi.mock('node:child_process', () => childProcessMock);
 
-let project: string;
-let originalArgv: string[];
+import { runAgentAdopt } from './index.js';
 
-beforeEach(() => {
-    project = mkdtempSync(join(tmpdir(), 'eep-adopt-test-'));
-    originalArgv = process.argv;
+interface Scratch {
+    project: string;
+    originalArgv: string[];
+}
+
+function freshScratch(): Scratch {
     setupCliMock.runInject.mockReset();
     setupCliMock.runApply.mockReset();
     setupCliMock.runVerify.mockReset();
     setupCliMock.applyFrameworkPatchers.mockReset();
     childProcessMock.spawn.mockReset();
-});
+    return {
+        project: mkdtempSync(join(tmpdir(), 'eep-adopt-test-')),
+        originalArgv: process.argv,
+    };
+}
+
+const cleanups: Array<() => void> = [];
 
 afterEach(() => {
-    process.argv = originalArgv;
-    if (existsSync(project)) {
-        rmSync(project, { recursive: true, force: true });
+    while (cleanups.length) {
+        const fn = cleanups.pop();
+        try {
+            fn?.();
+        } catch {
+            /* best-effort */
+        }
     }
 });
 
+function withScratch(setup: Scratch) {
+    cleanups.push(() => {
+        process.argv = setup.originalArgv;
+        if (existsSync(setup.project)) {
+            rmSync(setup.project, { recursive: true, force: true });
+        }
+    });
+}
+
 describe('runAgentAdopt — happy path', () => {
     it('runs inject → apply → patchers → verify and writes the report', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: true, message: 'apply ok' });
         setupCliMock.runVerify.mockResolvedValue({ ok: true, message: 'verify ok' });
         setupCliMock.applyFrameworkPatchers.mockResolvedValue({ express: ['noop'], fastapi: [] });
 
-        process.argv = ['node', 'agent-adopt', '--project', project];
+        process.argv = ['node', 'agent-adopt', '--project', s.project];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(0);
@@ -68,7 +93,7 @@ describe('runAgentAdopt — happy path', () => {
         expect(setupCliMock.applyFrameworkPatchers).toHaveBeenCalledOnce();
         expect(setupCliMock.runVerify).toHaveBeenCalledOnce();
 
-        const report = join(project, 'EEP_ADOPTION_REPORT.md');
+        const report = join(s.project, 'EEP_ADOPTION_REPORT.md');
         expect(existsSync(report)).toBe(true);
         const text = readFileSync(report, 'utf8');
         expect(text).toContain('setup-cli inject');
@@ -80,11 +105,13 @@ describe('runAgentAdopt — happy path', () => {
 
 describe('runAgentAdopt — early exits on failure', () => {
     it('aborts with code 2 when inject fails and writes a failure report', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: false, message: 'detect failed' });
 
-        process.argv = ['node', 'agent-adopt', '--project', project];
+        process.argv = ['node', 'agent-adopt', '--project', s.project];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(2);
@@ -92,17 +119,19 @@ describe('runAgentAdopt — early exits on failure', () => {
         expect(setupCliMock.applyFrameworkPatchers).not.toHaveBeenCalled();
         expect(setupCliMock.runVerify).not.toHaveBeenCalled();
 
-        const text = readFileSync(join(project, 'EEP_ADOPTION_REPORT.md'), 'utf8');
+        const text = readFileSync(join(s.project, 'EEP_ADOPTION_REPORT.md'), 'utf8');
         expect(text).toMatch(/setup-cli inject.*failed/);
     });
 
     it('aborts with code 2 when apply fails', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: false, message: 'codegen err' });
 
-        process.argv = ['node', 'agent-adopt', '--project', project];
+        process.argv = ['node', 'agent-adopt', '--project', s.project];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(2);
@@ -111,14 +140,16 @@ describe('runAgentAdopt — early exits on failure', () => {
     });
 
     it('aborts with code 2 when verify fails', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: true, message: 'apply ok' });
         setupCliMock.applyFrameworkPatchers.mockResolvedValue({ express: [], fastapi: [] });
         setupCliMock.runVerify.mockResolvedValue({ ok: false, message: 'manifest mismatch' });
 
-        process.argv = ['node', 'agent-adopt', '--project', project];
+        process.argv = ['node', 'agent-adopt', '--project', s.project];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(2);
@@ -127,13 +158,15 @@ describe('runAgentAdopt — early exits on failure', () => {
 
 describe('runAgentAdopt — flags', () => {
     it('--no-patch skips applyFrameworkPatchers', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: true, message: 'apply ok' });
         setupCliMock.runVerify.mockResolvedValue({ ok: true, message: 'verify ok' });
 
-        process.argv = ['node', 'agent-adopt', '--project', project, '--no-patch'];
+        process.argv = ['node', 'agent-adopt', '--project', s.project, '--no-patch'];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(0);
@@ -141,15 +174,16 @@ describe('runAgentAdopt — flags', () => {
     });
 
     it('--help prints usage and returns 0 without invoking setup-cli', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         const stderrWrite = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
         process.argv = ['node', 'agent-adopt', '--help'];
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(0);
         expect(setupCliMock.runInject).not.toHaveBeenCalled();
-        expect(stderrWrite).toHaveBeenCalled();
         const allOutput = stderrWrite.mock.calls.map((c) => String(c[0])).join('');
         expect(allOutput).toContain('Usage: eep-adopt');
 
@@ -157,42 +191,49 @@ describe('runAgentAdopt — flags', () => {
     });
 
     it('--report writes the adoption report at the provided path', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: true, message: 'apply ok' });
         setupCliMock.runVerify.mockResolvedValue({ ok: true, message: 'verify ok' });
         setupCliMock.applyFrameworkPatchers.mockResolvedValue({ express: [], fastapi: [] });
 
-        const customReport = join(project, 'custom-report.md');
-        process.argv = ['node', 'agent-adopt', '--project', project, '--report', customReport];
+        const customReport = join(s.project, 'custom-report.md');
+        process.argv = ['node', 'agent-adopt', '--project', s.project, '--report', customReport];
 
-        const { runAgentAdopt } = await import('./index.js');
         await runAgentAdopt();
 
         expect(existsSync(customReport)).toBe(true);
         // Default location MUST NOT be written when --report is provided.
-        expect(existsSync(join(project, 'EEP_ADOPTION_REPORT.md'))).toBe(false);
+        expect(existsSync(join(s.project, 'EEP_ADOPTION_REPORT.md'))).toBe(false);
     });
 });
 
 describe('runAgentAdopt — compliance step', () => {
     it('skips compliance when no --compliance-target is given', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: true, message: 'apply ok' });
         setupCliMock.runVerify.mockResolvedValue({ ok: true, message: 'verify ok' });
         setupCliMock.applyFrameworkPatchers.mockResolvedValue({ express: [], fastapi: [] });
 
-        process.argv = ['node', 'agent-adopt', '--project', project];
+        process.argv = ['node', 'agent-adopt', '--project', s.project];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(0);
         expect(childProcessMock.spawn).not.toHaveBeenCalled();
-        const text = readFileSync(join(project, 'EEP_ADOPTION_REPORT.md'), 'utf8');
+        const text = readFileSync(join(s.project, 'EEP_ADOPTION_REPORT.md'), 'utf8');
         expect(text).toContain('skipped');
     });
 
     it('honours --no-compliance even when target is provided', async () => {
+        const s = freshScratch();
+        withScratch(s);
+
         setupCliMock.runInject.mockResolvedValue({ ok: true, message: 'inject ok' });
         setupCliMock.runApply.mockResolvedValue({ ok: true, message: 'apply ok' });
         setupCliMock.runVerify.mockResolvedValue({ ok: true, message: 'verify ok' });
@@ -202,13 +243,12 @@ describe('runAgentAdopt — compliance step', () => {
             'node',
             'agent-adopt',
             '--project',
-            project,
+            s.project,
             '--compliance-target',
             'https://api.example.com',
             '--no-compliance',
         ];
 
-        const { runAgentAdopt } = await import('./index.js');
         const code = await runAgentAdopt();
 
         expect(code).toBe(0);

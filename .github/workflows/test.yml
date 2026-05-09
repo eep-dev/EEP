@@ -192,6 +192,8 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: node dist/index.js --help
+      - name: Run agent-adopt vitest suite
+        run: npx vitest run
 
   test-middleware:
     runs-on: ubuntu-latest

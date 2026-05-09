@@ -4,7 +4,12 @@ import { writeFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { exit, argv, stderr, stdout } from "node:process";
+// Note: we deliberately do NOT use `import { argv } from "node:process"`. That
+// form binds the array reference at module load time, so a later
+// `process.argv = [...]` (e.g. from a vitest suite) is invisible to
+// runAgentAdopt. Reading `process.argv` at call time picks up the
+// current value.
+import { exit, stderr, stdout } from "node:process";
 import { runApply, runInject, runVerify, applyFrameworkPatchers } from "@eep-dev/setup-cli";
 
 type StepLog = { step: string; ok: boolean; details?: string };
@@ -97,7 +102,7 @@ async function writeReport(
 }
 
 export async function runAgentAdopt(): Promise<number> {
-  const a = argv;
+  const a = process.argv;
   const project = resolve(readToken(a, "--project", "-p") ?? ".");
   const outConfig = readToken(a, "--config") ?? join(project, "eep-setup.json");
   const outGen = readToken(a, "--output") ?? join(project, "eep-generated");
@@ -187,8 +192,20 @@ export async function runAgentAdopt(): Promise<number> {
   return 0;
 }
 
+// Entry-point gate. When the file is loaded as a module (e.g. by a vitest
+// suite that imports `./index.js`), process.argv[1] may point at a value
+// that does not exist on disk (the test runner's argv, or a mocked argv).
+// realpathSync would throw ENOENT in that case, so the gate is wrapped in
+// a try/catch and defaults to "not main" — only direct CLI invocation
+// where both paths resolve and match should trigger runAgentAdopt().
 const here = fileURLToPath(import.meta.url);
-if (process.argv[1] && realpathSync(here) === realpathSync(process.argv[1])) {
+let isMain = false;
+try {
+  isMain = Boolean(process.argv[1]) && realpathSync(here) === realpathSync(process.argv[1]!);
+} catch {
+  isMain = false;
+}
+if (isMain) {
   runAgentAdopt()
     .then((code) => exit(code))
     .catch((e) => {

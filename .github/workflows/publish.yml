@@ -69,8 +69,8 @@ jobs:
         run: npm install && npm run build && npx vitest run --reporter=dot
         working-directory: packages/@eep-dev/setup-cli
 
-      - name: Build @eep-dev/agent-adopt
-        run: npm install && npm run build && node dist/index.js --help
+      - name: Test @eep-dev/agent-adopt
+        run: npm install && npm run build && node dist/index.js --help && npx vitest run --reporter=dot
         working-directory: packages/@eep-dev/agent-adopt
 
       - name: npm high-severity audit gate
