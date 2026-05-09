@@ -56,6 +56,126 @@ The EEP specification uses the Apache 2.0 license. Implementations are free to b
 
 ---
 
+## Intellectual property, trademark, and independence
+
+EEP is intended to be neutral, vendor-independent infrastructure for the
+agentic web. This section makes the operational reality of that intent
+explicit so that implementors, contributors, sponsors, and downstream
+consumers can review the project's IP posture before adopting it.
+
+### Inbound = outbound (Apache 2.0)
+
+Every contribution accepted into this repository is licensed under the same
+Apache 2.0 terms that cover the project itself (see [LICENSE](./LICENSE)).
+Contributors retain copyright in their contributions; the project does not
+require a Contributor License Agreement (CLA) at this time.
+
+### Developer Certificate of Origin (DCO)
+
+All commits to `main` MUST carry a `Signed-off-by:` trailer, matching the
+[Developer Certificate of Origin v1.1](https://developercertificate.org/).
+This is enforced by CI; use `git commit -s` to add the trailer
+automatically. The DCO is a lightweight per-commit assertion that the
+contributor has the right to submit the work under the project's license,
+and is the recommended alternative to a CLA for foundation-aligned
+projects.
+
+### Patents
+
+The Apache 2.0 license includes an explicit patent grant from contributors
+(§3 of the license). By submitting a contribution, a contributor grants the
+project and its downstream users a perpetual, worldwide, non-exclusive,
+royalty-free patent license covering that contribution, on the terms set
+out in the license.
+
+### Trademark
+
+"EEP" and "Entity Engagement Protocol" are project names used by the
+community to identify the specification and its conforming implementations.
+The project does not currently assert a registered trademark, and does not
+restrict factual or nominative uses (e.g. "this library implements EEP",
+"EEP-compatible"). Implementations and products MUST NOT use the name in a
+way that suggests endorsement, affiliation, or certification by the EEP
+project unless they have passed the relevant conformance tier
+([TESTING.md](./TESTING.md)) and obtained a corresponding conformance
+credential.
+
+If, in a future phase, the project elects to register a trademark, the
+intention is to do so under a foundation or other neutral steward, with a
+public usage policy aligned with the
+[Linux Foundation Trademark Usage Guidelines](https://www.linuxfoundation.org/legal/trademark-usage)
+or the
+[Apache Software Foundation trademark policy](https://www.apache.org/foundation/marks/),
+not under any individual contributor or commercial entity.
+
+### Domains and accounts
+
+The following project assets are operated by the core team listed at the
+top of this document. Any change of steward will be announced in this
+section before it takes effect:
+
+- `eep.dev` — primary domain, currently operated by the EEP core team
+- `https://github.com/eep-dev` — the GitHub organization that hosts
+  `EEP` and `eep-site`
+- `hello@eep.dev` — security and general contact mailbox
+
+The intent is for these assets to be transferred to a neutral foundation
+(or equivalent steward) on or before the v1.0 transition, in conjunction
+with the formation of the Technical Steering Committee (see
+[ROADMAP.md](./ROADMAP.md)).
+
+### Independence from any commercial sponsor
+
+Several core-team members are affiliated with academic institutions,
+research partners, or commercial entities (notably MUDT and BeneluxSoft).
+Some companies — including, but not limited to, more.md — have adopted EEP
+in their products, and individuals from those companies contribute back to
+the specification. To prevent any single sponsor from steering the
+specification:
+
+1. **No commercial entity has a controlling vote** over the spec, schemas,
+   or conformance test suite. Decisions follow the EEIP lifecycle and the
+   governance phase in force (BDFN until v1.0; TSC majority thereafter).
+2. **Spec changes that primarily benefit a single product** require an
+   EEIP with the standard 60-day public review and at least one independent
+   implementation before reaching `Final`.
+3. **Conformance test ownership** lives in this repository and follows
+   the same governance as the specification. Conformance credentials
+   (`EEPConformanceCredential_*`) MUST be issued from project-controlled
+   keys, not from sponsor-controlled keys.
+4. **Funding and infrastructure sponsorship** disclosures (CI minutes,
+   hosting, audit costs) will be published in this section once the
+   project formally accepts external funding.
+
+If a contributor or maintainer becomes aware of a conflict between a
+commercial sponsor's product roadmap and the integrity of the spec, they
+SHOULD raise it on the `governance` issue label. The core team commits to
+publishing a written response within 14 days.
+
+### Conflict of interest
+
+Maintainers and TSC members MUST disclose, in their public profile or in
+[MAINTAINERS.md](./MAINTAINERS.md):
+
+- Their primary employer.
+- Any commercial product they own or maintain that depends on, or
+  competes with, EEP.
+- Any compensation received from a sponsor in connection with their
+  EEP work.
+
+When a maintainer has a conflict on a specific decision (e.g. an EEIP that
+materially affects their employer's product), they MUST recuse themselves
+from the vote and note the recusal in the PR.
+
+### Legal contact
+
+Legal questions about this section, the trademark, or any reuse of the EEP
+name should be sent to `hello@eep.dev` with `[Legal]` in the subject. The
+core team will route the question to the appropriate contributor or, where
+necessary, decline to comment until the v1.0 foundation transition.
+
+---
+
 ## EEIP Lifecycle (EEP Improvement Proposals)
 
 EEIPs are the formal mechanism for proposing changes to the EEP specification. All protocol-level changes, new gate types, new event types, and breaking modifications MUST go through the EEIP process.

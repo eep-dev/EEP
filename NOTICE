@@ -1,0 +1,83 @@
+Entity Engagement Protocol (EEP)
+Copyright 2026 The EEP Authors and Contributors
+
+This product includes software developed by the EEP project
+(https://github.com/eep-dev/EEP) and its contributors, listed in
+GOVERNANCE.md and the project's git history.
+
+This NOTICE file is provided in compliance with Section 4(d) of the
+Apache License, Version 2.0 (see LICENSE).
+
+================================================================================
+Third-party software notices
+================================================================================
+
+The following third-party libraries are used by EEP packages at runtime.
+Their licenses are reproduced or referenced as required.
+
+--------------------------------------------------------------------------------
+Pydantic (MIT)
+  - Used by: eep-gates (Python)
+  - Source:  https://github.com/pydantic/pydantic
+  - License: https://github.com/pydantic/pydantic/blob/main/LICENSE
+  - Copyright (c) 2017 to present Pydantic Services Inc. and individual
+    contributors.
+
+--------------------------------------------------------------------------------
+FastAPI (MIT)
+  - Used by: eep-middleware (Python)
+  - Source:  https://github.com/fastapi/fastapi
+  - License: https://github.com/fastapi/fastapi/blob/master/LICENSE
+  - Copyright (c) 2018 Sebastián Ramírez
+
+--------------------------------------------------------------------------------
+HTTPX (BSD-3-Clause)
+  - Used by: eep-compliance-cli (Python), tests/cross-impl
+  - Source:  https://github.com/encode/httpx
+  - License: https://github.com/encode/httpx/blob/master/LICENSE.md
+  - Copyright (c) 2019, Encode OSS Ltd.
+  - Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the conditions of the
+    BSD-3-Clause license are met. Neither the name of the copyright holder
+    nor the names of its contributors may be used to endorse or promote
+    products derived from this software without specific prior written
+    permission.
+
+================================================================================
+Specifications & standards referenced (informative)
+================================================================================
+
+EEP normatively or informatively references the following open
+specifications. Their texts are not redistributed in this repository; the
+references are provided for credit and traceability.
+
+  - CloudEvents v1.0.2 (CNCF, Apache-2.0)
+    https://github.com/cloudevents/spec
+  - W3C Decentralized Identifiers (DID) v1.0
+    https://www.w3.org/TR/did-core/
+  - W3C Verifiable Credentials Data Model v1.1 / v2.0
+    https://www.w3.org/TR/vc-data-model/
+  - W3C Server-Sent Events
+    https://www.w3.org/TR/eventsource/
+  - IETF RFC 6455 (The WebSocket Protocol)
+  - IETF RFC 5246 / 8446 (TLS 1.2 / 1.3)
+  - IETF RFC 2119 / 8174 (Key words for use in RFCs)
+  - Standard Webhooks (https://www.standardwebhooks.com/)
+
+================================================================================
+Build- and test-time tooling
+================================================================================
+
+The following tools are used during development and CI but are NOT
+distributed as part of any published EEP package and are listed here for
+informational completeness only:
+
+  TypeScript (Apache-2.0), Vitest (MIT), @vitest/coverage-v8 (MIT),
+  @types/node (MIT), pytest (MIT), pytest-asyncio (Apache-2.0),
+  pytest-cov (MIT), pip-audit (Apache-2.0), build (MIT), twine (Apache-2.0).
+
+================================================================================
+
+If you believe a third-party component is missing from this NOTICE, please
+open an issue at https://github.com/eep-dev/EEP/issues so the maintainers
+can correct it.
