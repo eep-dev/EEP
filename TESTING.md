@@ -7,7 +7,13 @@ bash scripts/bootstrap.sh
 bash test.sh
 ```
 
-This runs schema validation tests and package test suites (core TS/Python packages and `tests/cross-impl` against `http://localhost:3002`; start **`examples/node-gate-publisher`** first or cross-impl fails).
+This runs schema validation and core TS/Python package tests, but skips cross-implementation network tests.
+
+```bash
+bash test.sh --full
+```
+
+Adding `--full` runs `tests/cross-impl`. Under the hood, this will transparently start the `examples/node-gate-publisher` server in the background and verify HTTP protocol compliance.
 
 **Not in `test.sh` (run separately or rely on CI):** `packages/@eep-dev/middleware`, `packages/@eep-dev/mcp-bridge`, `packages/@eep-dev/setup-cli`, `packages/@eep-dev/agent-adopt` (no separate test suite yet; depends on `setup-cli`), `packages/eep-middleware-python`, `packages/eep-mcp-bridge-python`. GitHub Actions runs these in [.github/workflows/test.yml](.github/workflows/test.yml). Locally:
 

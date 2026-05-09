@@ -101,7 +101,18 @@ See [eep-positioning-complementary.md](./docs/guides/eep-positioning-complementa
 bash scripts/bootstrap.sh
 ```
 
-Run the full test matrix: [TESTING.md](./TESTING.md) (`bash test.sh` after bootstrap).
+### Testing
+Run the test matrix: [TESTING.md](./TESTING.md)
+
+```bash
+bash test.sh
+```
+
+To run the *full* test matrix including cross-implementation network tests (this implicitly starts a background server):
+
+```bash
+bash test.sh --full
+```
 
 ### For subscribers (sketch)
 
