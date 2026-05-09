@@ -1,0 +1,1 @@
+{"specversion":"1.0","type":"com.example.entity.updated","source":"did:web:test.eep.dev:u:alice","id":"evt-4","time":"2026-05-09T12:00:00Z","data":{}}

@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "spec_section": "§4 Discovery",
+  "schema": "schemas/v0.1/eep-manifest.json",
+  "asserts": [
+    "eep_version is present and matches the implementation's announced version",
+    "endpoints.discovery, .subscribe, .stream are absolute https URLs",
+    "endpoints.pulse is an absolute wss URL",
+    "supported_layers is a non-empty subset of {state_resolution, signal_stream, network_pulse}",
+    "conformance_level is one of {Core, Standard, Full}"
+  ]
+}

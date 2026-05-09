@@ -1,0 +1,10 @@
+{
+  "valid": true,
+  "spec_section": "§6 Subscription lifecycle",
+  "schema": "schemas/v0.1/subscription.request.json",
+  "asserts": [
+    "delivery_method='webhook' MUST require delivery_url.",
+    "delivery_url MUST pass SSRF validation (no private IPs, no localhost, no metadata services).",
+    "event_types follow reverse-DNS naming and may use trailing wildcards."
+  ]
+}

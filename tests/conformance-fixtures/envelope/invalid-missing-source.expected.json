@@ -1,0 +1,9 @@
+{
+  "valid": false,
+  "spec_section": "§5 Event envelope",
+  "reason": "missing_required_field",
+  "missing_field": "source",
+  "asserts": [
+    "CloudEvents requires `source`. EEP requires it to be the publisher's DID URI."
+  ]
+}

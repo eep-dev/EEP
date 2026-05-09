@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.test.eep.dev/o/acme/admin/audit_log",
+    "agent_did": "did:web:test.eep.dev:agent:test-agent",
+    "agent_proofs": [
+      {
+        "type": "credential",
+        "credential_type": "EmployeeOf",
+        "issuer": "did:web:test.eep.dev:o:acme",
+        "subject": "did:web:test.eep.dev:agent:test-agent"
+      }
+    ]
+  },
+  "gate_config": {
+    "version": "1",
+    "tiers": {
+      "employee": { "scope": ["content.internal.*"] },
+      "admin": {
+        "scope": ["content.admin.*"],
+        "requires": [
+          { "type": "credential", "credential_type": "AdminOf" }
+        ]
+      }
+    }
+  },
+  "requested_scope": "content.admin.audit_log"
+}

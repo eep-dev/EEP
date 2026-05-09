@@ -1,0 +1,14 @@
+{
+  "specversion": "1.0",
+  "type": "com.example.entity.updated",
+  "source": "did:web:test.eep.dev:u:alice",
+  "id": "evt-01HN3QK7GX",
+  "time": "2026-05-09T12:00:00Z",
+  "datacontenttype": "application/json",
+  "subject": "u:alice",
+  "data": {
+    "field": "value"
+  },
+  "eepversion": "0.1",
+  "eepdelivery": "webhook"
+}

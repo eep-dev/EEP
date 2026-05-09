@@ -1,0 +1,22 @@
+{
+  "eep_version": "0.1",
+  "publisher_did": "did:web:test.eep.dev:o:acme",
+  "endpoints": {
+    "discovery": "https://test.eep.dev/.well-known/eep.json",
+    "subscribe": "https://test.eep.dev/eep/subscribe",
+    "stream": "https://test.eep.dev/eep/stream",
+    "pulse": "wss://test.eep.dev/eep/pulse"
+  },
+  "supported_layers": ["state_resolution", "signal_stream", "network_pulse"],
+  "delivery_methods": ["sse", "webhook"],
+  "conformance_level": "Standard",
+  "rate_limits": {
+    "default_per_minute": 600,
+    "default_per_day": 100000
+  },
+  "auth": {
+    "schemes": ["bearer", "did_signed"],
+    "did_methods": ["did:web", "did:key"]
+  },
+  "issued_at": "2026-05-09T12:00:00Z"
+}

@@ -1,0 +1,10 @@
+{
+  "source_did": "did:web:test.eep.dev:o:acme",
+  "event_types": [
+    "com.example.entity.updated",
+    "com.example.trust.changed"
+  ],
+  "delivery_method": "webhook",
+  "delivery_url": "https://subscriber.example.com/hooks/eep",
+  "auth_token": "Bearer SUBSCRIBER_API_KEY"
+}

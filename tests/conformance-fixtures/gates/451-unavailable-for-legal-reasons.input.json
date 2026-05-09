@@ -1,0 +1,18 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.test.eep.dev/o/acme/recall_notice",
+    "agent_did": "did:web:test.eep.dev:agent:test-agent",
+    "agent_proofs": [],
+    "agent_jurisdiction": "EU"
+  },
+  "gate_config": {
+    "version": "1",
+    "geo_restrictions": {
+      "scope": "content.recall_notice",
+      "blocked_jurisdictions": ["EU", "UK"],
+      "legal_basis": "EU Product Safety Regulation 2023/988 §17"
+    }
+  },
+  "requested_scope": "content.recall_notice"
+}

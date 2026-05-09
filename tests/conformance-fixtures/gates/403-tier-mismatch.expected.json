@@ -1,0 +1,18 @@
+{
+  "valid": true,
+  "spec_section": "§7 Gates and access control",
+  "schema": "schemas/v0.1/gate.403-response.json",
+  "expected_status": 403,
+  "expected_response": {
+    "type": "https://eep.dev/errors/forbidden",
+    "title": "Forbidden",
+    "reason": "tier_credential_mismatch",
+    "scope": "content.admin.audit_log",
+    "tier_required": "admin"
+  },
+  "asserts": [
+    "Agent has a valid EmployeeOf credential but the requested scope requires AdminOf.",
+    "Implementations MUST NOT auto-elevate by partial credential match.",
+    "The 403 body SHOULD include the tier and scope to help the caller fix the request."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.test.eep.dev/u/alice/papers/full_text",
+    "agent_did": "did:web:test.eep.dev:agent:test-agent",
+    "agent_proofs": []
+  },
+  "gate_config": {
+    "version": "1",
+    "tiers": {
+      "free": {
+        "scope": ["public.summary"]
+      },
+      "premium": {
+        "scope": ["content.papers.full_text"],
+        "requires": [
+          { "type": "payment", "currency": "USD", "amount": "5.00" }
+        ]
+      }
+    }
+  },
+  "requested_scope": "content.papers.full_text"
+}

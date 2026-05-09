@@ -1,0 +1,11 @@
+{
+  "publisher_did": "did:web:test.eep.dev:o:acme",
+  "endpoints": {
+    "discovery": "https://test.eep.dev/.well-known/eep.json",
+    "subscribe": "https://test.eep.dev/eep/subscribe",
+    "stream": "https://test.eep.dev/eep/stream"
+  },
+  "supported_layers": ["signal_stream"],
+  "delivery_methods": ["sse"],
+  "conformance_level": "Core"
+}

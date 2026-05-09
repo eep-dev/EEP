@@ -1,0 +1,146 @@
+name: "Reference implementation RFC"
+description: "Propose a new EEP reference implementation in a language or runtime that is not currently covered (e.g. Go, Rust, Java/Kotlin, .NET, Swift, Elixir)."
+title: "[RFC] Reference implementation: <language/runtime>"
+labels: ["rfc", "reference-implementation", "ecosystem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for considering a new EEP reference implementation. The
+        goal of this RFC is to align scope, ownership, and conformance
+        bar before code is written, so that the eventual implementation
+        can be cited as a peer of the TypeScript and Python reference
+        packages.
+
+        Before filing, please review:
+
+        - [SPECIFICATION.md](https://github.com/eep-dev/EEP/blob/main/docs/current/SPECIFICATION.md)
+        - [ROADMAP.md](https://github.com/eep-dev/EEP/blob/main/ROADMAP.md)
+        - [tests/conformance-fixtures](https://github.com/eep-dev/EEP/tree/main/tests/conformance-fixtures)
+          — your implementation must pass these
+        - [GOVERNANCE.md § Independence](https://github.com/eep-dev/EEP/blob/main/GOVERNANCE.md#independence-from-any-commercial-sponsor)
+
+  - type: input
+    id: language
+    attributes:
+      label: Target language / runtime
+      placeholder: "Go 1.24+, Rust (stable), Java 21, ..."
+    validations:
+      required: true
+
+  - type: input
+    id: org
+    attributes:
+      label: Sponsoring organization (if any)
+      placeholder: "individual / company / research group"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Target conformance tier
+      description: Which tier do you commit to passing on first release?
+      options:
+        - "Core"
+        - "Standard"
+        - "Full"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: licensing
+    attributes:
+      label: License you intend to use
+      options:
+        - "Apache-2.0"
+        - "MIT"
+        - "BSD-3-Clause"
+        - "Other / propose"
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope on first release
+      description: What will your library / SDK ship on day 1?
+      placeholder: |
+        - HMAC sign + verify, 60s replay window
+        - Manifest discovery + Link header parsing
+        - SSE consumer
+        - Webhook receiver helper for <framework>
+        - Optional: gates client, MCP bridge port, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: What will you intentionally not build, and why?
+      placeholder: |
+        - Will not implement Layer 3 (pulse) in v0.1
+        - Will not ship a payment provider integration; rely on @eep-dev/gates remote
+    validations:
+      required: false
+
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Maintainership commitment
+      description: |
+        For an implementation to be cited as a "reference" we need a
+        person or team committing to triage and patch SLAs comparable to
+        the TypeScript / Python references. What is your commitment?
+      placeholder: |
+        - Two named maintainers, GitHub handles
+        - Triage SLA: 5 business days
+        - Security patch SLA: 14 days for high-severity
+        - Release cadence: quarterly minimum
+    validations:
+      required: true
+
+  - type: textarea
+    id: conformance
+    attributes:
+      label: Conformance plan
+      description: How will you prove conformance?
+      placeholder: |
+        - Run tests/conformance-fixtures in CI
+        - Run @eep-dev/compliance-cli against a reference deployment
+        - Issue a `EEPConformanceCredential_<Tier>` and publish it
+    validations:
+      required: true
+
+  - type: textarea
+    id: governance
+    attributes:
+      label: Governance & IP posture
+      description: |
+        See GOVERNANCE.md § Independence. If you are a commercial
+        sponsor, what firewall keeps your product roadmap from steering
+        the spec? If you are an independent maintainer, this can be a
+        single sentence.
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Proposed timeline
+      placeholder: |
+        - Week 0–4: scaffold, types, manifest discovery
+        - Week 4–8: signer + validator
+        - Week 8–12: gates client, conformance fixtures green
+        - Public release: <date>
+    validations:
+      required: false
+
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions for the EEP core team
+      description: Anything you need clarified before scoping commits.
+    validations:
+      required: false

@@ -1,64 +1,263 @@
-# draft-eep-protocol-core-00
-
-**Internet-Draft**  
-**EEP Core Protocol**  
-**Intended status:** Informational  
-**Expires:** October 2026  
-
-**Authors:** EEP Core Team  
-**Email:** hello@eep.dev  
-
-## Abstract
-
-The Entity Engagement Protocol (EEP) defines how digital entities publish real-time state change events and how authorized subscribers receive them. It uses three transport layers: state resolution (REST), signal stream (SSE and Webhooks), and network pulse (WebSockets). EEP supports the agentic web, where AI agents participate directly in digital interactions.
-
-This document describes the core normative wire format, event envelope, discovery mechanisms, and conformance levels.
-
-See the full specification at https://github.com/eep-dev/EEP/blob/main/docs/current/SPECIFICATION.md for complete normative text, schemas, and reference implementation.
-
-## Status of This Memo
-
-This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.
-
-Internet-Drafts are working documents of the Internet Engineering Task Force (IETF). Note that other groups may also distribute working documents as Internet-Drafts. The list of current Internet-Drafts is at https://datatracker.ietf.org/drafts/current/.
-
-Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time. It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."
-
-This Internet-Draft will expire on October 2026.
-
-## Copyright Notice
-
-Copyright (c) 2026 IETF Trust and the persons identified as the document authors. All rights reserved.
-
-This document is subject to BCP 78 and the IETF Trust's Legal Provisions Relating to IETF Documents (https://trustee.ietf.org/license-info) in effect on the date of publication of this document. Please review these documents carefully, as they describe your rights and restrictions with respect to this document.
-
-## Table of Contents
-
-1. Introduction
-2. Terminology
-3. Layer 1: State Resolution
-4. Layer 2: Signal Stream
-5. Event Envelope
-6. Discovery
-7. Conformance Levels
-8. Security Considerations
-9. IANA Considerations
-10. Normative References
-
-(Full content mirrors EEP/docs/current/SPECIFICATION.md sections; this skeleton is for IETF submission process. See the normative specification for wire format details.)
-
-## 1. Introduction
-
-EEP standardizes push-based verifiable communication for agents. See the full specification for normative requirements.
-
-## Normative References
-
-- [EEP-SPEC] "Entity Engagement Protocol Specification v0.1", EEP Core Team, April 2026, <https://github.com/eep-dev/EEP/blob/main/docs/current/SPECIFICATION.md>.
-
-## Security Considerations
-
-See the full specification's security section and WHITEPAPER.tex for detailed analysis (replay protection, HMAC, DID cache, fail-closed defaults, PQC hybrid policy).
-
 ---
+title: "EEP Core Protocol"
+abbrev: "EEP-Core"
+docname: draft-eep-protocol-core-00
+category: info
+ipr: trust200902
+area: applications
+workgroup: ""
+keyword: [agents, webhooks, sse, websockets, did, verifiable-credentials, cloudevents, agentic-web]
+stand_alone: yes
+pi: [toc, sortrefs, symrefs]
 
-This is a starting skeleton for `draft-eep-protocol-core-00`. Submit via IETF datatracker after community review. Update with feedback per the roadmap in docs/standards/ietf-w3c-readiness-roadmap.md.
+author:
+  -
+    ins: U. Cekmez
+    name: Ugur Cekmez
+    organization: "Munich University of Digital Technologies and Applied Sciences"
+    email: hello@eep.dev
+
+informative:
+  EEP-SPEC:
+    title: "Entity Engagement Protocol Specification v0.1"
+    target: https://github.com/eep-dev/EEP/blob/main/docs/current/SPECIFICATION.md
+    author:
+      -
+        organization: "The EEP Authors and Contributors"
+    date: 2026
+
+normative:
+  RFC2119:
+  RFC8174:
+  RFC3986:
+  RFC3339:
+  RFC7725:
+  RFC9110:
+  W3C.SSE:
+    title: "Server-Sent Events"
+    target: https://www.w3.org/TR/eventsource/
+    author:
+      -
+        organization: "World Wide Web Consortium"
+    date: 2009
+  W3C.DID:
+    title: "Decentralized Identifiers (DIDs) v1.0"
+    target: https://www.w3.org/TR/did-core/
+    author:
+      -
+        organization: "World Wide Web Consortium"
+    date: 2022
+  W3C.VC:
+    title: "Verifiable Credentials Data Model v2.0"
+    target: https://www.w3.org/TR/vc-data-model-2.0/
+    author:
+      -
+        organization: "World Wide Web Consortium"
+    date: 2025
+  CLOUDEVENTS:
+    title: "CloudEvents — Specification v1.0.2"
+    target: https://github.com/cloudevents/spec
+    author:
+      -
+        organization: "Cloud Native Computing Foundation (CNCF)"
+    date: 2024
+  STANDARD-WEBHOOKS:
+    title: "Standard Webhooks"
+    target: https://www.standardwebhooks.com/
+    date: 2024
+
+--- abstract
+
+The Entity Engagement Protocol (EEP) describes how digital entities
+publish real-time state-change events and how authorized subscribers
+receive them. EEP defines three composable transport layers: state
+resolution over HTTP REST, signal delivery over Server-Sent Events (SSE)
+and Webhooks, and an optional bidirectional "network pulse" over
+WebSockets. Events follow the CloudEvents v1.0.2 envelope; webhook
+deliveries are signed using HMAC-SHA256 in alignment with the Standard
+Webhooks convention. Optional access gates allow publishers to require
+identity, credentials, payment, or signed agreements before serving an
+event stream. EEP composes with — and does not replace — Decentralized
+Identifiers (DID), Verifiable Credentials (VC), CloudEvents, and the
+Model Context Protocol (MCP). This document specifies the Core
+conformance tier; richer "Standard" and "Full" tiers are defined in the
+companion specification at {{EEP-SPEC}}.
+
+--- middle
+
+# Introduction
+
+The world wide web evolved around the assumption that the consumer of
+a resource is either a human-driven browser or a backend service polling
+on a custom schedule. Increasingly, the consumer is an autonomous agent
+that needs to (1) discover an entity (person, organization, product,
+agent), (2) subscribe to changes in that entity's state, (3) verify the
+authenticity of received events, and (4) interact with optional
+identity, credential, payment, or agreement gates that the publisher may
+require. Today every publisher solves these problems differently,
+forcing each consumer to write a bespoke integration.
+
+EEP standardizes the four problems above as a single, layered protocol.
+The Core tier covered by this document is sufficient to discover an
+entity and receive signed events from it; richer tiers and sector
+extensions are described in the companion specification.
+
+# Terminology
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+"OPTIONAL" in this document are to be interpreted as described in
+BCP 14 {{RFC2119}}{{RFC8174}} when, and only when, they appear in all
+capitals, as shown here.
+
+The following terms have specific meaning in EEP:
+
+Entity:
+: An identifiable subject in the EEP universe — a person, organization,
+  agent, product, listing, or other addressable thing — denoted by a DID
+  {{W3C.DID}}.
+
+Publisher:
+: A service that exposes one or more entities and emits state-change
+  events about them.
+
+Subscriber:
+: A consumer (typically an automated agent) that receives events from
+  one or more publishers.
+
+Pulse channel:
+: An optional bidirectional WebSocket channel for low-latency commands
+  and negotiation.
+
+# Layer 1: State Resolution {#layer-1}
+
+A conforming publisher MUST expose a discovery document at
+`/.well-known/eep.json` per {{RFC9110}}. The document MUST be a JSON
+object that includes:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `eep_version` | string | yes | The EEP version supported, e.g. `"0.1"`. |
+| `publisher_did` | string | yes | An absolute DID URI per {{W3C.DID}}. |
+| `endpoints.discovery` | string (URI) | yes | Absolute https URL of this document. |
+| `endpoints.subscribe` | string (URI) | yes | Absolute https URL for subscribe / unsubscribe. |
+| `endpoints.stream` | string (URI) | yes | Absolute https URL for SSE stream. |
+| `endpoints.pulse` | string (URI) | no | Absolute wss URL for pulse channel, when supported. |
+| `supported_layers` | array | yes | Subset of `{state_resolution, signal_stream, network_pulse}`. |
+| `delivery_methods` | array | yes | Subset of `{sse, webhook}`. |
+| `conformance_level` | string | yes | One of `Core`, `Standard`, `Full`. |
+
+Subscribers MUST be able to fetch this document with a single HTTPS
+GET. Publishers MUST serve it over TLS.
+
+# Layer 2: Signal Stream {#layer-2}
+
+The signal stream is the only mandatory transport. A Core-conformant
+publisher MUST implement at least one of:
+
+- Server-Sent Events ({{W3C.SSE}}) at `endpoints.stream`, OR
+- Outbound HTTPS Webhooks signed per {#signing}.
+
+## Subscription
+
+A subscriber MAY register for events by POSTing to
+`endpoints.subscribe` a JSON body conforming to the
+`subscription.request.json` schema in {{EEP-SPEC}}. Required fields are
+`source_did`, `event_types`, and `delivery_method`; webhook
+subscriptions also require `delivery_url`.
+
+Publishers MUST validate `delivery_url` against
+{{!RFC1918}} / {{!RFC5735}} address ranges and reject any URL that
+resolves to a private, link-local, loopback, or cloud-metadata address
+(see {{security}}).
+
+## Event envelope {#envelope}
+
+EEP events use the CloudEvents v1.0.2 envelope {{CLOUDEVENTS}}. In
+addition to the core CloudEvents fields, EEP defines two extension
+attributes:
+
+- `eepversion` (string, REQUIRED): the spec version the publisher used,
+  matching the `EEP-Version` response header.
+- `eepdelivery` (string, OPTIONAL): one of `webhook`, `sse`, `pulse`.
+
+EEP event types MUST follow reverse-DNS naming, e.g.
+`com.example.entity.updated`. Event types MAY use a trailing wildcard
+in subscriptions (e.g. `com.example.entity.*`).
+
+## Signing {#signing}
+
+Webhook deliveries MUST be signed using HMAC-SHA256 in alignment with
+{{STANDARD-WEBHOOKS}}. The signed content is the concatenation
+`{webhook-id}.{webhook-timestamp}.{raw-body}`, where the three values
+are taken from the headers `webhook-id`, `webhook-timestamp`, and the
+HTTP body bytes respectively. The signature header takes the form
+`webhook-signature: v1,<base64-hmac>`. Multiple space-separated
+signatures MAY appear; subscribers MUST accept the message if any one
+of them verifies.
+
+Subscribers:
+
+- MUST reject deliveries whose `webhook-timestamp` is more than 60
+  seconds older or newer than the subscriber's wall clock.
+- MUST use a constant-time comparison to verify signatures.
+- MUST refuse signing secrets shorter than 16 octets.
+
+# Conformance Levels
+
+This document defines only the **Core** tier. The richer **Standard**
+and **Full** tiers, including gate types, commerce negotiation, and the
+WebSocket pulse channel, are defined in {{EEP-SPEC}}.
+
+A Core-conformant implementation MUST support {#layer-1} and the SSE or
+Webhook subset of {#layer-2}, including signing per {#signing}.
+
+# Security Considerations {#security}
+
+EEP inherits the threat model of any push-based delivery protocol.
+Implementations MUST take the following protections:
+
+1. **SSRF**: validate every subscriber-supplied delivery URL against
+   the address ranges in {{!RFC1918}} / {{!RFC5735}} and reject
+   localhost and cloud-metadata aliases. Re-validate the resolved IP
+   immediately before connect to defend against DNS rebinding.
+2. **Replay**: enforce the 60-second timestamp window in {#signing}
+   and a server-side nonce store on `webhook-id` for at least 60
+   seconds.
+3. **Key handling**: never log signing secrets or DID private keys;
+   redact in audit pipelines.
+4. **Revocation**: subscribers MUST honour `trust.signal.revoked`
+   events from the canonical EEP registry and MUST check DID Documents
+   for `doc.revoked` before accepting a proof.
+5. **Rate limits**: publishers MUST emit `Retry-After`,
+   `X-RateLimit-Remaining`, and `X-RateLimit-Reset` on 429 responses.
+6. **Legal restrictions**: publishers MUST use HTTP 451
+   ({{RFC7725}}) when an event is blocked specifically by law in the
+   subscriber's jurisdiction.
+
+# IANA Considerations
+
+This document defines:
+
+- **A new well-known URI** `/.well-known/eep.json` to be registered per
+  the procedure in {{!RFC8615}}. The intended use is publisher
+  discovery in EEP.
+- **CloudEvents extension attributes** `eepversion` and `eepdelivery`
+  to be registered in the CloudEvents Attributes registry.
+
+# Privacy Considerations
+
+EEP allows publishers to expose state changes to authenticated
+subscribers; published data SHOULD be classified per the publisher's
+privacy policy (see `operator.privacy-policy.json` in {{EEP-SPEC}}).
+Subscribers SHOULD NOT cache event bodies beyond what is required to
+deliver them to their downstream consumer; long-term retention of
+events that include personally-identifying data is governed by the
+publisher's stated retention policy.
+
+--- back
+
+# Acknowledgements
+
+The authors thank the EEP core team, BeneluxSoft, MUDT, and the early
+adopters listed in `registry/adopters.json`.

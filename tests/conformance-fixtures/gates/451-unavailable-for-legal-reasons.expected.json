@@ -1,0 +1,19 @@
+{
+  "valid": true,
+  "spec_section": "§7 Gates / legal restrictions",
+  "schema": "schemas/v0.1/gate.451-response.json",
+  "expected_status": 451,
+  "expected_response": {
+    "type": "https://eep.dev/errors/unavailable-for-legal-reasons",
+    "title": "Unavailable for legal reasons",
+    "blocked_jurisdiction": "EU",
+    "legal_basis": "EU Product Safety Regulation 2023/988 §17"
+  },
+  "expected_headers": {
+    "Link": "<https://eep.dev/errors/unavailable-for-legal-reasons>; rel=\"blocked-by\""
+  },
+  "asserts": [
+    "451 is the correct status when content is blocked specifically because of jurisdictional law (RFC 7725).",
+    "Implementations MUST cite the legal basis and the blocked jurisdiction in the body."
+  ]
+}

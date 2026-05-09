@@ -1,0 +1,21 @@
+{
+  "valid": true,
+  "spec_section": "§9 Rate limiting",
+  "schema": "schemas/v0.1/gate.429-response.json",
+  "expected_status": 429,
+  "expected_headers": {
+    "Retry-After": "60",
+    "X-RateLimit-Remaining": "0",
+    "X-RateLimit-Reset": "1778414460"
+  },
+  "expected_response": {
+    "type": "https://eep.dev/errors/rate-limited",
+    "title": "Too many requests",
+    "retry_after_seconds": 60
+  },
+  "asserts": [
+    "Implementations MUST emit Retry-After when 429 is returned.",
+    "X-RateLimit-Remaining MUST be 0 in the limited response.",
+    "X-RateLimit-Reset is a unix timestamp in seconds."
+  ]
+}

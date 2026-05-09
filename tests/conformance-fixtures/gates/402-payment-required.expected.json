@@ -1,0 +1,20 @@
+{
+  "valid": true,
+  "spec_section": "§7 Gates and access control",
+  "schema": "schemas/v0.1/gate.402-response.json",
+  "expected_status": 402,
+  "expected_response": {
+    "type": "https://eep.dev/errors/payment-required",
+    "title": "Payment required",
+    "tier_required": "premium",
+    "scope": "content.papers.full_text",
+    "accepts": [
+      { "type": "payment", "currency": "USD", "amount": "5.00" }
+    ]
+  },
+  "asserts": [
+    "An agent with no proofs requesting a paid scope MUST receive 402.",
+    "Body MUST conform to gate.402-response.json schema.",
+    "tier_required MUST match the lowest-cost tier that grants the scope."
+  ]
+}

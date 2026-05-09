@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.test.eep.dev/u/alice/recent",
+    "agent_did": "did:web:test.eep.dev:agent:test-agent",
+    "agent_proofs": []
+  },
+  "rate_limit_state": {
+    "remaining_per_minute": 0,
+    "reset_at": "2026-05-09T12:01:00Z",
+    "window_seconds": 60
+  }
+}

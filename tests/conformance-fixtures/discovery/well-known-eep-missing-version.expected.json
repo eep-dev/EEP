@@ -1,0 +1,9 @@
+{
+  "valid": false,
+  "spec_section": "§4 Discovery",
+  "reason": "missing_required_field",
+  "missing_field": "eep_version",
+  "asserts": [
+    "Implementations MUST reject a discovery document that does not declare eep_version."
+  ]
+}

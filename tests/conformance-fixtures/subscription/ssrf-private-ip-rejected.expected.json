@@ -1,0 +1,11 @@
+{
+  "valid": false,
+  "spec_section": "§6 / §11 Security — SSRF prevention",
+  "reason": "ssrf_private_address",
+  "expected_status": 400,
+  "asserts": [
+    "RFC 1918 addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) MUST be rejected.",
+    "RFC 5735 / link-local / loopback / cloud-metadata addresses MUST be rejected.",
+    "Implementations MUST resolve DNS and re-check the resolved address (DNS rebinding defence)."
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "valid": false,
+  "reason": "secret_too_short",
+  "minimum_length": 16
+}

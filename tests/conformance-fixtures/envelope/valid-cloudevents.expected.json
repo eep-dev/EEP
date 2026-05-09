@@ -1,0 +1,13 @@
+{
+  "valid": true,
+  "spec_section": "§5 Event envelope",
+  "schema": "schemas/v0.1/event.envelope.json",
+  "asserts": [
+    "specversion is '1.0' (CloudEvents v1.0.2 alignment)",
+    "type follows reverse-DNS naming",
+    "source is an absolute URI (DID URIs are absolute per RFC 3986)",
+    "id is unique per source",
+    "time is RFC 3339",
+    "EEP extensions (eepversion, eepdelivery) are recognized"
+  ]
+}

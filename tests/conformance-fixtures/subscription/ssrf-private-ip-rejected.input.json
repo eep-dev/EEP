@@ -1,0 +1,6 @@
+{
+  "source_did": "did:web:test.eep.dev:o:acme",
+  "event_types": ["com.example.entity.updated"],
+  "delivery_method": "webhook",
+  "delivery_url": "https://10.0.0.1/hooks/eep"
+}

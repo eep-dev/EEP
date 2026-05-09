@@ -1,0 +1,163 @@
+{
+  "$schema": "https://eep.dev/schemas/v0.1/conformance-fixtures-manifest.json",
+  "spec_version": "0.1",
+  "schema_version": "v0.1",
+  "generated_at": "2026-05-09T12:00:00Z",
+  "description": "Offline test vectors for the Entity Engagement Protocol. See README.md for usage.",
+  "fixtures": [
+    {
+      "id": "discovery-well-known-eep-valid",
+      "category": "discovery",
+      "tier": "Core",
+      "spec_section": "§4 Discovery",
+      "schema": "schemas/v0.1/eep-manifest.json",
+      "input": "discovery/well-known-eep-valid.input.json",
+      "expected": "discovery/well-known-eep-valid.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "discovery-well-known-eep-missing-version",
+      "category": "discovery",
+      "tier": "Core",
+      "spec_section": "§4 Discovery",
+      "schema": "schemas/v0.1/eep-manifest.json",
+      "input": "discovery/well-known-eep-missing-version.input.json",
+      "expected": "discovery/well-known-eep-missing-version.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
+    },
+    {
+      "id": "envelope-valid-cloudevents",
+      "category": "envelope",
+      "tier": "Core",
+      "spec_section": "§5 Event envelope",
+      "schema": "schemas/v0.1/event.envelope.json",
+      "input": "envelope/valid-cloudevents.input.json",
+      "expected": "envelope/valid-cloudevents.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "envelope-invalid-missing-source",
+      "category": "envelope",
+      "tier": "Core",
+      "spec_section": "§5 Event envelope",
+      "schema": "schemas/v0.1/event.envelope.json",
+      "input": "envelope/invalid-missing-source.input.json",
+      "expected": "envelope/invalid-missing-source.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
+    },
+    {
+      "id": "signature-valid-fresh",
+      "category": "signature",
+      "tier": "Standard",
+      "spec_section": "§5.3 Signing / Standard Webhooks",
+      "path": "signature/valid-fresh-signature",
+      "shape": "signed-bundle",
+      "asserts_valid": true
+    },
+    {
+      "id": "signature-expired-timestamp",
+      "category": "signature",
+      "tier": "Standard",
+      "spec_section": "§5.3 Signing / Replay window",
+      "path": "signature/expired-timestamp",
+      "shape": "signed-bundle",
+      "asserts_valid": false
+    },
+    {
+      "id": "signature-wrong-secret",
+      "category": "signature",
+      "tier": "Standard",
+      "spec_section": "§5.3 Signing",
+      "path": "signature/wrong-secret",
+      "shape": "signed-bundle",
+      "asserts_valid": false
+    },
+    {
+      "id": "signature-short-secret-rejected",
+      "category": "signature",
+      "tier": "Standard",
+      "spec_section": "§5.3 Signing — secret minimum length",
+      "path": "signature/short-secret-rejected",
+      "shape": "signed-bundle",
+      "asserts_valid": false
+    },
+    {
+      "id": "signature-multi-header",
+      "category": "signature",
+      "tier": "Standard",
+      "spec_section": "§5.3 Signing — multi-value header",
+      "path": "signature/multi-signature-header",
+      "shape": "signed-bundle",
+      "asserts_valid": true
+    },
+    {
+      "id": "gates-402-payment-required",
+      "category": "gates",
+      "tier": "Standard",
+      "spec_section": "§7 Gates and access control",
+      "schema": "schemas/v0.1/gate.402-response.json",
+      "input": "gates/402-payment-required.input.json",
+      "expected": "gates/402-payment-required.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "gates-403-tier-mismatch",
+      "category": "gates",
+      "tier": "Standard",
+      "spec_section": "§7 Gates and access control",
+      "schema": "schemas/v0.1/gate.403-response.json",
+      "input": "gates/403-tier-mismatch.input.json",
+      "expected": "gates/403-tier-mismatch.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "gates-429-rate-limited",
+      "category": "gates",
+      "tier": "Core",
+      "spec_section": "§9 Rate limiting",
+      "schema": "schemas/v0.1/gate.429-response.json",
+      "input": "gates/429-rate-limited.input.json",
+      "expected": "gates/429-rate-limited.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "gates-451-unavailable-for-legal-reasons",
+      "category": "gates",
+      "tier": "Standard",
+      "spec_section": "§7 Gates / legal restrictions",
+      "schema": "schemas/v0.1/gate.451-response.json",
+      "input": "gates/451-unavailable-for-legal-reasons.input.json",
+      "expected": "gates/451-unavailable-for-legal-reasons.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "subscription-valid-webhook-request",
+      "category": "subscription",
+      "tier": "Core",
+      "spec_section": "§6 Subscription lifecycle",
+      "schema": "schemas/v0.1/subscription.request.json",
+      "input": "subscription/valid-webhook-request.input.json",
+      "expected": "subscription/valid-webhook-request.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "subscription-ssrf-private-ip-rejected",
+      "category": "subscription",
+      "tier": "Standard",
+      "spec_section": "§11 Security — SSRF",
+      "input": "subscription/ssrf-private-ip-rejected.input.json",
+      "expected": "subscription/ssrf-private-ip-rejected.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
+    }
+  ]
+}
