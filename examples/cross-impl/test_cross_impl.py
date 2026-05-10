@@ -16,8 +16,6 @@ Usage:
 Environment variables:
     NODE_PUBLISHER_URL   (default: http://localhost:3001)
     PYTHON_PUBLISHER_URL (default: http://localhost:8001)
-    NODE_SUBSCRIBER_URL  (default: http://localhost:3002)
-    PYTHON_SUBSCRIBER_URL (default: http://localhost:8002)
 """
 import os
 import json
