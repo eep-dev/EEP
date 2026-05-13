@@ -10,7 +10,7 @@
         "bench": "vitest bench"
     },
     "devDependencies": {
-        "@types/node": "^25.3.3",
+        "@types/node": "^25.7.0",
         "ajv": "^8.20.0",
         "ajv-formats": "^3.0.0",
         "typescript": "^5.3.0",
