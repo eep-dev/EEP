@@ -206,7 +206,7 @@ jobs:
           artifact-name: eep-sbom.cdx.json
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4 # renovate: pin
+        uses: actions/upload-artifact@v7 # renovate: pin
         with:
           name: eep-sbom
           path: eep-sbom.cdx.json
@@ -422,7 +422,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download SBOM artifact
-        uses: actions/download-artifact@v4 # renovate: pin
+        uses: actions/download-artifact@v8 # renovate: pin
         with:
           name: eep-sbom
           path: ./release-artifacts
