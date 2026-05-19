@@ -24,23 +24,27 @@
     "node": ">=22"
   },
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "eep-compliance": "./src/index.ts"
+    "eep-compliance": "./dist/index.js"
   },
   "files": [
-    "src",
+    "dist",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "start": "node --experimental-strip-types src/index.ts",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/index.js",
     "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",
     "@vitest/coverage-v8": "^4.1.6",
+    "typescript": "^5.3.0",
     "vitest": "^4.0.0"
   },
   "publishConfig": {

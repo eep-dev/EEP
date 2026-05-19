@@ -14,7 +14,7 @@ import { parseArgs } from 'node:util';
 import { createServer } from 'node:http';
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
-import { createTestRunner, normalizeTarget, validateCloudEventsEnvelope, validateEEPExtensions, checkWebhookHeaders } from './helpers.ts';
+import { createTestRunner, normalizeTarget, validateCloudEventsEnvelope, validateEEPExtensions, checkWebhookHeaders } from './helpers.js';
 
 // ─── CLI Argument Parsing ────────────────────────────────────────────────────
 
@@ -401,26 +401,27 @@ async function runTests() {
 
             if (hasId && hasTimestamp && hasSignature) {
                 pass('Standard Webhooks headers present', 'webhook-id, webhook-timestamp, webhook-signature');
-            } else {
-                fail('Standard Webhooks headers present', `missing: ${[!hasId && 'id', !hasTimestamp && 'timestamp', !hasSignature && 'signature'].filter(Boolean).join(', ')}`);
-            }
 
-            // Verify HMAC signature
-            if (hasSignature) {
-                const wid = receivedHeaders['webhook-id'];
-                const wts = receivedHeaders['webhook-timestamp'];
-                const wsig = receivedHeaders['webhook-signature'];
+                const headers = receivedHeaders as Record<string, string>;
+                const wid = headers['webhook-id'];
+                const wts = headers['webhook-timestamp'];
+                const signatureHeader = headers['webhook-signature'];
                 const rawBody = JSON.stringify(receivedWebhook);
                 const signedContent = `${wid}.${wts}.${rawBody}`;
                 const expected = createHmac('sha256', webhookSecret).update(signedContent).digest('base64');
 
                 try {
-                    const incoming = Buffer.from(wsig.replace('v1,', ''), 'base64');
+                    const incoming = Buffer.from(signatureHeader.replace(/^v1,/, ''), 'base64');
                     const valid = timingSafeEqual(Buffer.from(expected), incoming);
                     if (valid) pass('HMAC-SHA256 signature is valid', 'Standard Webhooks v1');
                     else fail('HMAC-SHA256 signature is valid', 'signature mismatch');
                 } catch {
                     fail('HMAC-SHA256 signature is valid', 'could not compare signatures');
+                }
+            } else {
+                fail('Standard Webhooks headers present', `missing: ${[!hasId && 'id', !hasTimestamp && 'timestamp', !hasSignature && 'signature'].filter(Boolean).join(', ')}`);
+                if (hasSignature) {
+                    fail('HMAC-SHA256 signature is valid', 'webhook-id, webhook-timestamp, or webhook-signature missing');
                 }
             }
 
@@ -430,10 +431,10 @@ async function runTests() {
             else fail('CloudEvents specversion is 1.0', `got: ${event.specversion}`);
 
             if (event.id) pass('Event id field present');
-            else fail('Event id field present');
+            else fail('Event id field present', 'missing');
 
             if (event.source) pass('Event source field present');
-            else fail('Event source field present');
+            else fail('Event source field present', 'missing');
 
             if (event.eep_version) pass('EEP extension attributes present', `eep_version: ${event.eep_version}`);
             else fail('EEP extension attributes present', 'eep_version missing');

@@ -31,6 +31,18 @@ Before pushing a tag:
    pip vulnerability gates before any publish step is allowed to
    start. Tag pushes that fail preflight do not publish anything.
 
+## Local npm publish (maintainers)
+
+After `npm login` with publish access to the `@eep-dev` scope:
+
+```bash
+./scripts/publish-npm-packages.sh 0.1.0
+```
+
+This publishes all nine packages in dependency order (same sequence as
+`publish.yml`). Prefer the tag-driven GitHub workflow when you want
+SBOM, provenance, and manual `release` environment approval.
+
 ## Tag format
 
 ```bash

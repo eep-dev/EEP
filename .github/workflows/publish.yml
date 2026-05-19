@@ -313,6 +313,7 @@ jobs:
       - name: Publish @eep-dev/compliance-cli
         run: |
           npm ci
+          npm run build
           npm pack --dry-run
           npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
           npm publish --access public --provenance
