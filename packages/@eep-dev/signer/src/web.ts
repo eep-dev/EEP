@@ -111,7 +111,9 @@ export class EEPWebSigner {
             } catch {
                 continue;
             }
-            const ok = await SUBTLE.verify('HMAC', key, raw, data);
+            // `raw` is a Uint8Array<ArrayBufferLike>; @types/node >= 25 narrows
+            // SubtleCrypto.verify to BufferSource (ArrayBufferView<ArrayBuffer>).
+            const ok = await SUBTLE.verify('HMAC', key, raw as BufferSource, data);
             if (ok) return true;
         }
         return false;

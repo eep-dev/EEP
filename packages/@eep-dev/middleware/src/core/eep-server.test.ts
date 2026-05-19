@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseGateConfig, type GateProof, type ProofVerifier } from "@eep-dev/gates";
 import { EEPServer } from "./eep-server.js";
-import type { EventBusAdapter, DBAdapter, SubscriptionRecord } from "./request-handler.js";
+import type { EventBusAdapter, DBAdapter, SubscriptionRecord, SubscriptionUpdate } from "./request-handler.js";
 
 class RecordingDBAdapter implements DBAdapter {
   public readonly rows: SubscriptionRecord[] = [];
@@ -16,6 +16,13 @@ class RecordingDBAdapter implements DBAdapter {
 
   async listSubscriptions(): Promise<SubscriptionRecord[]> {
     return [...this.rows];
+  }
+
+  async updateSubscription(subscriptionId: string, updates: SubscriptionUpdate): Promise<void> {
+    const index = this.rows.findIndex((row) => row.subscription_id === subscriptionId);
+    if (index >= 0) {
+      this.rows[index] = { ...this.rows[index], ...updates } as SubscriptionRecord;
+    }
   }
 }
 
@@ -152,6 +159,8 @@ describe("EEPServer", () => {
     expect(created.status).toBe(201);
     expect(db.rows.length).toBe(1);
     expect(bus.published).toEqual(["subscription.created"]);
+    // The one-time creation response carries the signing secret...
+    expect(typeof (created.body as { delivery_secret?: string }).delivery_secret).toBe("string");
 
     const audit = await server.getAuditLogHandler()({
       method: "GET",
@@ -159,7 +168,13 @@ describe("EEPServer", () => {
       headers: {}
     });
     expect(audit.status).toBe(200);
-    expect((audit.body as { subscriptions_count: number }).subscriptions_count).toBe(1);
+    const auditBody = audit.body as {
+      subscriptions_count: number;
+      subscriptions: Array<Record<string, unknown>>;
+    };
+    expect(auditBody.subscriptions_count).toBe(1);
+    // ...but the audit log never re-exposes it.
+    expect(auditBody.subscriptions[0]).not.toHaveProperty("delivery_secret");
   });
 
   it("returns stream and pulse upgrade hints", async () => {

@@ -16,5 +16,13 @@ describe("middleware index exports", () => {
     expect(typeof middleware.KafkaEventBusAdapter).toBe("function");
     expect(typeof middleware.InMemoryDBAdapter).toBe("function");
     expect(typeof middleware.PostgresDBAdapter).toBe("function");
+    expect(typeof middleware.WebhookDispatcher).toBe("function");
+  });
+
+  it("exports the spec retry-schedule constants", () => {
+    expect(Array.isArray(middleware.DEFAULT_RETRY_SCHEDULE_MS)).toBe(true);
+    expect(middleware.DEFAULT_RETRY_SCHEDULE_MS).toHaveLength(7);
+    expect(middleware.DEFAULT_PAUSE_AFTER_FAILURES).toBe(5);
+    expect(middleware.DEFAULT_DELIVERY_TIMEOUT_MS).toBe(10_000);
   });
 });

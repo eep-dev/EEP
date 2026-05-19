@@ -4,6 +4,33 @@ All notable changes to this repository are documented here. The format is loosel
 
 ## Unreleased
 
+- **`@eep-dev/middleware` — webhook dispatcher** — New
+  `WebhookDispatcher` fans published events out to webhook subscribers
+  with the retry policy mandated by
+  [docs/current/delivery_guarantees.md](./docs/current/delivery_guarantees.md)
+  §2: the 7-attempt exponential-backoff schedule (immediate → +5s →
+  +30s → +2m → +15m → +1h → +6h), a 10-second per-attempt timeout, and
+  automatic transition to the `paused` state after 5 consecutive
+  fully-failed deliveries (reset on the next success). Deliveries are
+  signed per Standard Webhooks via `@eep-dev/signer`, re-signed each
+  attempt so a late retry still lands inside the subscriber's replay
+  window, and filtered by `event_types` via `@eep-dev/validator`.
+  - `SubscriptionRecord` gains `event_types`, `status`,
+    `failure_count`, and a per-subscription `delivery_secret`;
+    `DBAdapter` gains `updateSubscription`. The in-memory and Postgres
+    adapters implement it, and the Postgres adapter tolerates rows
+    written before the new columns existed.
+  - `EEPServer` now persists those fields on `/eep/subscribe` and mints
+    a `delivery_secret` returned once in the creation response;
+    `/eep/audit-log` redacts `delivery_secret` so it is never
+    re-exposed.
+  - `@eep-dev/signer` and `@eep-dev/validator` added as `middleware`
+    dependencies and to its build chain.
+- **`@eep-dev/signer/web`** — Fixed a build break against
+  `@types/node` ≥ 25: `SubtleCrypto.verify` now narrows its data
+  argument to `BufferSource`, so the base64-decoded signature is cast
+  accordingly.
+
 - **Open-source readiness audit** — Comprehensive trust-bundle and
   release-pipeline hardening pass to prepare the repo for public
   Apache-2.0 launch:
