@@ -50,7 +50,8 @@ describe("PostgresDBAdapter", () => {
     const many = await adapter.listSubscriptions();
 
     expect(calls.length).toBe(4);
-    // Insert carries all nine columns, event_types serialized as JSON.
+    // Insert carries all eleven columns, event_types serialized as JSON.
+    expect(calls[0]?.params?.length).toBe(11);
     expect(calls[0]?.params?.[4]).toBe(JSON.stringify(["entity.updated"]));
     expect(one?.subscription_id).toBe("sub_1");
     expect(one?.callback_url).toBe("https://hook.example");
@@ -84,6 +85,54 @@ describe("PostgresDBAdapter", () => {
     expect(got?.event_types).toEqual([]);
     expect(got?.status).toBe("active");
     expect(got?.failure_count).toBe(0);
+    expect(got?.metadata).toBeUndefined();
+    expect(got?.tier).toBeUndefined();
+  });
+
+  it("round-trips metadata and tier", async () => {
+    const calls: Array<{ query: string; params?: unknown[] }> = [];
+    const adapter = new PostgresDBAdapter({
+      execute: async (query, params) => {
+        calls.push({ query, params });
+        if (query.includes("WHERE")) {
+          return { rows: [row({ metadata: JSON.stringify({ agent_id: "agent-42" }), tier: "pro" })] };
+        }
+        return;
+      }
+    });
+
+    await adapter.saveSubscription(record({ metadata: { agent_id: "agent-42" }, tier: "pro" }));
+    // metadata is param 9 (index 8), tier is param 10 (index 9).
+    expect(calls[0]?.params?.[8]).toBe(JSON.stringify({ agent_id: "agent-42" }));
+    expect(calls[0]?.params?.[9]).toBe("pro");
+
+    const got = await adapter.getSubscription("sub_1");
+    expect(got?.metadata).toEqual({ agent_id: "agent-42" });
+    expect(got?.tier).toBe("pro");
+  });
+
+  it("reads metadata when the driver returns an already-parsed object", async () => {
+    // jsonb columns (and JSON-auto-parsing drivers) hand back an object, not a string.
+    const adapter = new PostgresDBAdapter({
+      execute: async () => ({ rows: [row({ metadata: { agent_id: "agent-42" } })] })
+    });
+    const got = await adapter.getSubscription("sub_1");
+    expect(got?.metadata).toEqual({ agent_id: "agent-42" });
+  });
+
+  it("initSchema creates the table and adds later columns idempotently", async () => {
+    const queries: string[] = [];
+    const adapter = new PostgresDBAdapter({
+      execute: async (query) => {
+        queries.push(query);
+      }
+    });
+
+    await adapter.initSchema();
+    expect(queries[0]).toContain("CREATE TABLE IF NOT EXISTS eep_subscriptions");
+    for (const column of ["event_types", "status", "failure_count", "delivery_secret", "metadata", "tier"]) {
+      expect(queries.some((q) => q.includes(`ADD COLUMN IF NOT EXISTS ${column}`))).toBe(true);
+    }
   });
 
   it("builds a partial UPDATE only for the supplied fields", async () => {

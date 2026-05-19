@@ -24,6 +24,11 @@ function parseEventTypes(raw: unknown): string[] {
 
 function parseMetadata(raw: unknown): Record<string, string> | undefined {
   if (!raw) return undefined;
+  // `jsonb` columns (and drivers that auto-parse JSON) hand back an object
+  // directly; `text` columns hand back the serialized string.
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, string>;
+  }
   if (typeof raw === "string") {
     try {
       const parsed = JSON.parse(raw) as unknown;
@@ -53,8 +58,49 @@ function rowToRecord(row: Record<string, unknown>): SubscriptionRecord {
   };
 }
 
+/**
+ * Columns added after the original `eep_subscriptions` table shipped.
+ * `initSchema` issues an idempotent `ADD COLUMN IF NOT EXISTS` for each so a
+ * table created by an earlier release is upgraded in place — without this,
+ * the `SELECT`/`INSERT` statements below fail with `column does not exist`.
+ */
+const ADDED_COLUMNS: ReadonlyArray<readonly [name: string, type: string]> = [
+  ["event_types", "TEXT"],
+  ["status", "TEXT NOT NULL DEFAULT 'active'"],
+  ["failure_count", "INTEGER NOT NULL DEFAULT 0"],
+  ["delivery_secret", "TEXT"],
+  ["metadata", "TEXT"],
+  ["tier", "TEXT"]
+];
+
 export class PostgresDBAdapter implements DBAdapter {
   constructor(private readonly client: SQLClientLike, private readonly tableName = "eep_subscriptions") {}
+
+  /**
+   * Create the subscriptions table if absent, and add any columns introduced
+   * by later releases. Idempotent — safe to call on every boot. Requires
+   * PostgreSQL ≥ 9.6 for `ADD COLUMN IF NOT EXISTS`.
+   */
+  async initSchema(): Promise<void> {
+    await this.client.execute(
+      `CREATE TABLE IF NOT EXISTS ${this.tableName} (
+         subscription_id TEXT PRIMARY KEY,
+         source_did TEXT NOT NULL,
+         delivery_method TEXT NOT NULL,
+         callback_url TEXT,
+         event_types TEXT,
+         status TEXT NOT NULL DEFAULT 'active',
+         failure_count INTEGER NOT NULL DEFAULT 0,
+         delivery_secret TEXT,
+         metadata TEXT,
+         tier TEXT,
+         created_at TEXT NOT NULL
+       )`
+    );
+    for (const [name, type] of ADDED_COLUMNS) {
+      await this.client.execute(`ALTER TABLE ${this.tableName} ADD COLUMN IF NOT EXISTS ${name} ${type}`);
+    }
+  }
 
   async saveSubscription(subscription: SubscriptionRecord): Promise<void> {
     await this.client.execute(
