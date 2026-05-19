@@ -66,14 +66,14 @@ below) and named individually in this table at that point.
 | `schemas/v0.1/**` | Core team (≥2 approvals required) | — |
 | `docs/eeips/**` | Core team | — |
 | `docs/standards/**` | Core team | — |
-| `packages/@eep-dev/signer` | Core team | Cekmez |
-| `packages/@eep-dev/validator` | Core team | Cekmez |
+| `packages/@eep-dev/signer` | Core team | Baytar |
+| `packages/@eep-dev/validator` | Core team | Baytar |
 | `packages/@eep-dev/gates` | Core team | Yakupoglu |
 | `packages/@eep-dev/discovery` | Core team | Cekmez |
 | `packages/@eep-dev/middleware` | Core team | Demirag |
 | `packages/@eep-dev/mcp-bridge` | Core team | Cekmez |
 | `packages/@eep-dev/compliance-cli` | Core team | Yakupoglu |
-| `packages/@eep-dev/setup-cli` | Core team | Demirag |
+| `packages/@eep-dev/setup-cli` | Core team | Baytar |
 | `packages/@eep-dev/agent-adopt` | Core team | Demirag |
 | `packages/eep-*-python/**` | Core team | Altuncu |
 | `examples/**` | Any maintainer | — |
