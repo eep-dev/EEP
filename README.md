@@ -14,6 +14,10 @@ The specification and reference packages are **v0.1**: the spec, schemas, CI and
 
 **Community and safety:** [Code of Conduct](./CODE_OF_CONDUCT.md) · [Security](./SECURITY.md) (reports: **hello@eep.dev** with `[Security]` in the subject) · [Releasing](./RELEASING.md) (maintainers)
 
+## Origins
+
+EEP grew out of engineering work at [more.md](https://more.md), where the team built a platform around the idea of one canonical URL per digital entity. Once the protocol stabilized, it was extracted from that codebase, generalized, and open-sourced under Apache 2.0 so any publisher and any agent can speak the same wire format. The more.md team continues to maintain the specification alongside the rest of the core team listed in [GOVERNANCE.md](./GOVERNANCE.md), and operates the production reference implementation that exercises every conformance tier and gate type defined here.
+
 ## Why EEP, and why not just MCP, A2A, webhooks, or ActivityPub?
 
 These standards solve different problems. EEP composes with all of them.
@@ -277,13 +281,12 @@ Tier types include payment, trust, identity, credential, connection, capability,
 
 ## Reference deployment
 
-The **eep-api** reference stack lives in [examples/eep-reference-implementation/](./examples/eep-reference-implementation/):
+EEP ships with two reference deployments at different levels of completeness:
 
-- Node service: `examples/eep-reference-implementation/node`
-- Python (FastAPI): `examples/eep-reference-implementation/python`
-- Compose file: `examples/eep-reference-implementation/compose.yml` (build context is the **EEP repo root** so local `packages/@eep-dev/*` paths resolve)
+- **In-tree minimal stack** — [examples/eep-reference-implementation/](./examples/eep-reference-implementation/). A small Node + Python + Postgres + Redis Compose project used by contributors and CI to exercise Layer 1 discovery, Layer 2 subscribe/stream, Layer 3 pulse and the gate endpoints against shared parity fixtures. Smoke script from repo root: `bash scripts/eep-reference-smoke.sh` (see [Five-minute proof](./docs/guides/five-minute-proof.md)).
+- **Production reference — [more.md](https://more.md)** — the platform where EEP originated. It runs every conformance tier (Core, Standard, Full), all gate types (credential, identity, agreement, data_request, payment, trust, allowlist, reciprocal, custom `x-*`), the commerce state machine and the WebSocket pulse end-to-end in production. Implementors who want to see EEP exercised at full scope can point clients and `@eep-dev/compliance-cli` at a more.md endpoint.
 
-Both implementations cover Layer 1 discovery, Layer 2 subscribe/stream, Layer 3 pulse and gate endpoints against shared parity fixtures. Smoke script from repo root: `bash scripts/eep-reference-smoke.sh` (see [Five-minute proof](./docs/guides/five-minute-proof.md)).
+The minimal stack is sufficient to read the spec and run conformance probes locally; more.md is the reference for *what a complete EEP deployment looks like in production*.
 
 ## Conformance levels
 

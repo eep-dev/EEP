@@ -4,6 +4,7 @@
 EEP (Entity Engagement Protocol) is an open standard for push-based, verifiable communication between digital entities and agents.
 It defines three layers: Layer 1 (REST state resolution/discovery), Layer 2 (SSE + webhooks signal stream), Layer 3 (WebSocket pulse).
 Core promises: documented wire format, libraries, and compliance tooling. No ranking/traffic claims.
+Origin: developed at more.md (https://more.md) and open-sourced under Apache 2.0; more.md maintains the spec with the core team and operates the production reference implementation.
 
 ## Repository Inventory (from README.md)
 - Normative spec: docs/current/SPECIFICATION.md
