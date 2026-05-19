@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import {
   build402Response,
   parseGateConfig,
@@ -16,7 +17,8 @@ import type {
   OutgoingResponse,
   RequestHandler,
   RouteDefinition,
-  SubscriptionRecord
+  SubscriptionRecord,
+  SubscriptionUpdate
 } from "./request-handler.js";
 
 export type EEPServerOptions = {
@@ -44,6 +46,13 @@ class InMemoryDBAdapter implements DBAdapter {
 
   async listSubscriptions(): Promise<SubscriptionRecord[]> {
     return Array.from(this.subscriptions.values());
+  }
+
+  async updateSubscription(subscriptionId: string, updates: SubscriptionUpdate): Promise<void> {
+    const existing = this.subscriptions.get(subscriptionId);
+    if (existing) {
+      this.subscriptions.set(subscriptionId, { ...existing, ...updates });
+    }
   }
 }
 
@@ -224,11 +233,22 @@ export class EEPServer {
         };
       }
 
+      const eventTypes = Array.isArray(body.event_types)
+        ? body.event_types.filter((entry): entry is string => typeof entry === "string")
+        : [];
+      // A per-subscription HMAC secret used to sign webhook deliveries.
+      // Returned to the subscriber once, on creation, and never again.
+      const deliverySecret = deliveryMethod === "webhook" ? randomBytes(24).toString("base64url") : undefined;
+
       const subscription: SubscriptionRecord = {
         subscription_id: `sub_${Date.now()}`,
         source_did: sourceDid,
         delivery_method: deliveryMethod,
         callback_url: typeof body.delivery_url === "string" ? body.delivery_url : undefined,
+        event_types: eventTypes,
+        status: "active",
+        failure_count: 0,
+        delivery_secret: deliverySecret,
         created_at: new Date().toISOString()
       };
 
@@ -252,11 +272,13 @@ export class EEPServer {
   getAuditLogHandler(): RequestHandler {
     return async () => {
       const subscriptions = await this.dbAdapter.listSubscriptions();
+      // Never expose delivery_secret beyond the one-time creation response.
+      const redacted = subscriptions.map(({ delivery_secret: _secret, ...rest }) => rest);
       return {
         status: 200,
         body: {
-          subscriptions_count: subscriptions.length,
-          subscriptions
+          subscriptions_count: redacted.length,
+          subscriptions: redacted
         }
       };
     };

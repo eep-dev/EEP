@@ -8,8 +8,20 @@ export type {
   OutgoingResponse,
   RequestHandler,
   RouteDefinition,
-  SubscriptionRecord
+  SubscriptionRecord,
+  SubscriptionUpdate
 } from "./core/request-handler.js";
+
+export {
+  WebhookDispatcher,
+  DEFAULT_RETRY_SCHEDULE_MS,
+  DEFAULT_PAUSE_AFTER_FAILURES,
+  DEFAULT_DELIVERY_TIMEOUT_MS,
+  type WebhookDispatcherOptions,
+  type WebhookHttpClient,
+  type WebhookHttpResponse,
+  type DeliveryResult
+} from "./dispatcher/webhook-dispatcher.js";
 
 export { createEEPRouter } from "./adapters/express.js";
 export { createFastifyPlugin } from "./adapters/fastify.js";

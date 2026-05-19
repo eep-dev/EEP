@@ -1,4 +1,4 @@
-import type { DBAdapter, SubscriptionRecord } from "../core/request-handler.js";
+import type { DBAdapter, SubscriptionRecord, SubscriptionUpdate } from "../core/request-handler.js";
 
 export class InMemoryDBAdapter implements DBAdapter {
   private readonly records = new Map<string, SubscriptionRecord>();
@@ -13,5 +13,13 @@ export class InMemoryDBAdapter implements DBAdapter {
 
   async listSubscriptions(): Promise<SubscriptionRecord[]> {
     return Array.from(this.records.values());
+  }
+
+  async updateSubscription(subscriptionId: string, updates: SubscriptionUpdate): Promise<void> {
+    const existing = this.records.get(subscriptionId);
+    if (!existing) {
+      return;
+    }
+    this.records.set(subscriptionId, { ...existing, ...updates });
   }
 }

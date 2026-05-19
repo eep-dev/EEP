@@ -53,14 +53,16 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "pretest": "npm --prefix ../gates run build",
-    "prebuild": "npm --prefix ../gates run build",
+    "pretest": "npm --prefix ../gates run build && npm --prefix ../signer run build && npm --prefix ../validator run build",
+    "prebuild": "npm --prefix ../gates run build && npm --prefix ../signer run build && npm --prefix ../validator run build",
     "build": "tsc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@eep-dev/gates": "file:../gates"
+    "@eep-dev/gates": "file:../gates",
+    "@eep-dev/signer": "file:../signer",
+    "@eep-dev/validator": "file:../validator"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",

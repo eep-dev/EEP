@@ -31,6 +31,11 @@ export type SubscriptionRecord = {
   source_did: string;
   delivery_method: "sse" | "webhook";
   callback_url?: string;
+  event_types: string[];
+  status: "active" | "paused";
+  failure_count: number;
+  /** Per-subscription HMAC secret returned to the subscriber on creation. */
+  delivery_secret?: string;
   created_at: string;
 };
 
@@ -51,8 +56,11 @@ export type EventBusAdapter = {
   subscribe: (pattern: string, handler: (event: CloudEvent) => void) => Promise<void>;
 };
 
+export type SubscriptionUpdate = Partial<Pick<SubscriptionRecord, "status" | "failure_count">>;
+
 export type DBAdapter = {
   saveSubscription: (subscription: SubscriptionRecord) => Promise<void>;
   getSubscription: (subscriptionId: string) => Promise<SubscriptionRecord | null>;
   listSubscriptions: () => Promise<SubscriptionRecord[]>;
+  updateSubscription: (subscriptionId: string, updates: SubscriptionUpdate) => Promise<void>;
 };
