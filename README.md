@@ -16,16 +16,16 @@ The specification and reference packages are **v0.1**: the spec, schemas, CI and
 
 ## Origins
 
-EEP grew out of engineering work at [more.md](https://more.md), where the team built a platform around the idea of one canonical URL per digital entity. Once the protocol stabilized, it was extracted from that codebase, generalized, and open-sourced under Apache 2.0 so any publisher and any agent can speak the same wire format. The more.md team continues to maintain the specification alongside the rest of the core team listed in [GOVERNANCE.md](./GOVERNANCE.md), and operates the production reference implementation that exercises every conformance tier and gate type defined here.
+EEP grew out of engineering work at [more.md](https://more.md), where the team built a platform around the idea of one canonical URL per digital entity. Once the protocol stabilized, it was extracted from that codebase, generalized and open-sourced under Apache 2.0 so any publisher and any agent can speak the same wire format. The more.md team continues to maintain the specification alongside the rest of the core team listed in [GOVERNANCE.md](./GOVERNANCE.md) and operates the production reference implementation that exercises every conformance tier and gate type defined here.
 
-## Why EEP, and why not just MCP, A2A, webhooks, or ActivityPub?
+## EEP?
 
-These standards solve different problems. EEP composes with all of them.
+MCP, A2A, webhooks and ActivityPub standards solve different problems. EEP composes with all of them.
 
-- **MCP** lets an LLM *call a tool*. EEP lets an LLM *follow an entity over time* — discover it, subscribe, and react to verified events from it.
+- **MCP** lets an LLM *call a tool*. EEP lets an LLM *follow an entity over time* — discover it, subscribe and react to verified events from it.
 - **A2A** lets two agents *collaborate on a task*. EEP defines how either agent learns that an entity changed at all.
-- **Plain webhooks** require a custom protocol per publisher (auth, signing, retries, replay window). EEP is one wire format with HMAC-signed delivery, SSE, and a 60-second replay window — implemented once, reusable everywhere.
-- **ActivityPub** federates accounts in a social graph. EEP delivers state-change events from any entity (person, org, agent, product, listing) to authorized subscribers, with optional payment / credential / identity gates.
+- **Plain webhooks** require a custom protocol per publisher (auth, signing, retries, replay window). EEP is one wire format with HMAC-signed delivery, SSE and a 60-second replay window — implemented once, reusable everywhere.
+- **ActivityPub** federates accounts in a social graph. EEP delivers state-change events from any entity (person org, agent, product, listing) to authorized subscribers, with optional payment / credential / identity gates.
 - **DIDs and Verifiable Credentials** identify *who* an entity is. EEP defines *what they tell their subscribers* and *how subscribers verify it*.
 
 If you are building anything labelled "agentic," EEP is the missing layer between *the agent knows about the world* (DIDs, MCP, your data store) and *the agent reacts when the world changes* (today: bespoke per-vendor integrations).
@@ -37,7 +37,7 @@ If you are building anything labelled "agentic," EEP is the missing layer betwee
 
 ## In this repository
 
-If you are deciding whether to star, fork, or integrate, here is what is actually here:
+If you are deciding whether to star, fork or integrate, here is what is actually here:
 
 | Artifact | Where |
 |----------|--------|
@@ -58,11 +58,11 @@ If you are deciding whether to star, fork, or integrate, here is what is actuall
 | Interactive playground (browser) | [eep.dev/playground](https://eep.dev/playground) — event validation + HMAC signing |
 | How to run tests | [TESTING.md](./TESTING.md) |
 
-Nothing here promises a particular ranking, traffic, or business outcome. It does promise a **documented wire format**, **libraries you can import** and **commands you can run** to check behavior.
+Nothing here promises a particular ranking, traffic or business outcome. It does promise a **documented wire format**, **libraries you can import** and **commands you can run** to check behavior.
 
 ## What is EEP?
 
-The Entity Engagement Protocol (EEP) describes how digital entities (people, organizations, products, agents) **publish state changes** and how **authorized subscribers** receive them **as events**, with optional **access gates** (identity, credentials, payment, agreements) and **signatures** so subscribers can tell real traffic from forgery.
+The Entity Engagement Protocol (EEP) describes how digital entities (people organizations, products, agents) **publish state changes** and how **authorized subscribers** receive them **as events**, with optional **access gates** (identity, credentials, payment, agreements) and **signatures** so subscribers can tell real traffic from forgery.
 
 Much of the web still relies on polling or bespoke feeds, so clients often see stale data or one-off integrations. EEP standardizes **discovery**, **subscription**, **delivery** (SSE and webhooks at minimum) and optional **WebSocket** negotiation so integrations look the same across publishers.
 
@@ -80,13 +80,13 @@ Implementations must provide the **signal stream**. State resolution and network
 
 ## Why it exists
 
-Automated clients (mobile apps, backends, or agents) repeatedly hit the same problems: knowing **when** something changed, subscribing **without** a custom protocol per publisher and checking that an event **really** came from that entity. EEP combines shared discovery, push delivery and cryptographic checks.
+Automated clients (mobile apps, backends or agents) repeatedly hit the same problems: knowing **when** something changed, subscribing **without** a custom protocol per publisher and checking that an event **really** came from that entity. EEP combines shared discovery, push delivery and cryptographic checks.
 
 **Publishers and strategists:** structured discovery, manifests versus sitemaps and *generative engine optimization* (GEO) are discussed as **industry context** in the [Whitepaper](docs/WHITEPAPER.tex) and non-normative spec notes. GEO is **not** a conformance test for EEP.
 
 ## Protocol positioning
 
-EEP is the contract for **agent ↔ entity** engagement: discovery, realtime streams, gate proofs and payment-aware access. It sits next to, not in place of, other stacks.
+EEP is the contract for **agent ↔ entity** engagement: discovery, realtime streams, gate proofs and payment-aware access. It sits next to other stacks.
 
 | Protocol | Primary scope | Interaction | What it standardizes |
 |----------|----------------|---------------|----------------------|
@@ -306,7 +306,7 @@ Publishers should enforce per-subscriber **429** limits with `Retry-After` and `
 
 EEP uses a BDFN model for **0.x** and plans a steering committee at **v1.0**. Details: [GOVERNANCE.md](./GOVERNANCE.md).
 
-- [ROADMAP.md](./ROADMAP.md) — milestones for v0.2, v0.3, and v1.0 (TSC formation, IETF/W3C submission, foundation transition)
+- [ROADMAP.md](./ROADMAP.md) — milestones for v0.2, v0.3 and v1.0 (TSC formation, IETF/W3C submission, foundation transition)
 - [MAINTAINERS.md](./MAINTAINERS.md) — current maintainer tiers and per-package ownership
 - [CHANGELOG.md](./CHANGELOG.md) — Keep-a-Changelog-style release notes
 - [eep-site sync checklist](./docs/guides/eep-site-sync-checklist.md) — keep landing-site copy in lockstep with the spec
