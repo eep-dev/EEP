@@ -24,9 +24,20 @@ pip install httpx pytest fastapi uvicorn
 docker compose up
 ```
 
+## Configuration
+
+```bash
+# Copy the environment template and configure URLs
+cp .env.example .env
+# Edit .env to set your publisher and subscriber URLs if different from defaults
+```
+
 ## Running the tests
 
 ```bash
+# First, configure environment:
+cp .env.example .env
+
 # Option 1: Shell script (local)
 bash test-interop.sh
 
