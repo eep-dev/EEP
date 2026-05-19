@@ -30,7 +30,8 @@ describe("createEEPMiddleware", () => {
       request: {
         body: {
           source_did: "did:web:agent.example",
-          delivery_method: "sse"
+          delivery_method: "sse",
+          event_types: ["com.example.*"]
         }
       }
     });

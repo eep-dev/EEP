@@ -8,6 +8,7 @@ import {
   type GateProof,
   type ProofVerifier
 } from "@eep-dev/gates";
+import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
 import type {
   AuthAdapter,
   CloudEvent,
@@ -225,7 +226,8 @@ export class EEPServer {
     return async (request) => {
       const body = (request.body ?? {}) as Record<string, unknown>;
       const sourceDid = typeof body.source_did === "string" ? body.source_did : "";
-      const deliveryMethod = body.delivery_method === "sse" || body.delivery_method === "webhook" ? body.delivery_method : "";
+      const deliveryMethod =
+        body.delivery_method === "sse" || body.delivery_method === "webhook" ? body.delivery_method : "";
       if (!sourceDid || !deliveryMethod) {
         return {
           status: 400,
@@ -233,9 +235,63 @@ export class EEPServer {
         };
       }
 
-      const eventTypes = Array.isArray(body.event_types)
-        ? body.event_types.filter((entry): entry is string => typeof entry === "string")
+      // event_types: required, at least one entry, each must match the EEP pattern
+      const rawEventTypes = Array.isArray(body.event_types)
+        ? body.event_types.filter((e): e is string => typeof e === "string")
         : [];
+      if (rawEventTypes.length === 0) {
+        return {
+          status: 400,
+          body: { error: "invalid_request", message: "event_types must be a non-empty array of strings" }
+        };
+      }
+      const badPattern = rawEventTypes.find((p) => !validateEventTypePattern(p));
+      if (badPattern !== undefined) {
+        return {
+          status: 400,
+          body: {
+            error: "invalid_request",
+            message: `event_types contains an invalid pattern: "${badPattern}". Patterns must be dot-separated lowercase segments, optionally ending with .*`
+          }
+        };
+      }
+
+      // delivery_url: required for webhook, must pass SSRF check
+      const deliveryUrl = typeof body.delivery_url === "string" ? body.delivery_url : undefined;
+      if (deliveryMethod === "webhook") {
+        if (!deliveryUrl) {
+          return {
+            status: 400,
+            body: { error: "invalid_request", message: "delivery_url is required when delivery_method is webhook" }
+          };
+        }
+        try {
+          await validateSSRF(deliveryUrl);
+        } catch (err) {
+          if (err instanceof SSRFError) {
+            return {
+              status: 400,
+              body: { error: "invalid_request", message: `delivery_url is not allowed: ${err.message}` }
+            };
+          }
+          return {
+            status: 400,
+            body: { error: "invalid_request", message: "delivery_url could not be validated" }
+          };
+        }
+      }
+
+      // metadata: pass through if it's a string-keyed object with string values
+      const rawMeta = body.metadata;
+      const metadata: Record<string, string> | undefined =
+        rawMeta && typeof rawMeta === "object" && !Array.isArray(rawMeta)
+          ? (Object.fromEntries(
+              Object.entries(rawMeta as Record<string, unknown>).filter(([, v]) => typeof v === "string")
+            ) as Record<string, string>)
+          : undefined;
+
+      const tier = typeof body.tier === "string" ? body.tier : undefined;
+
       // A per-subscription HMAC secret used to sign webhook deliveries.
       // Returned to the subscriber once, on creation, and never again.
       const deliverySecret = deliveryMethod === "webhook" ? randomBytes(24).toString("base64url") : undefined;
@@ -244,11 +300,13 @@ export class EEPServer {
         subscription_id: `sub_${Date.now()}`,
         source_did: sourceDid,
         delivery_method: deliveryMethod,
-        callback_url: typeof body.delivery_url === "string" ? body.delivery_url : undefined,
-        event_types: eventTypes,
+        callback_url: deliveryUrl,
+        event_types: rawEventTypes,
         status: "active",
         failure_count: 0,
         delivery_secret: deliverySecret,
+        metadata,
+        tier,
         created_at: new Date().toISOString()
       };
 

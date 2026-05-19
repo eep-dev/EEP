@@ -36,6 +36,10 @@ export type SubscriptionRecord = {
   failure_count: number;
   /** Per-subscription HMAC secret returned to the subscriber on creation. */
   delivery_secret?: string;
+  /** Subscriber-defined metadata (passed through, not interpreted). */
+  metadata?: Record<string, string>;
+  /** Requested access tier; matched against gate config on delivery. */
+  tier?: string;
   created_at: string;
 };
 

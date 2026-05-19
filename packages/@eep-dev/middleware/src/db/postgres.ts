@@ -5,7 +5,7 @@ export type SQLClientLike = {
 };
 
 const COLUMNS =
-  "subscription_id, source_did, delivery_method, callback_url, event_types, status, failure_count, delivery_secret, created_at";
+  "subscription_id, source_did, delivery_method, callback_url, event_types, status, failure_count, delivery_secret, metadata, tier, created_at";
 
 function parseEventTypes(raw: unknown): string[] {
   if (Array.isArray(raw)) {
@@ -22,6 +22,21 @@ function parseEventTypes(raw: unknown): string[] {
   return [];
 }
 
+function parseMetadata(raw: unknown): Record<string, string> | undefined {
+  if (!raw) return undefined;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, string>;
+      }
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 function rowToRecord(row: Record<string, unknown>): SubscriptionRecord {
   return {
     subscription_id: String(row.subscription_id),
@@ -32,6 +47,8 @@ function rowToRecord(row: Record<string, unknown>): SubscriptionRecord {
     status: row.status === "paused" ? "paused" : "active",
     failure_count: Number(row.failure_count ?? 0),
     delivery_secret: row.delivery_secret ? String(row.delivery_secret) : undefined,
+    metadata: parseMetadata(row.metadata),
+    tier: row.tier ? String(row.tier) : undefined,
     created_at: String(row.created_at)
   };
 }
@@ -42,7 +59,7 @@ export class PostgresDBAdapter implements DBAdapter {
   async saveSubscription(subscription: SubscriptionRecord): Promise<void> {
     await this.client.execute(
       `INSERT INTO ${this.tableName} (${COLUMNS})
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         subscription.subscription_id,
         subscription.source_did,
@@ -52,6 +69,8 @@ export class PostgresDBAdapter implements DBAdapter {
         subscription.status,
         subscription.failure_count,
         subscription.delivery_secret ?? null,
+        subscription.metadata ? JSON.stringify(subscription.metadata) : null,
+        subscription.tier ?? null,
         subscription.created_at
       ]
     );

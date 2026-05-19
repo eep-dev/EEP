@@ -14,7 +14,7 @@ describe("createEEPApp", () => {
         header: () => undefined,
         query: () => undefined,
         param: () => undefined,
-        json: async () => ({ source_did: "did:web:agent.example", delivery_method: "sse" })
+        json: async () => ({ source_did: "did:web:agent.example", delivery_method: "sse", event_types: ["com.example.*"] })
       }
     });
     expect(response.status).toBe(201);

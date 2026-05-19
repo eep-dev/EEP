@@ -1,7 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseGateConfig, type GateProof, type ProofVerifier } from "@eep-dev/gates";
 import { EEPServer } from "./eep-server.js";
 import type { EventBusAdapter, DBAdapter, SubscriptionRecord, SubscriptionUpdate } from "./request-handler.js";
+
+// Prevent real DNS resolution during subscribe validation tests.
+vi.mock("@eep-dev/validator", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@eep-dev/validator")>();
+  return {
+    ...original,
+    validateSSRF: vi.fn().mockResolvedValue(undefined)
+  };
+});
 
 class RecordingDBAdapter implements DBAdapter {
   public readonly rows: SubscriptionRecord[] = [];
@@ -153,7 +162,8 @@ describe("EEPServer", () => {
       body: {
         source_did: "did:web:agent.example",
         delivery_method: "webhook",
-        delivery_url: "https://hook.example/notify"
+        delivery_url: "https://hook.example/notify",
+        event_types: ["com.example.entity.updated"]
       }
     });
     expect(created.status).toBe(201);
@@ -242,7 +252,8 @@ describe("EEPServer", () => {
       headers: {},
       body: {
         source_did: "did:web:agent.example",
-        delivery_method: "sse"
+        delivery_method: "sse",
+        event_types: ["com.example.*"]
       }
     });
     const audit = await server.getAuditLogHandler()({
@@ -278,5 +289,115 @@ describe("EEPServer", () => {
     const routes = server.getRouteDefinitions();
     expect(routes.length).toBe(10);
     expect(routes.map((route) => route.operationId)).toContain("subscribe");
+  });
+
+  describe("subscribe body validation", () => {
+    const makeServer = () => {
+      const db = new RecordingDBAdapter();
+      const bus = new RecordingEventBusAdapter();
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        dbAdapter: db,
+        eventBusAdapter: bus
+      });
+      return { db, bus, server };
+    };
+
+    const validWebhookBody = {
+      source_did: "did:web:agent.example",
+      delivery_method: "webhook",
+      delivery_url: "https://hook.example/notify",
+      event_types: ["com.example.entity.updated"]
+    } as const;
+
+    it("rejects missing event_types", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...validWebhookBody, event_types: undefined }
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as { error: string }).error).toBe("invalid_request");
+    });
+
+    it("rejects empty event_types array", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...validWebhookBody, event_types: [] }
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("rejects invalid event type pattern", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...validWebhookBody, event_types: ["INVALID_PATTERN"] }
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as { message: string }).message).toContain("INVALID_PATTERN");
+    });
+
+    it("rejects webhook without delivery_url", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { source_did: "did:web:agent.example", delivery_method: "webhook", event_types: ["com.example.*"] }
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as { message: string }).message).toContain("delivery_url");
+    });
+
+    it("rejects delivery_url that fails SSRF check", async () => {
+      const { SSRFError: Err, validateSSRF: mockFn } = await import("@eep-dev/validator");
+      vi.mocked(mockFn).mockRejectedValueOnce(new Err("Private address"));
+      const { server } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: validWebhookBody
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as { message: string }).message).toContain("not allowed");
+    });
+
+    it("stores metadata and tier on the subscription record", async () => {
+      const { server, db } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: {
+          ...validWebhookBody,
+          metadata: { agent_id: "agent-42", label: "monitor" },
+          tier: "pro"
+        }
+      });
+      expect(res.status).toBe(201);
+      expect(db.rows[0]?.metadata).toEqual({ agent_id: "agent-42", label: "monitor" });
+      expect(db.rows[0]?.tier).toBe("pro");
+    });
+
+    it("accepts wildcard event type patterns", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...validWebhookBody, event_types: ["com.example.*", "org.other.entity.created"] }
+      });
+      expect(res.status).toBe(201);
+    });
   });
 });
