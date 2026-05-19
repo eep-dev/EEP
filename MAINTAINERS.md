@@ -40,6 +40,7 @@ for the disclosure standard.
 | Dr. Tarik Altuncu, PhD | Imperial College | None disclosed. |
 | Erdem Cimenoglu | Siemens | None disclosed. |
 | Berk Baytar | Chooch AI | None disclosed. |
+| Mustafa Ozsiginan | Duacore | None disclosed. |
 | BeneluxSoft (org) | Development partner (Belgium) | Service partner for EEP adopters. |
 | MUDT (org) | Research partner (Germany) | Hosts EEP-related research. |
 | Biruni University (org) | Research partner (Turkey) | Hosts EEP-related research. |
