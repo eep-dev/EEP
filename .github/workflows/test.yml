@@ -205,11 +205,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-      - name: Build @eep-dev/gates (required by middleware)
-        working-directory: packages/@eep-dev/gates
+      - name: Build workspace dependencies (required by middleware)
         run: |
-          npm ci
-          npm run build
+          for dep in gates signer validator; do
+            (cd "../$dep" && npm ci && npm run build)
+          done
       - run: npm install
       - run: npx vitest run --coverage
 

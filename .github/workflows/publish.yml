@@ -60,7 +60,9 @@ jobs:
 
       - name: Test @eep-dev/middleware
         run: |
-          (cd ../../packages/@eep-dev/gates && npm ci && npm run build)
+          for dep in gates signer validator; do
+            (cd "../../packages/@eep-dev/$dep" && npm ci && npm run build)
+          done
           npm install && npx vitest run --reporter=dot
         working-directory: packages/@eep-dev/middleware
 
