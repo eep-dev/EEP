@@ -187,9 +187,8 @@ jobs:
           fi
 
   # ── SBOM generation ───────────────────────────────────────────────────────
-  # Emits a CycloneDX SBOM for every published package. The artifact is
-  # uploaded to the GitHub Release and consumed by downstream provenance
-  # verifiers.
+  # Emits a CycloneDX SBOM for the repo. The workflow artifact is attached to the
+  # GitHub Release in create-github-release (not here — avoids contents:write on this job).
   sbom:
     name: Generate SBOM
     runs-on: ubuntu-latest
@@ -206,6 +205,9 @@ jobs:
           format: cyclonedx-json
           output-file: eep-sbom.cdx.json
           artifact-name: eep-sbom.cdx.json
+          # SBOM ships on the Release via create-github-release (artifact download).
+          # Default true tries to attach here with contents:read and fails on public repos.
+          upload-release-assets: false
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v7 # renovate: pin
