@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createHmac } from 'node:crypto';
 import {
     createTestRunner,
     validateArgs,
@@ -6,7 +9,25 @@ import {
     validateCloudEventsEnvelope,
     validateEEPExtensions,
     checkWebhookHeaders,
+    verifyWebhookSignature,
 } from './helpers';
+
+const FIXTURES_DIR = resolve(
+    import.meta.dirname,
+    '../../../../tests/conformance-fixtures/signature',
+);
+
+function loadFixture(name: string) {
+    const dir = resolve(FIXTURES_DIR, name);
+    const headers = JSON.parse(readFileSync(resolve(dir, 'headers.json'), 'utf8')) as Record<string, string>;
+    const body = readFileSync(resolve(dir, 'body.txt'), 'utf8');
+    const secret = readFileSync(resolve(dir, 'secret.txt'), 'utf8').trim();
+    const expected = JSON.parse(readFileSync(resolve(dir, 'expected.json'), 'utf8')) as {
+        valid: boolean;
+        reason: string;
+    };
+    return { headers, body, secret, expected };
+}
 
 describe('@eep-dev/compliance-cli helpers', () => {
 
@@ -227,6 +248,172 @@ describe('@eep-dev/compliance-cli helpers', () => {
             expect(result.hasTimestamp).toBe(false);
             expect(result.hasSignature).toBe(false);
             expect(result.missing).toHaveLength(3);
+        });
+    });
+
+    // ── verifyWebhookSignature ──────────────────────────────────────
+    //
+    // These tests are the regression guard for the bug described in the
+    // 2026-05 audit: the prior inline comparison built a Buffer from the
+    // base64-encoded `expected` string (≈44 bytes) and `timingSafeEqual`'d
+    // it against the base64-decoded incoming signature (32 bytes), which
+    // throws "input buffers must have the same byte length". The throw was
+    // swallowed and reported as "could not compare signatures", meaning
+    // every conformance run mis-reported HMAC validity. Tests below verify
+    // both shapes (single + multi-signature) against the canonical
+    // fixtures under `tests/conformance-fixtures/signature/`.
+
+    describe('verifyWebhookSignature', () => {
+        const SECRET = 'whsec_test-secret-at-least-16-chars';
+        const WID = 'msg_01HN3QK7GX';
+        const TS = '1700000000';
+        const BODY = '{"specversion":"1.0","id":"evt-1"}';
+
+        function sign(body: string, secret: string = SECRET, wid: string = WID, ts: string = TS): string {
+            const hmac = createHmac('sha256', secret).update(`${wid}.${ts}.${body}`, 'utf8').digest('base64');
+            return `v1,${hmac}`;
+        }
+
+        it('accepts a freshly signed payload', () => {
+            const result = verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: SECRET,
+                signatureHeader: sign(BODY),
+            });
+            expect(result).toEqual({ valid: true, reason: 'ok' });
+        });
+
+        it('rejects a body that was altered after signing', () => {
+            const result = verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: '{"specversion":"1.0","id":"evt-1","tampered":true}',
+                secret: SECRET,
+                signatureHeader: sign(BODY),
+            });
+            expect(result).toEqual({ valid: false, reason: 'signature_mismatch' });
+        });
+
+        it('rejects a signature computed with the wrong secret', () => {
+            const result = verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: SECRET,
+                signatureHeader: sign(BODY, 'a-different-secret-1234567890'),
+            });
+            expect(result).toEqual({ valid: false, reason: 'signature_mismatch' });
+        });
+
+        it('accepts the second token in a multi-signature header (rotation)', () => {
+            const fake = `v1,${'A'.repeat(44).slice(0, 43)}=`;
+            const real = sign(BODY);
+            const result = verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: SECRET,
+                signatureHeader: `${fake} ${real}`,
+            });
+            expect(result).toEqual({ valid: true, reason: 'ok_via_multi_signature' });
+        });
+
+        it('rejects a header that carries only non-v1 schemes', () => {
+            const result = verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: SECRET,
+                signatureHeader: 'v2,abc v0,def',
+            });
+            expect(result).toEqual({ valid: false, reason: 'no_v1_token' });
+        });
+
+        it('rejects an empty header as malformed', () => {
+            expect(verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: SECRET,
+                signatureHeader: '',
+            })).toEqual({ valid: false, reason: 'malformed_header' });
+        });
+
+        it('rejects a missing secret', () => {
+            expect(verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: '',
+                signatureHeader: sign(BODY),
+            })).toEqual({ valid: false, reason: 'missing_secret' });
+        });
+
+        it('does not throw on a too-short base64 token (regression: timingSafeEqual length mismatch)', () => {
+            // Prior bug: comparing the base64 STRING buffer to the decoded
+            // buffer would throw; the throw was swallowed and reported as
+            // an unrelated failure. Now the length-mismatch branch must
+            // be a clean `signature_mismatch`, not a crash.
+            expect(() =>
+                verifyWebhookSignature({
+                    webhookId: WID,
+                    timestamp: TS,
+                    rawBody: BODY,
+                    secret: SECRET,
+                    signatureHeader: 'v1,deadbeef',
+                })
+            ).not.toThrow();
+            const result = verifyWebhookSignature({
+                webhookId: WID,
+                timestamp: TS,
+                rawBody: BODY,
+                secret: SECRET,
+                signatureHeader: 'v1,deadbeef',
+            });
+            expect(result).toEqual({ valid: false, reason: 'signature_mismatch' });
+        });
+
+        // ── Fixture-driven (locks the verifier to the published vectors) ──
+
+        it('matches fixture: signature/valid-fresh-signature → valid', () => {
+            const fx = loadFixture('valid-fresh-signature');
+            const result = verifyWebhookSignature({
+                webhookId: fx.headers['webhook-id'],
+                timestamp: fx.headers['webhook-timestamp'],
+                rawBody: fx.body,
+                secret: fx.secret,
+                signatureHeader: fx.headers['webhook-signature'],
+            });
+            expect(result.valid).toBe(fx.expected.valid);
+            expect(result.reason).toBe('ok');
+        });
+
+        it('matches fixture: signature/wrong-secret → invalid (signature_mismatch)', () => {
+            const fx = loadFixture('wrong-secret');
+            const result = verifyWebhookSignature({
+                webhookId: fx.headers['webhook-id'],
+                timestamp: fx.headers['webhook-timestamp'],
+                rawBody: fx.body,
+                secret: fx.secret,
+                signatureHeader: fx.headers['webhook-signature'],
+            });
+            expect(result.valid).toBe(fx.expected.valid);
+            expect(result.reason).toBe('signature_mismatch');
+        });
+
+        it('matches fixture: signature/multi-signature-header → valid via second token', () => {
+            const fx = loadFixture('multi-signature-header');
+            const result = verifyWebhookSignature({
+                webhookId: fx.headers['webhook-id'],
+                timestamp: fx.headers['webhook-timestamp'],
+                rawBody: fx.body,
+                secret: fx.secret,
+                signatureHeader: fx.headers['webhook-signature'],
+            });
+            expect(result.valid).toBe(fx.expected.valid);
+            expect(result.reason).toBe('ok_via_multi_signature');
         });
     });
 });

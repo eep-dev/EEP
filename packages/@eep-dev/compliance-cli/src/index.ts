@@ -12,9 +12,15 @@
 
 import { parseArgs } from 'node:util';
 import { createServer } from 'node:http';
-import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
-import { createTestRunner, normalizeTarget, validateCloudEventsEnvelope, validateEEPExtensions, checkWebhookHeaders } from './helpers.js';
+import {
+    createTestRunner,
+    normalizeTarget,
+    validateCloudEventsEnvelope,
+    validateEEPExtensions,
+    checkWebhookHeaders,
+    verifyWebhookSignature,
+} from './helpers.js';
 
 // ─── CLI Argument Parsing ────────────────────────────────────────────────────
 
@@ -85,6 +91,11 @@ function logSkip(name: string, reason: string) { _origSkip(name, reason); consol
 
 let receivedWebhook: Record<string, unknown> | null = null;
 let receivedHeaders: Record<string, string> | null = null;
+// `receivedRawBody` captures the exact bytes the sender hashed. HMAC
+// verification MUST use this, not `JSON.stringify(receivedWebhook)`, since
+// round-tripping through `JSON.parse` drops whitespace and key ordering
+// the sender included in its signed content.
+let receivedRawBody: string | null = null;
 let challengeResponse: ((challenge: string) => void) | null = null;
 
 type ResultStatus = 'pass' | 'fail' | 'skip';
@@ -268,6 +279,7 @@ const server = createServer((req, res) => {
         receivedHeaders = Object.fromEntries(
             Object.entries(req.headers).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v!])
         );
+        receivedRawBody = body;
         try {
             receivedWebhook = JSON.parse(body);
         } catch {
@@ -377,6 +389,7 @@ async function runTests() {
     if (subscriptionId && webhookSecret) {
         receivedWebhook = null;
         receivedHeaders = null;
+        receivedRawBody = null;
 
         try {
             await fetch(`${TARGET}/eep/subscriptions/${subscriptionId}/test`, {
@@ -403,20 +416,20 @@ async function runTests() {
                 pass('Standard Webhooks headers present', 'webhook-id, webhook-timestamp, webhook-signature');
 
                 const headers = receivedHeaders as Record<string, string>;
-                const wid = headers['webhook-id'];
-                const wts = headers['webhook-timestamp'];
-                const signatureHeader = headers['webhook-signature'];
-                const rawBody = JSON.stringify(receivedWebhook);
-                const signedContent = `${wid}.${wts}.${rawBody}`;
-                const expected = createHmac('sha256', webhookSecret).update(signedContent).digest('base64');
-
-                try {
-                    const incoming = Buffer.from(signatureHeader.replace(/^v1,/, ''), 'base64');
-                    const valid = timingSafeEqual(Buffer.from(expected), incoming);
-                    if (valid) pass('HMAC-SHA256 signature is valid', 'Standard Webhooks v1');
-                    else fail('HMAC-SHA256 signature is valid', 'signature mismatch');
-                } catch {
-                    fail('HMAC-SHA256 signature is valid', 'could not compare signatures');
+                const result = verifyWebhookSignature({
+                    webhookId: headers['webhook-id'],
+                    timestamp: headers['webhook-timestamp'],
+                    signatureHeader: headers['webhook-signature'],
+                    // Use the exact bytes the receiver captured — not a
+                    // re-serialized JSON object — so whitespace and key
+                    // ordering preserved by the sender flow through to HMAC.
+                    rawBody: receivedRawBody ?? '',
+                    secret: webhookSecret,
+                });
+                if (result.valid) {
+                    pass('HMAC-SHA256 signature is valid', `Standard Webhooks v1 (${result.reason})`);
+                } else {
+                    fail('HMAC-SHA256 signature is valid', result.reason);
                 }
             } else {
                 fail('Standard Webhooks headers present', `missing: ${[!hasId && 'id', !hasTimestamp && 'timestamp', !hasSignature && 'signature'].filter(Boolean).join(', ')}`);
