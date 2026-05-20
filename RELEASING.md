@@ -129,7 +129,8 @@ Prefer `git push origin v0.1.0` + GitHub Actions `publish-pypi` when you want OI
 
 5. Open the workflow run → approve **`release`** when `publish-pypi` waits.
 6. Watch job **Publish PyPI packages** (matrix runs **one package at a time**).
-   Packages already at that version on PyPI may log “file already exists”; that is OK.
+   If that version is already on PyPI, the matrix job **skips build/upload** and stays green
+   (`Check if version already on PyPI`).
 
 No `TWINE_PASSWORD` in GitHub secrets is required when Trusted Publishing is configured.
 

@@ -392,7 +392,39 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
+      - name: Check if version already on PyPI
+        id: pypi_release
+        working-directory: packages/${{ matrix.package }}
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          set -euo pipefail
+          PROJECT="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['name'])")"
+          echo "project=${PROJECT}" >> "$GITHUB_OUTPUT"
+          HTTP_CODE="$(curl -sS -o /tmp/pypi-project.json -w '%{http_code}' "https://pypi.org/pypi/${PROJECT}/json")"
+          if [ "${HTTP_CODE}" = "200" ] && VERSION="${VERSION}" python - <<'PY'
+          import json, os, sys
+          version = os.environ["VERSION"]
+          data = json.load(open("/tmp/pypi-project.json"))
+          if version in data.get("releases", {}):
+              sys.exit(0)
+          sys.exit(1)
+          PY
+          then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "PyPI already has ${PROJECT}@${VERSION} — skipping build and upload."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish ${PROJECT}@${VERSION} to PyPI."
+          fi
+
+      - name: Already on PyPI (skipped)
+        if: steps.pypi_release.outputs.skip == 'true'
+        run: |
+          echo "No upload needed for ${{ steps.pypi_release.outputs.project }}@${{ steps.version.outputs.VERSION }}."
+
       - name: Set version and build
+        if: steps.pypi_release.outputs.skip != 'true'
         working-directory: packages/${{ matrix.package }}
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
@@ -409,6 +441,7 @@ jobs:
           python -m build
 
       - name: Publish to PyPI (Trusted Publishing)
+        if: steps.pypi_release.outputs.skip != 'true'
         uses: pypa/gh-action-pypi-publish@release/v1 # renovate: pin
         with:
           packages-dir: packages/${{ matrix.package }}/dist/
