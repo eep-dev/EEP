@@ -22,4 +22,8 @@ export class InMemoryDBAdapter implements DBAdapter {
     }
     this.records.set(subscriptionId, { ...existing, ...updates });
   }
+
+  async deleteSubscription(subscriptionId: string): Promise<boolean> {
+    return this.records.delete(subscriptionId);
+  }
 }

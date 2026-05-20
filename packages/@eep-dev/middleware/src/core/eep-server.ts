@@ -55,6 +55,10 @@ class InMemoryDBAdapter implements DBAdapter {
       this.subscriptions.set(subscriptionId, { ...existing, ...updates });
     }
   }
+
+  async deleteSubscription(subscriptionId: string): Promise<boolean> {
+    return this.subscriptions.delete(subscriptionId);
+  }
 }
 
 class NullEventBusAdapter implements EventBusAdapter {
@@ -327,6 +331,55 @@ export class EEPServer {
     };
   }
 
+  getSubscriptionStatusHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return {
+          status: 400,
+          body: { error: "invalid_request", message: "subscription_id is required" }
+        };
+      }
+      const subscription = await this.dbAdapter.getSubscription(subscriptionId);
+      if (!subscription) {
+        return {
+          status: 404,
+          body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` }
+        };
+      }
+      // delivery_secret is returned only once, at creation time.
+      const { delivery_secret: _secret, ...safe } = subscription;
+      return { status: 200, body: safe };
+    };
+  }
+
+  getUnsubscribeHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return {
+          status: 400,
+          body: { error: "invalid_request", message: "subscription_id is required" }
+        };
+      }
+      const deleted = await this.dbAdapter.deleteSubscription(subscriptionId);
+      if (!deleted) {
+        return {
+          status: 404,
+          body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` }
+        };
+      }
+      await this.eventBusAdapter.publish({
+        id: `evt_${Date.now()}`,
+        type: "subscription.deleted",
+        source: this.did,
+        time: new Date().toISOString(),
+        data: { subscription_id: subscriptionId }
+      });
+      return { status: 204, body: null };
+    };
+  }
+
   getAuditLogHandler(): RequestHandler {
     return async () => {
       const subscriptions = await this.dbAdapter.listSubscriptions();
@@ -369,6 +422,8 @@ export class EEPServer {
       { method: "GET", path: "/eep/stream", operationId: "stream", handler: this.getSSEHandler() },
       { method: "GET", path: "/eep/content/:resourcePath", operationId: "gatedContent", handler: this.getGatedResourceHandler() },
       { method: "POST", path: "/eep/subscribe", operationId: "subscribe", handler: this.getSubscribeHandler() },
+      { method: "GET", path: "/eep/subscribe/:subscriptionId", operationId: "subscriptionStatus", handler: this.getSubscriptionStatusHandler() },
+      { method: "DELETE", path: "/eep/subscribe/:subscriptionId", operationId: "unsubscribe", handler: this.getUnsubscribeHandler() },
       { method: "GET", path: "/eep/audit-log", operationId: "auditLog", handler: this.getAuditLogHandler() },
       { method: "GET", path: "/eep/pulse", operationId: "pulseUpgrade", handler: this.getPulseUpgradeHandler() }
     ];

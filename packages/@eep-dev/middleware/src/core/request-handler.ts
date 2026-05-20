@@ -67,4 +67,6 @@ export type DBAdapter = {
   getSubscription: (subscriptionId: string) => Promise<SubscriptionRecord | null>;
   listSubscriptions: () => Promise<SubscriptionRecord[]>;
   updateSubscription: (subscriptionId: string, updates: SubscriptionUpdate) => Promise<void>;
+  /** Remove a subscription. Resolves to true if a row was deleted, false if no such id existed. */
+  deleteSubscription: (subscriptionId: string) => Promise<boolean>;
 };

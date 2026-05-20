@@ -1,7 +1,10 @@
 import type { DBAdapter, SubscriptionRecord, SubscriptionUpdate } from "../core/request-handler.js";
 
 export type SQLClientLike = {
-  execute: (query: string, params?: unknown[]) => Promise<{ rows?: Array<Record<string, unknown>> } | void>;
+  execute: (
+    query: string,
+    params?: unknown[]
+  ) => Promise<{ rows?: Array<Record<string, unknown>>; rowCount?: number } | void>;
 };
 
 const COLUMNS =
@@ -135,6 +138,20 @@ export class PostgresDBAdapter implements DBAdapter {
     const result = await this.client.execute(`SELECT ${COLUMNS} FROM ${this.tableName}`);
     const rows = result && "rows" in result && result.rows ? result.rows : [];
     return rows.map(rowToRecord);
+  }
+
+  async deleteSubscription(subscriptionId: string): Promise<boolean> {
+    const result = await this.client.execute(
+      `DELETE FROM ${this.tableName} WHERE subscription_id = $1`,
+      [subscriptionId]
+    );
+    // `rowCount` is the standard pg driver field. Drivers that don't surface it
+    // (or our void-returning test stub) fall through to `true` — the caller
+    // will get a 204 even for a no-op, which matches DELETE semantics anyway.
+    if (result && typeof result === "object" && "rowCount" in result && typeof result.rowCount === "number") {
+      return result.rowCount > 0;
+    }
+    return true;
   }
 
   async updateSubscription(subscriptionId: string, updates: SubscriptionUpdate): Promise<void> {

@@ -33,6 +33,13 @@ class RecordingDBAdapter implements DBAdapter {
       this.rows[index] = { ...this.rows[index], ...updates } as SubscriptionRecord;
     }
   }
+
+  async deleteSubscription(subscriptionId: string): Promise<boolean> {
+    const index = this.rows.findIndex((row) => row.subscription_id === subscriptionId);
+    if (index < 0) return false;
+    this.rows.splice(index, 1);
+    return true;
+  }
 }
 
 class RecordingEventBusAdapter implements EventBusAdapter {
@@ -287,8 +294,11 @@ describe("EEPServer", () => {
       did: "did:web:example.com"
     });
     const routes = server.getRouteDefinitions();
-    expect(routes.length).toBe(10);
-    expect(routes.map((route) => route.operationId)).toContain("subscribe");
+    expect(routes.length).toBe(12);
+    const operationIds = routes.map((route) => route.operationId);
+    expect(operationIds).toContain("subscribe");
+    expect(operationIds).toContain("subscriptionStatus");
+    expect(operationIds).toContain("unsubscribe");
   });
 
   describe("subscribe body validation", () => {
@@ -398,6 +408,112 @@ describe("EEPServer", () => {
         body: { ...validWebhookBody, event_types: ["com.example.*", "org.other.entity.created"] }
       });
       expect(res.status).toBe(201);
+    });
+  });
+
+  describe("subscription status and unsubscribe", () => {
+    const makeServer = () => {
+      const db = new RecordingDBAdapter();
+      const bus = new RecordingEventBusAdapter();
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        dbAdapter: db,
+        eventBusAdapter: bus
+      });
+      return { db, bus, server };
+    };
+
+    const createSubscription = async (server: EEPServer): Promise<string> => {
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: {
+          source_did: "did:web:agent.example",
+          delivery_method: "webhook",
+          delivery_url: "https://hook.example/notify",
+          event_types: ["com.example.entity.updated"]
+        }
+      });
+      return (res.body as { subscription_id: string }).subscription_id;
+    };
+
+    it("returns the subscription without delivery_secret on GET", async () => {
+      const { server } = makeServer();
+      const id = await createSubscription(server);
+
+      const res = await server.getSubscriptionStatusHandler()({
+        method: "GET",
+        path: `/eep/subscribe/${id}`,
+        headers: {},
+        params: { subscriptionId: id }
+      });
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("delivery_secret");
+      expect((res.body as { subscription_id: string }).subscription_id).toBe(id);
+      expect((res.body as { status: string }).status).toBe("active");
+    });
+
+    it("returns 404 when GET targets an unknown id", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscriptionStatusHandler()({
+        method: "GET",
+        path: "/eep/subscribe/sub_missing",
+        headers: {},
+        params: { subscriptionId: "sub_missing" }
+      });
+      expect(res.status).toBe(404);
+      expect((res.body as { error: string }).error).toBe("not_found");
+    });
+
+    it("returns 400 when GET has no subscription id param", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscriptionStatusHandler()({
+        method: "GET",
+        path: "/eep/subscribe/",
+        headers: {}
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("deletes the subscription and publishes subscription.deleted", async () => {
+      const { server, db, bus } = makeServer();
+      const id = await createSubscription(server);
+      expect(db.rows.length).toBe(1);
+      bus.published.length = 0;
+
+      const res = await server.getUnsubscribeHandler()({
+        method: "DELETE",
+        path: `/eep/subscribe/${id}`,
+        headers: {},
+        params: { subscriptionId: id }
+      });
+      expect(res.status).toBe(204);
+      expect(db.rows.length).toBe(0);
+      expect(bus.published).toEqual(["subscription.deleted"]);
+    });
+
+    it("returns 404 when DELETE targets an unknown id and skips publish", async () => {
+      const { server, bus } = makeServer();
+      const res = await server.getUnsubscribeHandler()({
+        method: "DELETE",
+        path: "/eep/subscribe/sub_missing",
+        headers: {},
+        params: { subscriptionId: "sub_missing" }
+      });
+      expect(res.status).toBe(404);
+      expect(bus.published).toEqual([]);
+    });
+
+    it("returns 400 when DELETE has no subscription id param", async () => {
+      const { server } = makeServer();
+      const res = await server.getUnsubscribeHandler()({
+        method: "DELETE",
+        path: "/eep/subscribe/",
+        headers: {}
+      });
+      expect(res.status).toBe(400);
     });
   });
 });

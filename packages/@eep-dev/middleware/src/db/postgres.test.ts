@@ -164,4 +164,36 @@ describe("PostgresDBAdapter", () => {
     await adapter.updateSubscription("sub_1", {});
     expect(executed).toBe(false);
   });
+
+  it("issues a DELETE for the given id and reports rowCount > 0", async () => {
+    const calls: Array<{ query: string; params?: unknown[] }> = [];
+    const adapter = new PostgresDBAdapter({
+      execute: async (query, params) => {
+        calls.push({ query, params });
+        return { rowCount: 1 };
+      }
+    });
+    const ok = await adapter.deleteSubscription("sub_1");
+    expect(ok).toBe(true);
+    expect(calls[0]?.query).toContain("DELETE FROM eep_subscriptions");
+    expect(calls[0]?.query).toContain("WHERE subscription_id = $1");
+    expect(calls[0]?.params).toEqual(["sub_1"]);
+  });
+
+  it("reports false when DELETE affects no rows", async () => {
+    const adapter = new PostgresDBAdapter({
+      execute: async () => ({ rowCount: 0 })
+    });
+    expect(await adapter.deleteSubscription("sub_missing")).toBe(false);
+  });
+
+  it("falls back to true when the driver omits rowCount", async () => {
+    // Some drivers/stubs return void; DELETE semantics tolerate no-op deletes.
+    const adapter = new PostgresDBAdapter({
+      execute: async () => {
+        return;
+      }
+    });
+    expect(await adapter.deleteSubscription("sub_1")).toBe(true);
+  });
 });

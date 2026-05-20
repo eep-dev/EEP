@@ -44,4 +44,17 @@ describe("InMemoryDBAdapter", () => {
     await db.updateSubscription("missing", { status: "paused" });
     expect(await db.getSubscription("missing")).toBeNull();
   });
+
+  it("deletes an existing subscription and reports success", async () => {
+    const db = new InMemoryDBAdapter();
+    await db.saveSubscription(record());
+    expect(await db.deleteSubscription("sub_1")).toBe(true);
+    expect(await db.getSubscription("sub_1")).toBeNull();
+    expect(await db.listSubscriptions()).toEqual([]);
+  });
+
+  it("returns false when deleting an unknown subscription", async () => {
+    const db = new InMemoryDBAdapter();
+    expect(await db.deleteSubscription("missing")).toBe(false);
+  });
 });
