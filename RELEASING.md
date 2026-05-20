@@ -31,6 +31,83 @@ Before pushing a tag:
    pip vulnerability gates before any publish step is allowed to
    start. Tag pushes that fail preflight do not publish anything.
 
+## Local PyPI publish (maintainers)
+
+After npm packages exist at the target version (no cross-Python dependency on them):
+
+```bash
+export TWINE_USERNAME=__token__
+export TWINE_PASSWORD=pypi-<your-api-token>   # upload scope for all eep-* projects
+pip install build twine
+./scripts/publish-pypi-packages.sh 0.1.0
+```
+
+**PyPI HTTP 429 (Too Many Requests).** The upload API (`upload.pypi.org`)
+limits how many **file upload POSTs** your account/IP can make in a window.
+Uploading seven packages × (wheel + sdist) in one session, then **re-running
+the script while it retries five times per failure**, can keep you rate-limited
+for much longer than “wait an hour”.
+
+### If 429 persists for hours
+
+1. **Stop all upload attempts** (including the publish script) for **12–24 hours**.
+   Further retries often extend the limit.
+2. Confirm what is already live:  
+   `curl -fsS https://pypi.org/pypi/eep-compliance-cli/json | head` → 404 means
+   the project was never created (nothing partial to fix).
+3. Upload **one package, one wheel only**, with verbose logging:
+
+```bash
+cd packages/eep-compliance-cli-python
+python3 -m pip install -U build twine
+rm -rf dist && python3 -m build && twine check dist/*
+export TWINE_USERNAME=__token__ TWINE_PASSWORD=pypi-...
+twine upload --verbose dist/*.whl
+# wait 30+ minutes before uploading dist/*.tar.gz (optional; wheel alone is enough for pip)
+```
+
+4. Repeat for `eep-mcp-bridge-python` and `eep-middleware-python` with long gaps.
+
+### Resume with the script (after the cooldown)
+
+```bash
+PYPI_WHEEL_ONLY=1 PYPI_PAUSE_SEC=300 ./scripts/publish-pypi-packages.sh 0.1.0 \
+  --from eep-compliance-cli-python --skip-existing
+```
+
+`PYPI_WHEEL_ONLY=1` uploads only the wheel (half the POSTs). The script now
+uploads **one file per `twine` call**, pauses **120s** between packages by default,
+and only retries on **429** (max 2 retries, 10-minute initial backoff).
+
+### Preferred alternative: GitHub Actions + Trusted Publishing
+
+Avoid local IP/account upload quotas entirely:
+
+1. On [pypi.org](https://pypi.org), create projects (if needed) and add a
+   **Trusted Publisher** for each of `eep-compliance-cli`, `eep-mcp-bridge`,
+   `eep-middleware` pointing at this repo, workflow `publish.yml`, environment `release`.
+2. Push tag `v0.1.0` (or a patch tag `v0.1.1` if you prefer a fresh release).
+3. Approve the **`release`** environment in GitHub Actions.
+
+The workflow matrix publishes one package per job (OIDC, no API token in the shell).
+If four packages are already at `0.1.0`, either temporarily limit the matrix to the
+three missing dirs or accept “file already exists” on the four (harmless).
+
+### Other options
+
+- **TestPyPI** (`twine upload --repository testpypi`) to verify credentials without
+  touching production quota.
+- **PyPI support**: [pypi.org/support](https://pypi.org/support/) if uploads still
+  return 429 after 24h with no retries.
+- Check token scope: use an **account-wide** upload token (or Trusted Publishing),
+  not a token limited to other project names only.
+
+Register each PyPI project name once (`eep-signer`, `eep-gates`, …) or uploads will fail with
+403/404. For CI, configure **Trusted Publishing** per project (see below) instead of tokens.
+
+Prefer `git push origin v0.1.0` + GitHub Actions `publish-pypi` when you want OIDC and the
+`release` environment approval gate.
+
 ## Local npm publish (maintainers)
 
 After `npm login` with publish access to the `@eep-dev` scope:
@@ -40,8 +117,11 @@ After `npm login` with publish access to the `@eep-dev` scope:
 ```
 
 This publishes all nine packages in dependency order (same sequence as
-`publish.yml`). Prefer the tag-driven GitHub workflow when you want
-SBOM, provenance, and manual `release` environment approval.
+`publish.yml`). Each package sets `publishConfig.provenance: true`; the local script
+temporarily removes that field before `npm publish` (npm ignores env-only
+disables when `provenance` stays in `package.json`). Prefer the
+tag-driven GitHub workflow when you want SBOM, provenance, and manual
+`release` environment approval.
 
 ## Tag format
 

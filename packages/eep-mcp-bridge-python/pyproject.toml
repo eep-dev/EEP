@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "eep-mcp-bridge"
 version = "0.1.0"
 description = "MCP to EEP bridge utilities and reference HTTP bridge server."
+readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 classifiers = [

@@ -14,6 +14,15 @@ if ! npm whoami >/dev/null 2>&1; then
   exit 1
 fi
 
+NPM_PUBLISH_ARGS=(--access public)
+LOCAL_PUBLISH=1
+if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${NPM_PUBLISH_PROVENANCE:-}" = "1" ]; then
+  LOCAL_PUBLISH=0
+  NPM_PUBLISH_ARGS+=(--provenance)
+else
+  echo "note: local publish strips publishConfig.provenance from package.json (use publish.yml for SLSA)"
+fi
+
 build_sibling() {
   local sibling="$1"
   echo "  (building @eep-dev/${sibling} for local file: link)"
@@ -28,12 +37,17 @@ publish_pkg() {
   echo "════════════════════════════════════════"
   echo "Publishing ${name}@${VERSION} from ${dir}"
   echo "════════════════════════════════════════"
-  local rewrote=0
+  local prep_pkg=0
   (
     cd "${ROOT}/${dir}"
-    if grep -qE '"file:\.\./' package.json 2>/dev/null; then
-      node "${ROOT}/scripts/npm-publish-rewrite-deps.mjs" "${ROOT}/${dir}" "${VERSION}"
-      rewrote=1
+    prep_args=("${ROOT}/${dir}" "${VERSION}")
+    if [ "${LOCAL_PUBLISH}" -eq 1 ]; then
+      prep_args+=(--strip-provenance)
+      node "${ROOT}/scripts/npm-publish-rewrite-deps.mjs" "${prep_args[@]}"
+      prep_pkg=1
+    elif grep -qE '"file:\.\./' package.json 2>/dev/null; then
+      node "${ROOT}/scripts/npm-publish-rewrite-deps.mjs" "${prep_args[@]}"
+      prep_pkg=1
     fi
     if [ -f package-lock.json ]; then
       npm install
@@ -45,8 +59,8 @@ publish_pkg() {
     fi
     npm pack --dry-run
     npm version "${VERSION}" --no-git-tag-version --allow-same-version
-    npm publish --access public --provenance
-    if [ "${rewrote}" -eq 1 ]; then
+    npm publish "${NPM_PUBLISH_ARGS[@]}"
+    if [ "${prep_pkg}" -eq 1 ]; then
       git checkout -- package.json package-lock.json 2>/dev/null || git checkout -- package.json 2>/dev/null || true
     fi
   )

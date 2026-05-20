@@ -390,6 +390,8 @@ jobs:
 
       - name: Set version and build
         working-directory: packages/${{ matrix.package }}
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           # Update version in pyproject.toml from tag (idempotent, allows same).
           python - <<'PY'

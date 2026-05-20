@@ -1,5 +1,10 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "eep-compliance-cli"
+readme = "README.md"
 version = "0.1.0"
 description = "EEP conformance test runner for any platform"
 requires-python = ">=3.11"

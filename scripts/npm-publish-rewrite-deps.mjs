@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /**
- * Rewrite file:../@eep-dev/* dependencies to ^VERSION for npm publish.
- * Usage: node scripts/npm-publish-rewrite-deps.mjs <packageDir> <version>
+ * Prepare package.json for registry publish (local machine).
+ * - Rewrite file:../@eep-dev/* dependencies to ^VERSION
+ * - Remove publishConfig.provenance (npm ignores NPM_CONFIG_PROVENANCE=false when set in package.json)
+ *
+ * Usage: node scripts/npm-publish-rewrite-deps.mjs <packageDir> <version> [--strip-provenance]
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -28,9 +31,21 @@ for (const section of ["dependencies", "peerDependencies", "optionalDependencies
   }
 }
 
+const stripProvenance = process.argv.includes("--strip-provenance");
+if (stripProvenance && pkg.publishConfig && pkg.publishConfig.provenance) {
+  delete pkg.publishConfig.provenance;
+  if (Object.keys(pkg.publishConfig).length === 0) {
+    delete pkg.publishConfig;
+  }
+  changed += 1;
+  console.log(`removed publishConfig.provenance from ${pkgPath} (local publish)`);
+}
+
 if (changed === 0) {
-  console.log(`no file:@eep-dev deps to rewrite in ${pkgPath}`);
+  console.log(`no publish prep changes in ${pkgPath}`);
 } else {
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
-  console.log(`rewrote ${changed} @eep-dev file: dep(s) in ${pkgPath} -> ^${version}`);
+  if (changed > (stripProvenance ? 1 : 0)) {
+    console.log(`updated ${pkgPath} for registry publish (^${version})`);
+  }
 }
