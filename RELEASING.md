@@ -133,6 +133,43 @@ Prefer `git push origin v0.1.0` + GitHub Actions `publish-pypi` when you want OI
 
 No `TWINE_PASSWORD` in GitHub secrets is required when Trusted Publishing is configured.
 
+## Publish npm from GitHub Actions (checklist)
+
+npm publish runs in job **Publish npm packages** inside workflow **`publish.yml`**
+(only when you push a version tag like `v0.1.0`).
+
+1. **npm access** — your npm user must be able to publish to the `@eep-dev` scope
+   (org member with publish, or owner of the packages).
+2. **`NPM_TOKEN` secret** — GitHub repo → **Settings** → **Environments** → **`release`**
+   → **Environment secrets** → add:
+   - Name: `NPM_TOKEN`
+   - Value: npm **Granular Access Token** or **Automation** token with **publish**
+     permission for `@eep-dev/*` (and read if required).
+   - Do **not** put this on the whole repo unless you intend to; `release` only is enough.
+3. **`release` environment** — same page: optional required reviewers (workflow waits for
+   approval before `publish-npm` runs).
+4. **Tag** — version must match `CHANGELOG.md` (e.g. `## [0.1.0]`):
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+   If the tag already exists on an old commit, move it to current `main` first (see
+   [Tag format](#tag-format)).
+5. **Actions** → **EEP Release — Publish npm + PyPI** → wait for **Preflight** + **SBOM**.
+6. When **Publish npm packages** shows *Waiting for review*, open the run →
+   **Review deployments** → approve **`release`**.
+7. Watch **Publish npm packages** — nine steps, one per `@eep-dev/*` package.
+
+**If packages are already at that version on npm** (e.g. you published `0.1.0` locally),
+the matching step fails with “version already exists”. That is expected; only missing
+versions need a new tag (e.g. `v0.1.1`) or unpublish/yank on npm (avoid if consumers
+already installed).
+
+**Provenance:** steps use `npm publish --provenance`; the workflow sets `id-token: write`
+(OIDC). No extra secret for provenance.
+
 ## Local npm publish (maintainers)
 
 After `npm login` with publish access to the `@eep-dev` scope:

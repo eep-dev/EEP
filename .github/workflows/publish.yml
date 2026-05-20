@@ -289,6 +289,7 @@ jobs:
         # Depends on @eep-dev/gates (workspace) — build the local dist first.
         run: |
           (cd ../gates && npm ci && npm run build)
+          node ../../../scripts/npm-publish-rewrite-deps.mjs . "${{ steps.version.outputs.VERSION }}"
           npm install
           npm run build
           npm pack --dry-run
@@ -301,6 +302,7 @@ jobs:
       - name: Publish @eep-dev/mcp-bridge
         run: |
           (cd ../gates && npm ci && npm run build)
+          node ../../../scripts/npm-publish-rewrite-deps.mjs . "${{ steps.version.outputs.VERSION }}"
           npm install
           npm run build
           npm pack --dry-run
@@ -338,6 +340,7 @@ jobs:
           # version is what consumers will install. For local pack/publish we
           # use the workspace-built dist.
           (cd ../setup-cli && npm install && npm run build)
+          node ../../../scripts/npm-publish-rewrite-deps.mjs . "${{ steps.version.outputs.VERSION }}"
           npm install
           npm run build
           npm pack --dry-run
