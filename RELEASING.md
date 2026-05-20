@@ -144,8 +144,12 @@ npm publish runs in job **Publish npm packages** inside workflow **`publish.yml`
 2. **`NPM_TOKEN` secret** — GitHub repo → **Settings** → **Environments** → **`release`**
    → **Environment secrets** → add:
    - Name: `NPM_TOKEN`
-   - Value: npm **Granular Access Token** or **Automation** token with **publish**
-     permission for `@eep-dev/*` (and read if required).
+   - Value: npm token that can **publish without a one-time password** in CI:
+     - **Granular Access Token** → Permissions: read/write for `@eep-dev/*`, enable
+       **“Bypass two-factor authentication for publish”** (wording may vary), or
+     - **Classic → Automation** token (designed for GitHub Actions / CI).
+   - A normal **Publish** token with account 2FA set to “Authorization and publishing”
+     fails in Actions with `EOTP` / “requires a one-time password”.
    - Do **not** put this on the whole repo unless you intend to; `release` only is enough.
 3. **`release` environment** — same page: optional required reviewers (workflow waits for
    approval before `publish-npm` runs).
@@ -163,10 +167,9 @@ npm publish runs in job **Publish npm packages** inside workflow **`publish.yml`
    **Review deployments** → approve **`release`**.
 7. Watch **Publish npm packages** — nine steps, one per `@eep-dev/*` package.
 
-**If packages are already at that version on npm** (e.g. you published `0.1.0` locally),
-the matching step fails with “version already exists”. That is expected; only missing
-versions need a new tag (e.g. `v0.1.1`) or unpublish/yank on npm (avoid if consumers
-already installed).
+**If packages are already at that version on npm**, `scripts/ci-npm-publish-package.sh`
+prints `npm already has … — skipping publish` and the step stays **green** (same idea
+as PyPI skip).
 
 **Provenance:** steps use `npm publish --provenance`; the workflow sets `id-token: write`
 (OIDC). No extra secret for provenance.
