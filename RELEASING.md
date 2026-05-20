@@ -108,6 +108,31 @@ Register each PyPI project name once (`eep-signer`, `eep-gates`, …) or uploads
 Prefer `git push origin v0.1.0` + GitHub Actions `publish-pypi` when you want OIDC and the
 `release` environment approval gate.
 
+### Publish PyPI from GitHub Actions (checklist)
+
+1. **PyPI Trusted Publisher** (once per project name): [pypi.org](https://pypi.org) →
+   Your projects → *Manage* → *Publishing* → add publisher:
+   - PyPI project: `eep-compliance-cli` (repeat for `eep-mcp-bridge`, `eep-middleware`, …)
+   - Owner: `eep-dev` (or your org)
+   - Repository: `EEP`
+   - Workflow: `publish.yml`
+   - Environment: `release`
+2. **GitHub Environment** `release`: repo *Settings* → *Environments* → `release` →
+   required reviewers (see [What the pipeline does](#what-the-pipeline-does)).
+3. **Green CI on the commit** you will tag (`test.yml` on `main`).
+4. **Tag and push** (version must match `CHANGELOG.md` `## [x.y.z]`):
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+5. Open the workflow run → approve **`release`** when `publish-pypi` waits.
+6. Watch job **Publish PyPI packages** (matrix runs **one package at a time**).
+   Packages already at that version on PyPI may log “file already exists”; that is OK.
+
+No `TWINE_PASSWORD` in GitHub secrets is required when Trusted Publishing is configured.
+
 ## Local npm publish (maintainers)
 
 After `npm login` with publish access to the `@eep-dev` scope:
