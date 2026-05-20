@@ -33,6 +33,13 @@ function readFile(absPath: string) {
     return fs.readFileSync(absPath, 'utf-8');
 }
 
+/** Executable `npm publish` lines (comments excluded) from workflow/scripts. */
+function npmPublishLines(...sources: string[]): string[] {
+    return sources.flatMap((src) =>
+        src.split('\n').filter((l) => /\bnpm publish\b/.test(l) && !l.trim().startsWith('#')),
+    );
+}
+
 // ── A1: signing_algorithms in eep-manifest.json ───────────────────────────────
 describe('A1 — signing_algorithms: crypto-agility field in eep-manifest.json', () => {
     let manifest: any;
@@ -309,8 +316,10 @@ describe('A5 — Cross-Implementation Interop: examples/cross-impl directory', (
 // ── A6: npm/PyPI publish pipeline ─────────────────────────────────────────────
 describe('A6 — Publish Pipeline: .github/workflows/publish.yml', () => {
     let publishYml: string;
+    let npmPublishScript: string;
     beforeAll(() => {
         publishYml = readFile(path.join(GITHUB, 'publish.yml'));
+        npmPublishScript = readFile(path.join(ROOT, 'scripts/ci-npm-publish-package.sh'));
     });
 
     it('.github/workflows/publish.yml exists', () => {
@@ -327,13 +336,24 @@ describe('A6 — Publish Pipeline: .github/workflows/publish.yml', () => {
         expect(publishYml).toContain('pytest');
     });
 
-    it('publish-npm job publishes all 4 TypeScript packages', () => {
+    it('publish-npm job publishes all @eep-dev TypeScript packages via CI script', () => {
         expect(publishYml).toContain('publish-npm');
-        expect(publishYml).toContain('@eep-dev/gates');
-        expect(publishYml).toContain('@eep-dev/signer');
-        expect(publishYml).toContain('@eep-dev/validator');
-        expect(publishYml).toContain('@eep-dev/compliance-cli');
-        expect(publishYml).toContain('npm publish --access public');
+        expect(publishYml).toContain('scripts/ci-npm-publish-package.sh');
+        const npmPackages = [
+            '@eep-dev/gates',
+            '@eep-dev/signer',
+            '@eep-dev/validator',
+            '@eep-dev/compliance-cli',
+            '@eep-dev/discovery',
+            '@eep-dev/middleware',
+            '@eep-dev/mcp-bridge',
+            '@eep-dev/setup-cli',
+            '@eep-dev/agent-adopt',
+        ];
+        for (const pkg of npmPackages) {
+            expect(publishYml).toContain(pkg);
+        }
+        expect(npmPublishScript).toContain('npm publish --access public --provenance');
     });
 
     it('publish-pypi job publishes all Python packages via PyPI Trusted Publishing (OIDC)', () => {
@@ -357,10 +377,10 @@ describe('A6 — Publish Pipeline: .github/workflows/publish.yml', () => {
         expect(publishYml).toContain('needs: preflight');
     });
 
-    it('uses NPM_TOKEN for npm; PyPI uses OIDC, not a token', () => {
-        // npm still uses a classic auth token (Trusted Publishing for npm
-        // is in preview as of this writing), so NPM_TOKEN must still be
-        // referenced.
+    it('uses NPM_TOKEN for npm (or OIDC when Trusted Publishing is configured); PyPI uses OIDC only', () => {
+        // npm may use NPM_TOKEN until every @eep-dev/* package has npm Trusted
+        // Publishing configured; then NODE_AUTH_TOKEN can be removed. PyPI must
+        // never fall back to twine/password tokens.
         expect(publishYml).toContain('NPM_TOKEN');
         // PyPI was migrated to Trusted Publishing — the workflow MUST NOT
         // reference a PyPI token any more. If this assertion regresses, the
@@ -378,9 +398,9 @@ describe('A6 — Publish Pipeline: .github/workflows/publish.yml', () => {
     // refactor cannot silently downgrade them.
 
     it('every npm publish call carries SLSA build provenance', () => {
-        // Each `npm publish` line must have `--provenance`. We don't allow
-        // a publish line without it.
-        const lines = publishYml.split('\n').filter((l) => /\bnpm publish\b/.test(l) && !l.trim().startsWith('#'));
+        // Publish steps delegate to scripts/ci-npm-publish-package.sh; provenance
+        // must live on the actual `npm publish` invocation, not only in YAML comments.
+        const lines = npmPublishLines(publishYml, npmPublishScript);
         expect(lines.length).toBeGreaterThan(0);
         for (const line of lines) {
             expect(line).toContain('--provenance');
