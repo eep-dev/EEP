@@ -30,17 +30,20 @@ below; see [GOVERNANCE.md § Conflict of interest](./GOVERNANCE.md#conflict-of-i
 for the disclosure standard.
 
 | Name | Primary affiliation | Disclosed conflicts |
-|---|---|---|---|
-| Dr. Ugur Cekmez | more.md | Founder/maintainer of more.md, an EEP adopter. |
+|---|---|---|
+| Dr. Ugur Cekmez | Konstellate, MUDT | None disclosed. |
 | Yigit Yakupoglu | Technic AI; Carnegie Mellon University (MS) | None disclosed. |
-| Jackson Foley | ThriveLogic (ex-Lockheed Martin) | None disclosed. |
-| Omid Jaafari | SudoVision | None disclosed. |
+| Jackson Foley | ThriveLogic (USA) | None disclosed. |
+| Omid Jaafari | SudoVision (USA) | None disclosed. |
+| Enes Demirag | Klyft | None disclosed. |
 | Kasim Acikbas | Ultralytics | None disclosed. |
-| Tarik Altuncu, PhD | Imperial College | None disclosed. |
+| Dr. Tarik Altuncu, PhD | Imperial College | None disclosed. |
 | Erdem Cimenoglu | Siemens | None disclosed. |
-| Berk Baytar | Chooch | None disclosed. |
+| Berk Baytar | Chooch AI | None disclosed. |
+| Mustafa Ozsiginan | Duacore | None disclosed. |
 | BeneluxSoft (org) | Development partner (Belgium) | Service partner for EEP adopters. |
-| MUDT (org) | Research partner | Hosts EEP-related research. |
+| MUDT (org) | Research partner (Germany) | Hosts EEP-related research. |
+| Biruni University (org) | Research partner (Turkey) | Hosts EEP-related research. |
 
 Each row's GitHub handle should be filled in via PR by the named member.
 The "Disclosed conflicts" column is filled in by the member themselves and
@@ -64,15 +67,15 @@ below) and named individually in this table at that point.
 | `schemas/v0.1/**` | Core team (≥2 approvals required) | — |
 | `docs/eeips/**` | Core team | — |
 | `docs/standards/**` | Core team | — |
-| `packages/@eep-dev/signer` | Core team | Cekmez |
-| `packages/@eep-dev/validator` | Core team | Cekmez |
+| `packages/@eep-dev/signer` | Core team | Baytar |
+| `packages/@eep-dev/validator` | Core team | Baytar |
 | `packages/@eep-dev/gates` | Core team | Yakupoglu |
 | `packages/@eep-dev/discovery` | Core team | Cekmez |
-| `packages/@eep-dev/middleware` | Core team | BeneluxSoft |
+| `packages/@eep-dev/middleware` | Core team | Demirag |
 | `packages/@eep-dev/mcp-bridge` | Core team | Cekmez |
 | `packages/@eep-dev/compliance-cli` | Core team | Yakupoglu |
-| `packages/@eep-dev/setup-cli` | Core team | BeneluxSoft |
-| `packages/@eep-dev/agent-adopt` | Core team | BeneluxSoft |
+| `packages/@eep-dev/setup-cli` | Core team | Baytar |
+| `packages/@eep-dev/agent-adopt` | Core team | Demirag |
 | `packages/eep-*-python/**` | Core team | Altuncu |
 | `examples/**` | Any maintainer | — |
 | `tests/conformance-fixtures/**` | Core team (≥2 approvals required) | — |

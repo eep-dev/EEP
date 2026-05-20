@@ -54,14 +54,14 @@ jobs:
 
       - name: Test @eep-dev/mcp-bridge
         run: |
-          (cd ../../packages/@eep-dev/gates && npm ci && npm run build)
+          (cd ../gates && npm ci && npm run build)
           npm install && npx vitest run --reporter=dot
         working-directory: packages/@eep-dev/mcp-bridge
 
       - name: Test @eep-dev/middleware
         run: |
           for dep in gates signer validator; do
-            (cd "../../packages/@eep-dev/$dep" && npm ci && npm run build)
+            (cd "../$dep" && npm ci && npm run build)
           done
           npm install && npx vitest run --reporter=dot
         working-directory: packages/@eep-dev/middleware
@@ -187,9 +187,8 @@ jobs:
           fi
 
   # ── SBOM generation ───────────────────────────────────────────────────────
-  # Emits a CycloneDX SBOM for every published package. The artifact is
-  # uploaded to the GitHub Release and consumed by downstream provenance
-  # verifiers.
+  # Emits a CycloneDX SBOM for the repo. The workflow artifact is attached to the
+  # GitHub Release in create-github-release (not here — avoids contents:write on this job).
   sbom:
     name: Generate SBOM
     runs-on: ubuntu-latest
@@ -206,6 +205,9 @@ jobs:
           format: cyclonedx-json
           output-file: eep-sbom.cdx.json
           artifact-name: eep-sbom.cdx.json
+          # SBOM ships on the Release via create-github-release (artifact download).
+          # Default true tries to attach here with contents:read and fails on public repos.
+          upload-release-assets: false
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v7 # renovate: pin
@@ -242,109 +244,58 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
       - name: Publish @eep-dev/signer
-        run: |
-          npm ci
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/signer
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/signer "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/validator
-        run: |
-          npm ci
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/validator
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/validator "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/gates
-        run: |
-          npm ci
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/gates
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/gates "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/discovery
-        run: |
-          npm install
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/discovery
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/discovery "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/middleware
-        # Depends on @eep-dev/gates (workspace) — build the local dist first.
-        run: |
-          (cd ../../packages/@eep-dev/gates && npm ci && npm run build)
-          npm install
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/middleware
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/middleware "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRE_PUBLISH: >-
+            cd ../gates && npm ci && npm run build &&
+            node ../../../scripts/npm-publish-rewrite-deps.mjs . ${{ steps.version.outputs.VERSION }}
 
       - name: Publish @eep-dev/mcp-bridge
-        run: |
-          (cd ../../packages/@eep-dev/gates && npm ci && npm run build)
-          npm install
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/mcp-bridge
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/mcp-bridge "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRE_PUBLISH: >-
+            cd ../gates && npm ci && npm run build &&
+            node ../../../scripts/npm-publish-rewrite-deps.mjs . ${{ steps.version.outputs.VERSION }}
 
       - name: Publish @eep-dev/compliance-cli
-        run: |
-          npm ci
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/compliance-cli
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/compliance-cli "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/setup-cli
-        run: |
-          npm install
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/setup-cli
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/setup-cli "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @eep-dev/agent-adopt
-        run: |
-          # agent-adopt depends on @eep-dev/setup-cli; the just-published
-          # version is what consumers will install. For local pack/publish we
-          # use the workspace-built dist.
-          (cd ../../packages/@eep-dev/setup-cli && npm install && npm run build)
-          npm install
-          npm run build
-          npm pack --dry-run
-          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version --allow-same-version
-          npm publish --access public --provenance
-        working-directory: packages/@eep-dev/agent-adopt
+        run: bash scripts/ci-npm-publish-package.sh packages/@eep-dev/agent-adopt "${{ steps.version.outputs.VERSION }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRE_PUBLISH: >-
+            cd ../setup-cli && npm install && npm run build &&
+            node ../../../scripts/npm-publish-rewrite-deps.mjs . ${{ steps.version.outputs.VERSION }}
 
   # ── PyPI publish (Python packages via OIDC trusted publishing) ───────────
   # Each PyPI project must have a Trusted Publisher configured pointing at
@@ -364,6 +315,7 @@ jobs:
       id-token: write   # required for PyPI Trusted Publishing (OIDC)
     strategy:
       fail-fast: false
+      max-parallel: 1   # one upload at a time — avoids PyPI upload API 429
       matrix:
         package:
           - eep-signer-python
@@ -387,8 +339,42 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Set version and build
+      - name: Check if version already on PyPI
+        id: pypi_release
         working-directory: packages/${{ matrix.package }}
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          set -euo pipefail
+          PROJECT="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['name'])")"
+          echo "project=${PROJECT}" >> "$GITHUB_OUTPUT"
+          HTTP_CODE="$(curl -sS -o /tmp/pypi-project.json -w '%{http_code}' "https://pypi.org/pypi/${PROJECT}/json")"
+          if [ "${HTTP_CODE}" = "200" ] && VERSION="${VERSION}" python - <<'PY'
+          import json, os, sys
+          version = os.environ["VERSION"]
+          data = json.load(open("/tmp/pypi-project.json"))
+          if version in data.get("releases", {}):
+              sys.exit(0)
+          sys.exit(1)
+          PY
+          then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "PyPI already has ${PROJECT}@${VERSION} — skipping build and upload."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish ${PROJECT}@${VERSION} to PyPI."
+          fi
+
+      - name: Already on PyPI (skipped)
+        if: steps.pypi_release.outputs.skip == 'true'
+        run: |
+          echo "No upload needed for ${{ steps.pypi_release.outputs.project }}@${{ steps.version.outputs.VERSION }}."
+
+      - name: Set version and build
+        if: steps.pypi_release.outputs.skip != 'true'
+        working-directory: packages/${{ matrix.package }}
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           # Update version in pyproject.toml from tag (idempotent, allows same).
           python - <<'PY'
@@ -402,6 +388,7 @@ jobs:
           python -m build
 
       - name: Publish to PyPI (Trusted Publishing)
+        if: steps.pypi_release.outputs.skip != 'true'
         uses: pypa/gh-action-pypi-publish@release/v1 # renovate: pin
         with:
           packages-dir: packages/${{ matrix.package }}/dist/

@@ -4,6 +4,14 @@ All notable changes to this repository are documented here. The format is loosel
 
 ## Unreleased
 
+- (nothing yet)
+
+## [0.1.0] - 2026-05-19
+
+First public npm publish of all `@eep-dev/*` TypeScript packages at `0.1.0`.
+
+### Added
+
 - **`@eep-dev/middleware` — webhook dispatcher** — New
   `WebhookDispatcher` fans published events out to webhook subscribers
   with the retry policy mandated by

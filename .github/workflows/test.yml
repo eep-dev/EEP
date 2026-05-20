@@ -126,6 +126,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
+      - run: npm run build
       - run: npx vitest run --coverage
 
   test-discovery:

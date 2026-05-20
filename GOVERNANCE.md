@@ -6,16 +6,18 @@ EEP uses an evolving governance model to stay open while enabling fast progress 
 
 Current pre-1.0 core team and research/implementation partners:
 
-- Prof. Dr. Ugur Cekmez (Munich University of Digital Technologies and Applied Sciences, Germany)
+- Dr. Ugur Cekmez (Professor, Munich University of Digital Technologies and Applied Sciences)
 - Yigit Yakupoglu (Technic AI, Carnegie Mellon University (MS))
-- Jackson Foley (ThriveLogic, ex-Lockheed Martin engineer)
+- Jackson Foley (ThriveLogic)
 - Omid Jaafari (SudoVision)
+- Enes Demirag (Klyft)
 - Kasim Acikbas (Ultralytics)
-- Tarik Altuncu (PhD, Imperial College)
+- Dr. Tarik Altuncu (PhD, Imperial College)
 - Erdem Cimenoglu (Siemens)
-- Berk Baytar (Chooch, DevOps expert)
+- Berk Baytar (Chooch)
 - BeneluxSoft, Belgium (development partner)
 - MUDT (research partner)
+- Biruni University (research partner)
 
 ---
 
@@ -128,9 +130,14 @@ with the formation of the Technical Steering Committee (see
 
 Several core-team members are affiliated with academic institutions,
 research partners, or commercial entities (notably MUDT and BeneluxSoft).
-Some companies — including, but not limited to, more.md — have adopted EEP
-in their products, and individuals from those companies contribute back to
-the specification. To prevent any single sponsor from steering the
+EEP itself originated as engineering work at more.md and was open-sourced
+for the community under Apache 2.0; more.md continues to maintain the
+specification alongside the rest of the core team and operates the
+production reference implementation. Other companies and academic
+partners also adopt EEP and contribute back to the spec. The origin
+relationship is structural and is disclosed openly here so that
+contributors, sponsors, and downstream consumers can evaluate it. To
+prevent any single sponsor — including more.md — from steering the
 specification:
 
 1. **No commercial entity has a controlling vote** over the spec, schemas,
