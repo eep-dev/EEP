@@ -302,12 +302,22 @@ describe("EEPServer", () => {
   });
 
   describe("subscribe body validation", () => {
+    // Includes a "pro" tier with no requirements so the metadata/tier round-trip
+    // test below can opt into a non-default tier without supplying gate_proofs.
+    const validationGateConfig = parseGateConfig({
+      default_tier: "public",
+      tiers: {
+        public: { requirements: [], access: ["entity.public.profile"] },
+        pro: { requirements: [], access: ["entity.public.profile"] }
+      }
+    });
     const makeServer = () => {
       const db = new RecordingDBAdapter();
       const bus = new RecordingEventBusAdapter();
       const server = new EEPServer({
         baseUrl: "https://api.example.com",
         did: "did:web:example.com",
+        gateConfig: validationGateConfig,
         dbAdapter: db,
         eventBusAdapter: bus
       });
@@ -408,6 +418,115 @@ describe("EEPServer", () => {
         body: { ...validWebhookBody, event_types: ["com.example.*", "org.other.entity.created"] }
       });
       expect(res.status).toBe(201);
+    });
+  });
+
+  describe("subscribe gate_proofs validation", () => {
+    const makeGatedServer = () => {
+      const db = new RecordingDBAdapter();
+      const bus = new RecordingEventBusAdapter();
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        gateConfig,
+        proofVerifiers: [paymentVerifier],
+        dbAdapter: db,
+        eventBusAdapter: bus
+      });
+      return { db, bus, server };
+    };
+
+    const baseBody = {
+      source_did: "did:web:agent.example",
+      delivery_method: "webhook",
+      delivery_url: "https://hook.example/notify",
+      event_types: ["com.example.entity.updated"]
+    } as const;
+
+    it("rejects an unknown tier with 400", async () => {
+      const { server, db } = makeGatedServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...baseBody, tier: "ghost" }
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as { error: string }).error).toBe("invalid_request");
+      expect(db.rows.length).toBe(0);
+    });
+
+    it("accepts the default tier without gate_proofs", async () => {
+      const { server, db } = makeGatedServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...baseBody, tier: "public" }
+      });
+      expect(res.status).toBe(201);
+      expect(db.rows[0]?.tier).toBe("public");
+    });
+
+    it("rejects a gated tier when gate_proofs are missing", async () => {
+      const { server, db, bus } = makeGatedServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: { ...baseBody, tier: "premium" }
+      });
+      expect(res.status).toBe(402);
+      const body = res.body as { error: string; required_tier: string; unmet_requirements: Array<{ type: string }> };
+      expect(body.error).toBe("access_restricted");
+      expect(body.required_tier).toBe("premium");
+      expect(body.unmet_requirements.some((u) => u.type === "payment")).toBe(true);
+      expect(db.rows.length).toBe(0);
+      expect(bus.published).toEqual([]);
+    });
+
+    it("accepts a gated tier with valid body gate_proofs", async () => {
+      const { server, db } = makeGatedServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: {
+          ...baseBody,
+          tier: "premium",
+          gate_proofs: [{ type: "payment", token: "tok_valid" }]
+        }
+      });
+      expect(res.status).toBe(201);
+      expect(db.rows[0]?.tier).toBe("premium");
+    });
+
+    it("rejects a gated tier when body gate_proofs fail semantic verification", async () => {
+      const { server } = makeGatedServer();
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: {
+          ...baseBody,
+          tier: "premium",
+          gate_proofs: [{ type: "payment", token: "tok_wrong" }]
+        }
+      });
+      expect(res.status).toBe(402);
+    });
+
+    it("accepts a gated tier when proofs are supplied via the auth header", async () => {
+      const { server, db } = makeGatedServer();
+      const proofs: GateProof[] = [{ type: "payment", token: "tok_valid" }];
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: { "x-eep-proofs": JSON.stringify(proofs) },
+        body: { ...baseBody, tier: "premium" }
+      });
+      expect(res.status).toBe(201);
+      expect(db.rows[0]?.tier).toBe("premium");
     });
   });
 

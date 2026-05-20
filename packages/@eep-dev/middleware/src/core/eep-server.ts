@@ -4,6 +4,7 @@ import {
   parseGateConfig,
   ProofVerifierRegistry,
   resolveAccess,
+  type AccessRestrictionResponse,
   type GateConfig,
   type GateProof,
   type ProofVerifier
@@ -295,6 +296,38 @@ export class EEPServer {
           : undefined;
 
       const tier = typeof body.tier === "string" ? body.tier : undefined;
+
+      // gate_proofs: validate against the requested tier's requirements. Body-supplied
+      // proofs are merged with any header-supplied proofs from the auth adapter, so
+      // either source (or both) can satisfy the tier.
+      if (tier !== undefined) {
+        const tierConfig = this.gateConfig.tiers[tier];
+        if (!tierConfig) {
+          return {
+            status: 400,
+            body: { error: "invalid_request", message: `unknown tier: "${tier}"` }
+          };
+        }
+        const requiresGateCheck = tier !== this.gateConfig.default_tier && tierConfig.requirements.length > 0;
+        if (requiresGateCheck) {
+          const sentinelResource = tierConfig.access[0];
+          // Degenerate tier with no resources to grant — nothing to verify against.
+          if (sentinelResource) {
+            const bodyProofs = Array.isArray(body.gate_proofs)
+              ? body.gate_proofs.filter((p): p is GateProof => !!p && typeof p === "object" && typeof (p as { type?: unknown }).type === "string")
+              : [];
+            const headerProofs = await this.authAdapter.extractProofs(request);
+            const proofs = [...headerProofs, ...bodyProofs];
+            const access = await resolveAccess(proofs, this.gateConfig, sentinelResource, this.verifierRegistry, {
+              strictSemanticVerification: true
+            });
+            if (!access.granted) {
+              const payload: AccessRestrictionResponse = await build402Response(this.gateConfig, sentinelResource, proofs);
+              return { status: 402, body: payload };
+            }
+          }
+        }
+      }
 
       // A per-subscription HMAC secret used to sign webhook deliveries.
       // Returned to the subscriber once, on creation, and never again.
