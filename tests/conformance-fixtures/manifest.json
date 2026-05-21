@@ -158,6 +158,16 @@
       "expected": "subscription/ssrf-private-ip-rejected.expected.json",
       "shape": "json-pair",
       "asserts_valid": false
+    },
+    {
+      "id": "discovery-crosswalk-host-bundle",
+      "category": "discovery",
+      "tier": "Informative",
+      "spec_section": "§12 Discovery (informative crosswalk)",
+      "path": "discovery/crosswalk-host",
+      "expected": "discovery/crosswalk-host/expected.json",
+      "shape": "bundle",
+      "asserts_valid": true
     }
   ]
 }

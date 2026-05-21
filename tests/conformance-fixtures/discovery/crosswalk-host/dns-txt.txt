@@ -1,0 +1,7 @@
+; Informative DNS TXT bootstrap (AID — Agent Interface Discovery).
+; Not normative; clients SHOULD fall back to HTTP /.well-known/* probing.
+
+_agent.crosswalk.example.   IN  TXT  "v=aid1; eep=https://crosswalk.example/.well-known/eep.json; a2a=https://crosswalk.example/.well-known/agent.json; mcp=https://crosswalk.example/.well-known/mcp.json"
+
+; SPEC §12.5 also defines a TXT form scoped to EEP only:
+_eep.crosswalk.example.     IN  TXT  "v=eep1; manifest=https://crosswalk.example/.well-known/eep.json"
