@@ -95,7 +95,9 @@ EEP is the contract for **agent ↔ entity** engagement: discovery, realtime str
 | **A2A** | Agent collaboration | agent ↔ agent | delegation and lifecycle |
 | **ANP** | Decentralized agent networking | agent ↔ agent | DID-centric coordination |
 
-See [eep-positioning-complementary.md](./docs/guides/eep-positioning-complementary.md) for a short comparison.
+See [eep-positioning-complementary.md](./docs/guides/eep-positioning-complementary.md) for a short comparison and
+[discovery-crosswalk-v1.md](./docs/guides/discovery-crosswalk-v1.md) for a copy-paste recipe that co-locates EEP,
+A2A Agent Card, MCP discovery and `llms.txt` on a single origin without conflict.
 
 ## Quick start
 

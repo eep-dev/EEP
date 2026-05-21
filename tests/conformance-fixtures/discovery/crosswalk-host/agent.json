@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.3.0",
+  "name": "crosswalk-example",
+  "description": "Example A2A Agent Card co-located with EEP, MCP and llms.txt on a single origin.",
+  "url": "https://crosswalk.example/a2a",
+  "provider": {
+    "organization": "Crosswalk Example, Inc.",
+    "url": "https://crosswalk.example"
+  },
+  "version": "1.0.0",
+  "documentation_url": "https://crosswalk.example/docs",
+  "capabilities": {
+    "streaming": true,
+    "push_notifications": true,
+    "state_transition_history": false
+  },
+  "default_input_modes": ["application/json", "text/plain"],
+  "default_output_modes": ["application/json", "text/markdown"],
+  "skills": [
+    {
+      "id": "summarize-entity",
+      "name": "Summarize entity",
+      "description": "Returns a short summary of the entity behind this card.",
+      "input_modes": ["text/plain"],
+      "output_modes": ["text/markdown"]
+    }
+  ],
+  "x-eep": {
+    "subscribe_url": "https://crosswalk.example/eep/subscribe",
+    "stream_url": "https://crosswalk.example/eep/stream",
+    "source_did": "did:web:crosswalk.example",
+    "supported_events": ["com.example.entity.*", "com.example.trust.*"],
+    "anp_compatible": true,
+    "dpv_purpose": "https://w3id.org/dpv#ServiceProvision",
+    "dpv_retention": "https://w3id.org/dpv#TemporalDuration"
+  }
+}
