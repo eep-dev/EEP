@@ -11,3 +11,5 @@ It is **not** a replacement for:
 | **ANP** | Decentralized agent networking | Complementary — EEP’s discovery and DID usage can align with agent network identity patterns. |
 
 **One-sentence pitch:** *MCP connects agents to tools; EEP connects subscribers to entity state changes with standard discovery and delivery semantics.*
+
+**See also:** [discovery-crosswalk-v1.md](./discovery-crosswalk-v1.md) — single-origin recipe co-locating `/.well-known/eep.json`, `/.well-known/agent.json` (A2A) and `/.well-known/mcp.json` without conflict.

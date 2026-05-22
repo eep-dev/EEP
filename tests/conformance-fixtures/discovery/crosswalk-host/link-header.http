@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Content-Type: application/json
+Link: </.well-known/eep.json>; rel="eep-manifest"; type="application/json"
+Link: </.well-known/agent.json>; rel="agent-card"; type="application/json"
+Link: </.well-known/mcp.json>; rel="mcp-discovery"; type="application/json"
+Link: <https://crosswalk.example/eep/subscribe>; rel="subscribe"; type="application/json"
+Link: <https://crosswalk.example/eep/stream?source=crosswalk.example>; rel="monitor"
+Link: </llms.txt>; rel="llms"; type="text/plain"

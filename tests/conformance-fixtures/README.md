@@ -32,6 +32,10 @@ Every fixture directory contains either:
   (raw signed bytes), `headers.json` (request headers including
   `webhook-id` / `webhook-timestamp` / `webhook-signature`),
   `secret.txt` (the test secret), and `expected.json` (`{"valid": true|false, "reason": ...}`).
+- **A static bundle** (`shape: "bundle"`) — a directory of static files served
+  by a single host (e.g. `discovery/crosswalk-host/`). Used for informative
+  fixtures where multiple files coexist; `expected.json` summarises what a
+  validator should see.
 
 Some fixtures are deliberately *invalid* — they encode bytes that
 implementations MUST reject. The expected outcome makes the rejection

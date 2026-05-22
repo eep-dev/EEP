@@ -1,0 +1,28 @@
+{
+  "did": "did:web:crosswalk.example",
+  "eep_version": "0.1",
+  "eep_versions": ["0.1"],
+  "preferred_version": "0.1",
+  "layers": {
+    "layer1": "https://crosswalk.example/eep",
+    "layer2_sse": "https://crosswalk.example/eep/stream",
+    "layer2_webhook": "https://crosswalk.example/eep/subscribe",
+    "layer3_ws": "wss://crosswalk.example/eep/pulse"
+  },
+  "supported_content_types": [
+    "application/json",
+    "text/markdown",
+    "text/toon"
+  ],
+  "gates_url": "https://crosswalk.example/eep/gates/did:web:crosswalk.example",
+  "services_url": "https://crosswalk.example/eep/services/did:web:crosswalk.example",
+  "capabilities_query_url": "https://crosswalk.example/.well-known/eep.json/capabilities",
+  "pqc_ready": false,
+  "x402_enabled": true,
+  "x402": {
+    "facilitator_url": "https://x402.org/facilitator",
+    "payment_rails": ["x402/usdc"],
+    "network": "base"
+  },
+  "updated_at": "2026-05-21T00:00:00Z"
+}

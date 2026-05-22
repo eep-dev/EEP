@@ -1,0 +1,22 @@
+{
+  "$comment": "Informative example — tracks the MCP well-known discovery proposal in modelcontextprotocol/modelcontextprotocol#1054. Field names may change as the upstream PR lands.",
+  "schema_version": "draft-0",
+  "name": "crosswalk-example-mcp",
+  "description": "Tool surface co-located with EEP and A2A on the same origin.",
+  "servers": [
+    {
+      "name": "crosswalk-tools",
+      "transport": "streamable-http",
+      "url": "https://crosswalk.example/mcp",
+      "auth": {
+        "scheme": "bearer",
+        "token_url": "https://crosswalk.example/oauth/token"
+      }
+    }
+  ],
+  "related": {
+    "eep_manifest": "https://crosswalk.example/.well-known/eep.json",
+    "agent_card": "https://crosswalk.example/.well-known/agent.json",
+    "llms_txt": "https://crosswalk.example/llms.txt"
+  }
+}

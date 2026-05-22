@@ -1,0 +1,15 @@
+# Crosswalk Example
+
+> Example single-origin host that co-locates EEP, A2A Agent Card, MCP and llms.txt.
+> Intended as offline reference for the Discovery Crosswalk v1 guide.
+
+## Machine-readable surfaces
+
+- [EEP manifest](https://crosswalk.example/.well-known/eep.json): entity engagement (discovery, streams, gates).
+- [A2A Agent Card](https://crosswalk.example/.well-known/agent.json): agent-to-agent task delegation.
+- [MCP discovery](https://crosswalk.example/.well-known/mcp.json): tool / resource invocation (informative).
+
+## Optional
+
+- DNS `TXT _agent.crosswalk.example` — informative bootstrap hint (AID).
+- Combined `Link:` response header — see `link-header.http` in this bundle.

@@ -1,0 +1,7 @@
+{
+  "eep_manifest_valid": true,
+  "co_located_surfaces": ["eep", "a2a", "mcp", "llms"],
+  "origin": "https://crosswalk.example",
+  "source_did": "did:web:crosswalk.example",
+  "notes": "Informative bundle for Discovery Crosswalk v1. eep.json MUST validate against schemas/v0.1/eep-manifest.json. agent.json and mcp.json are informative — their schemas track upstream A2A v0.3 and the MCP well-known discovery proposal respectively."
+}
