@@ -3,7 +3,6 @@ MCP Tool: get_fund_comparison
 Fetches fund comparison data from TEFAS API.
 """
 
-import json
 from enum import Enum
 import requests
 from typing import Optional, Dict, Any, List
