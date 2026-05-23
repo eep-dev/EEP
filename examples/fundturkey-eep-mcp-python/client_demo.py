@@ -63,7 +63,7 @@ def main() -> None:
         if r.status_code == 200:
             result = r.json()["result"]
             print("✅ Access Granted!")
-            print(f"📊 Result: {json.dumps(result, indent=2, ensure_ascii=False)[:300]}...\n")
+            print(f"📊 Result: {json.dumps(result, indent=2, ensure_ascii=False)}...\n")
         else:
             print(f"❌ Failed: {r.text}")
 
