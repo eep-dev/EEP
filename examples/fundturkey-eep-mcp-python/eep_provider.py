@@ -121,7 +121,11 @@ def main() -> None:
     
     # 2. Configure the EEP bridge
     config = {
+<<<<<<< HEAD
         "did": "did:web:fundturkey.mcp.ai",
+=======
+        "did": "did:web:fundturkey.eep-dev.org",
+>>>>>>> 52e78cfdd10560925c5bc5e03e8aad9a75c25950
         "base_url": "http://localhost:3005",
         "mcp_base_url": f"http://localhost:{adapter_port}",
         
