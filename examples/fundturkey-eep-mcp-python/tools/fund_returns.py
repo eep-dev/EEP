@@ -3,7 +3,6 @@ MCP Tool: get_fund_returns
 Fetches fund return (getiri) data from TEFAS API.
 """
 
-import json
 import requests
 from enum import Enum
 from typing import Optional, Dict, Any
