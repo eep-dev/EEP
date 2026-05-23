@@ -2,7 +2,9 @@
 
 This example demonstrates how to use the **Entity Engagement Protocol (EEP)** as a monetisation, identity, and security gate layer on top of a **Model Context Protocol (MCP)** server.
 
-Specifically, it gates premium financial tools from **`tefas-mcp-server`** (a Turkish Investment Funds tracking service) using EEP's **Payment Gate** and **Agreement Gate** mechanics.
+Specifically, it gates premium financial tools from **`tefas-mcp-server`** (a Turkish Investment Funds tracking service) using EEP's **Payment Gate** and **Agreement Gate** mechanics. 
+
+Use this tool and see the financial platform.
 
 ---
 
@@ -94,20 +96,3 @@ The client will:
 4.  Receive a successful `200 OK` return with real-time fund comparison statistics.
 
 ---
-
-## Connecting Your Real `tefas-mcp-server`
-
-To switch from the simulated mock server to your actual **`tefas-mcp-server`** located in the parent directory:
-
-1.  Open `eep_provider.py` and modify the imports section:
-
-```python
-# Swap this import:
-# from mcp_server import mcp
-
-# To import your actual server:
-sys.path.append(os.path.abspath("../../../tefas-mcp-server"))
-from server import mcp
-```
-
-2.  Run `python eep_provider.py` again. The EEP-MCP bridge will now automatically introspect your real live TEFAS python tools and apply the configured gates!
