@@ -121,11 +121,7 @@ def main() -> None:
     
     # 2. Configure the EEP bridge
     config = {
-<<<<<<< HEAD
         "did": "did:web:fundturkey.mcp.ai",
-=======
-        "did": "did:web:fundturkey.eep-dev.org",
->>>>>>> 7036636 (virtuel-tech-guru: As the realistic data provider I have provided my mcp server created specifically for fundturkey platform. EEP makes it available as the main tooling source to bring fund related data and put this context into agentic evaluation on investment decisions)
         "base_url": "http://localhost:3005",
         "mcp_base_url": f"http://localhost:{adapter_port}",
         
