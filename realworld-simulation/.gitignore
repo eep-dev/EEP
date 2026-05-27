@@ -5,3 +5,8 @@ agent/.venv/
 **/__pycache__/
 *.pyc
 .DS_Store
+
+# vhs/ffmpeg intermediate outputs (final artifacts live in ../assets/)
+realworld-demo.mp4
+realworld-demo-short.mp4
+realworld-demo.gif

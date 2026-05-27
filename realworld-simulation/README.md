@@ -86,6 +86,32 @@ flowchart LR
 - Do **not** speed up the terminal recording for the EEP leg — sub-second structured access is the punchline.
 - Suggested post: *We taught an agent to satisfy gates, sign an NDA, and pay (simulated) USDC for JSON — no HTML parse. Entity Engagement Protocol (EEP).*
 
+## Regenerating the demo recording
+
+The canonical demo GIF/MP4 live in [`assets/realworld-demo.gif`](../assets/realworld-demo.gif) and [`assets/realworld-demo.mp4`](../assets/realworld-demo.mp4). The recording runs both scenarios **in parallel** (split-screen mode via `DEMO_SPLIT_SCREEN=1`) so the contrast in completion time — Scenario A's ~26 s vs Scenario B's ~10 s — is visible at a glance.
+
+To refresh:
+
+```bash
+# 1. Run the demo recording (uses VHS — brew install vhs)
+#    demo.tape sets DEMO_SPLIT_SCREEN=1 and renders at 1800×950 so the
+#    parallel two-pane layout fits.
+vhs demo.tape
+
+# 2. Optimized GIF via two-pass palette extraction (10 fps, 1000 px wide)
+ffmpeg -y -i realworld-demo.mp4 -vf "fps=10,scale=1000:-1:flags=lanczos,palettegen=stats_mode=diff:max_colors=128" /tmp/palette.png
+ffmpeg -y -i realworld-demo.mp4 -i /tmp/palette.png \
+  -lavfi "fps=10,scale=1000:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5" \
+  realworld-demo.gif
+
+# 3. Lossy post-optimization with gifsicle (brew install gifsicle)
+gifsicle -O3 --colors 128 --lossy=80 realworld-demo.gif -o realworld-demo-opt.gif
+mv realworld-demo-opt.gif realworld-demo.gif
+
+# 4. Move artifacts to assets/
+mv realworld-demo.mp4 realworld-demo.gif ../assets/
+```
+
 ## License
 
 Apache-2.0, consistent with the EEP monorepo.

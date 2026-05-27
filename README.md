@@ -8,6 +8,11 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](./CODE_OF_CONDUCT.md)
 [![EEP compatible](./assets/badges/eep-compatible.svg)](./docs/current/SPECIFICATION.md)
 
+<p align="center">
+  <img src="./assets/realworld-demo.gif" alt="Two terminal panes running in parallel: an agent fetching the same quarterly report via current-web HTML scraping (~26s, ~46 KB, ~11.5K tokens, 2 simulated human steps) vs EEP (~10s, ~2.2 KB, ~386 tokens, 0 human steps). Deterministic, no LLM calls." width="1000"/>
+</p>
+<p align="center"><sub>Two agent paths, side by side. Deterministic — no LLM spend. <a href="./realworld-simulation/">Reproduce it →</a></sub></p>
+
 ## Stability (v0.1)
 
 The specification and reference packages are **v0.1**: the spec, schemas, CI and libraries here are meant to be implemented against, but **breaking changes can still happen** while the ecosystem is small. Pin versions in production and read [CHANGELOG.md](./CHANGELOG.md) before upgrades. Governance details: [GOVERNANCE.md](./GOVERNANCE.md).
