@@ -1,15 +1,14 @@
 # EEP llms.txt — Concise Overview for Agents (v0.1)
-# Generated: 2026-04-15T19:31:24Z
+# Generated: 2026-06-01T18:18:10Z
 
 EEP (Entity Engagement Protocol) is an open standard for push-based, verifiable communication between digital entities and agents.
 It defines three layers: Layer 1 (REST state resolution/discovery), Layer 2 (SSE + webhooks signal stream), Layer 3 (WebSocket pulse).
 Core promises: documented wire format, libraries, and compliance tooling. No ranking/traffic claims.
-Origin: developed at more.md (https://more.md) and open-sourced under Apache 2.0; more.md maintains the spec with the core team and operates the production reference implementation.
 
 ## Repository Inventory (from README.md)
 - Normative spec: docs/current/SPECIFICATION.md
 - Schemas: schemas/v0.1/
-- TS packages: packages/@eep-dev/* (@eep-dev/signer, validator, gates, middleware, mcp-bridge, compliance-cli, setup-cli)
+- TS packages: packages/@eep-dev/* (@eep-dev/signer, validator, gates, middleware, mcp-bridge, discovery, compliance-cli, setup-cli, agent-adopt)
 - Python parity: packages/eep-*-python/
 - Compliance CLI: packages/@eep-dev/compliance-cli (with --report-html, --report-json, --report-md)
 - Setup CLI: npx @eep-dev/setup-cli (init, inject, apply --production)
@@ -27,6 +26,8 @@ Use: npx @eep-dev/compliance-cli --target <url> --report-html report.html
 
 ## Key Guides (selected)
 - how-to-setup-cli.md: init/inject/apply/verify
+- how-to-subscribe.md: subscribe to an entity's events (core agent action)
+- how-to-dispatch.md: dispatch/publish events as a provider (core agent action)
 - integrate-eep-after-setup-cli.md: wiring middleware after artifacts
 - five-minute-proof.md: quick validation
 - testing-and-validation.md, langgraph-eep-agent.md, mcp-eep-bridge.md
