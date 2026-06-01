@@ -1,4 +1,4 @@
-import { resolve as dnsResolve } from 'dns/promises';
+import { resolve4, resolve6 } from 'dns/promises';
 
 /**
  * @eep-dev/validator
@@ -82,12 +82,23 @@ export async function validateSSRF(
         throw new SSRFError(`Blocked hostname: '${hostname}' resolves to localhost`);
     }
 
-    // 3. DNS resolution and IP validation
-    let resolvedAddresses: string[];
-    try {
-        resolvedAddresses = await dnsResolve(hostname);
-    } catch (error) {
-        throw new SSRFError(`DNS resolution failed for '${hostname}': ${(error as Error).message}`);
+    // 3. DNS resolution and IP validation.
+    //    Resolve BOTH address families: a host can present a public IPv4 (A) while
+    //    hiding a private IPv6 (AAAA) — or vice versa — and the OS resolver may then
+    //    connect over the unchecked family. Block if *any* resolved address is private;
+    //    only treat the host as unresolvable when *both* families fail.
+    const resolvedAddresses: string[] = [];
+    const resolutionErrors: string[] = [];
+    const settled = await Promise.allSettled([resolve4(hostname), resolve6(hostname)]);
+    for (const result of settled) {
+        if (result.status === 'fulfilled') {
+            resolvedAddresses.push(...result.value);
+        } else {
+            resolutionErrors.push((result.reason as Error).message);
+        }
+    }
+    if (resolvedAddresses.length === 0) {
+        throw new SSRFError(`DNS resolution failed for '${hostname}': ${resolutionErrors.join('; ')}`);
     }
 
     for (const address of resolvedAddresses) {

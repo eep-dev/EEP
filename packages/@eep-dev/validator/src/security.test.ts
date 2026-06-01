@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { validateSSRF, SSRFError, validateEventTypePattern } from './index';
 
-const { mockDnsResolve } = vi.hoisted(() => ({ mockDnsResolve: vi.fn() }));
-vi.mock('dns/promises', () => ({ resolve: mockDnsResolve }));
+const { mockResolve4, mockResolve6 } = vi.hoisted(() => ({
+    mockResolve4: vi.fn(),
+    mockResolve6: vi.fn(),
+}));
+vi.mock('dns/promises', () => ({ resolve4: mockResolve4, resolve6: mockResolve6 }));
 
 describe('Validator Security', () => {
 
     beforeEach(() => {
-        mockDnsResolve.mockReset();
+        mockResolve4.mockReset();
+        mockResolve6.mockReset();
+        // Default: a host resolves to nothing in either family unless a test says so.
+        mockResolve4.mockResolvedValue([]);
+        mockResolve6.mockResolvedValue([]);
     });
 
     describe('SSRF Prevention', () => {
@@ -17,29 +24,52 @@ describe('Validator Security', () => {
         });
 
         it('rejects private IP ranges (10.x, 172.16-31.x, 192.168.x)', async () => {
-            mockDnsResolve.mockResolvedValueOnce(['10.0.0.1']);
+            mockResolve4.mockResolvedValueOnce(['10.0.0.1']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow('Private class A');
 
-            mockDnsResolve.mockResolvedValueOnce(['172.16.0.1']);
+            mockResolve4.mockResolvedValueOnce(['172.16.0.1']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow('Private class B');
 
-            mockDnsResolve.mockResolvedValueOnce(['192.168.1.1']);
+            mockResolve4.mockResolvedValueOnce(['192.168.1.1']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow('Private class C');
         });
 
-        it('rejects IPv6 mapped IPv4 addresses', async () => {
-            mockDnsResolve.mockResolvedValueOnce(['::ffff:127.0.0.1']);
+        it('rejects IPv6 mapped IPv4 addresses (AAAA family)', async () => {
+            mockResolve6.mockResolvedValueOnce(['::ffff:127.0.0.1']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow(SSRFError);
 
-            mockDnsResolve.mockResolvedValueOnce(['::ffff:10.0.0.1']);
+            mockResolve6.mockResolvedValueOnce(['::ffff:10.0.0.1']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow(SSRFError);
         });
 
-        it('rejects DNS rebinding attempts', async () => {
-            // First call resolves to public, simulating a TOCTOU DNS rebind
-            // The validator checks all resolved addresses; if any is private, it rejects.
-            mockDnsResolve.mockResolvedValueOnce(['93.184.216.34', '127.0.0.1']);
+        it('rejects a host that hides a private IPv6 (AAAA) behind a public IPv4 (dual-stack bypass)', async () => {
+            // Regression: the validator used to resolve A records only, so a private
+            // AAAA address was never inspected and the OS could connect over IPv6.
+            mockResolve4.mockResolvedValueOnce(['93.184.216.34']); // public decoy
+            mockResolve6.mockResolvedValueOnce(['fd00::1']);        // private ULA (fc00::/7)
+            await expect(validateSSRF('https://dual-stack.example.com/hook')).rejects.toThrow(SSRFError);
+        });
+
+        it('rejects an IPv6 link-local AAAA record', async () => {
+            mockResolve6.mockResolvedValueOnce(['fe80::1']);
+            await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow('private/reserved');
+        });
+
+        it('allows a public host that is IPv4-only (AAAA returns NODATA)', async () => {
+            mockResolve4.mockResolvedValueOnce(['93.184.216.34']);
+            mockResolve6.mockRejectedValueOnce(new Error('queryAaaa ENODATA evil.com'));
+            await expect(validateSSRF('https://example.com/hook')).resolves.toBeUndefined();
+        });
+
+        it('rejects DNS rebinding attempts (any resolved address private)', async () => {
+            mockResolve4.mockResolvedValueOnce(['93.184.216.34', '127.0.0.1']);
             await expect(validateSSRF('https://rebind.example.com/hook')).rejects.toThrow(SSRFError);
+        });
+
+        it('reports a DNS failure only when BOTH families fail to resolve', async () => {
+            mockResolve4.mockRejectedValueOnce(new Error('queryA ENOTFOUND nope.invalid'));
+            mockResolve6.mockRejectedValueOnce(new Error('queryAaaa ENOTFOUND nope.invalid'));
+            await expect(validateSSRF('https://nope.invalid/hook')).rejects.toThrow('DNS resolution failed');
         });
 
         it('rejects URL-encoded bypass attempts', async () => {
@@ -56,12 +86,12 @@ describe('Validator Security', () => {
         });
 
         it('rejects link-local / AWS metadata IP 169.254.169.254', async () => {
-            mockDnsResolve.mockResolvedValueOnce(['169.254.169.254']);
+            mockResolve4.mockResolvedValueOnce(['169.254.169.254']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow('Link-local');
         });
 
         it('rejects multicast range addresses', async () => {
-            mockDnsResolve.mockResolvedValueOnce(['224.0.0.1']);
+            mockResolve4.mockResolvedValueOnce(['224.0.0.1']);
             await expect(validateSSRF('https://evil.com/hook')).rejects.toThrow('Multicast');
         });
 
@@ -86,7 +116,7 @@ describe('Validator Security', () => {
         it('handles unicode normalization attacks', async () => {
             // Homoglyph: "ⅼocalhost" uses Unicode ⅼ (U+217C) instead of ASCII l
             // URL constructor should either reject or normalize this differently from 'localhost'
-            const homoglyphUrl = 'https://\u217Cocalhost/hook';
+            const homoglyphUrl = 'https://ⅼocalhost/hook';
             try {
                 await validateSSRF(homoglyphUrl);
                 // If it doesn't throw, it must have resolved to a public IP (DNS would fail)
