@@ -158,6 +158,15 @@ describe('EEP JSON Schema Validation', () => {
             expect(validate(makeValidEnvelope({ type: 'a.b' }))).toBe(false);
         });
 
+        it('accepts catalog event types with underscores in suffix segments (§8/§9)', () => {
+            expect(validate(makeValidEnvelope({ type: 'com.acme.product.price_changed' }))).toBe(true);
+            expect(validate(makeValidEnvelope({ type: 'gate.access_granted' }))).toBe(true);
+        });
+
+        it('still rejects an underscore in the root segment', () => {
+            expect(validate(makeValidEnvelope({ type: 'com_root.entity.updated' }))).toBe(false);
+        });
+
         it('rejects non-ISO8601 time', () => {
             expect(validate(makeValidEnvelope({ time: 'not-a-date' }))).toBe(false);
         });

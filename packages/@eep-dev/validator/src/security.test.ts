@@ -126,5 +126,17 @@ describe('Validator Security', () => {
         it('rejects patterns with null bytes', () => {
             expect(validateEventTypePattern('md.more\x00.entity')).toBe(false);
         });
+
+        it('accepts the spec catalog event types that use underscores', () => {
+            // §8/§9 use snake_case in suffix segments; these MUST validate.
+            expect(validateEventTypePattern('com.acme.product.price_changed')).toBe(true);
+            expect(validateEventTypePattern('gate.access_granted')).toBe(true);
+            expect(validateEventTypePattern('com.example.entity.*')).toBe(true);
+        });
+
+        it('still rejects a leading underscore or underscore in the root segment', () => {
+            expect(validateEventTypePattern('_private.event')).toBe(false);
+            expect(validateEventTypePattern('com_root.event')).toBe(false);
+        });
     });
 });
