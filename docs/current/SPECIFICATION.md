@@ -1340,19 +1340,19 @@ Publishers MUST declare their retention period in the manifest's `compliance` ob
 
 ### 16.4 Regulatory Alignment Table (G23)
 
-The following table maps EEP protocol features to their corresponding regulatory obligations:
+The following table maps EEP protocol features to **relevant building blocks** for the listed obligations. These mappings are **informational, not legal advice or a compliance certification**: an obligation is only met when the operator actually implements the feature (for example, per-entry Ed25519 audit-log signing per §16.2) and has the deployment independently verified. "Operator-verified" means the burden of proof rests on the deploying operator, not on the protocol itself.
 
-| Regulation | EEP Feature | How It Helps |
+| Regulation | EEP Feature | Relevant building block (operator-verified) |
 |---|---|---|
 | **EU AI Act Art. 9** (risk management) | `trust` gate, ERC-8004 reputation | Verified agent identity and behavioral scoring |
-| **EU AI Act Art. 12** (record-keeping) | Audit Trail API (`GET /eep/audit`), signed log entries | Tamper-evident, long-term audit logs |
+| **EU AI Act Art. 12** (record-keeping) | Audit Trail API (`GET /eep/audit`), signed log entries | Audit-log endpoint; tamper-evidence requires the operator to implement per-entry Ed25519 signing (§16.2) |
 | **EU AI Act Art. 13** (transparency) | `eep.json` manifest, TOON format | Machine-readable and human-readable disclosures |
-| **GDPR Art. 5** (purpose limitation) | `data_request` gate with W3C DPV purpose | Prevents data use outside declared purpose |
-| **GDPR Art. 7** (consent) | `data_request` gate, Operator Privacy Policy | Structured, withdrawable consent |
-| **GDPR Art. 17** (right to erasure) | `data.withdrawal` WebSocket message | Standardized data withdrawal request protocol |
-| **DORA Art. 9** (ICT risk) | `compliance.dora: true` flag, audit retention | Registry-level ICT risk compliance declaration |
+| **GDPR Art. 5** (purpose limitation) | `data_request` gate with W3C DPV purpose | Pins a declared processing purpose to each data grant |
+| **GDPR Art. 7** (consent) | `data_request` gate, Operator Privacy Policy | Structured, withdrawable consent flow |
+| **GDPR Art. 17** (right to erasure) | `data.withdrawal` WebSocket message | Withdrawal-request channel for data shared via `data_request` — not a general erasure mechanism; must be reconciled with the §16.3 audit-log retention period |
+| **DORA Art. 9** (ICT risk) | `compliance.dora: true` flag, audit retention | Registry-level ICT-risk compliance declaration |
 | **eIDAS 2.0 / EU 2024/1183** | `agreement` gate (W3C VC), Delegation Proof VC | Wallet-aligned credential stack; cross-border identity |
-| **CCPA §1798.100** | Operator Privacy Policy, `data_request` gate | Agent-side privacy preference enforcement |
+| **CCPA §1798.100** | Operator Privacy Policy, `data_request` gate | Agent-side privacy-preference declaration (enforcement is operator-side) |
 | **W3C ANP** | `compliance.anp_compatible`, A2A `x-eep` fields | Semantic interoperability with agent network protocols |
 
 ---
