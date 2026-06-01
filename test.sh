@@ -89,7 +89,7 @@ if [ "$RUN_FULL" = true ]; then
   fi
 
   set +e
-  (cd "$ROOT_DIR" && pip install -r tests/cross-impl/requirements.txt -q && EEP_BASE_URL="${EEP_BASE_URL:-http://localhost:3002}" python3 -m pytest tests/cross-impl -v)
+  (cd "$ROOT_DIR" && pip install -r tests/cross-impl/requirements.txt -q && pip install -e packages/eep-signer-python -q && EEP_REQUIRE_PYTHON_SIGNER=1 EEP_BASE_URL="${EEP_BASE_URL:-http://localhost:3002}" python3 -m pytest tests/cross-impl -v)
   TEST_EXIT_CODE=$?
   set -e
 

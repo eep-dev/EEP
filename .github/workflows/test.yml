@@ -351,7 +351,11 @@ jobs:
       - name: Run cross-implementation protocol tests
         run: |
           pip install -r tests/cross-impl/requirements.txt
-          EEP_BASE_URL=http://localhost:3002 python -m pytest tests/cross-impl -v
+          # Install the Python reference signer so the cross-language signing-parity
+          # check runs for real instead of skipping. EEP_REQUIRE_PYTHON_SIGNER=1 turns
+          # a missing import into a failure rather than a silent skip.
+          pip install ./packages/eep-signer-python
+          EEP_REQUIRE_PYTHON_SIGNER=1 EEP_BASE_URL=http://localhost:3002 python -m pytest tests/cross-impl -v
 
       - name: Stop publisher
         if: always()
