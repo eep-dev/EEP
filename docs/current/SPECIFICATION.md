@@ -1642,13 +1642,13 @@ The following fields are available in `eep.json` in addition to those defined in
 
 ## §12.5 DNS TXT Record Discovery (G20)
 
-Agents MAY verify that a domain is a legitimate EEP participant by checking its DNS TXT record:
+Agents MAY discover a domain's EEP manifest by checking its DNS TXT record at `_eep.<domain>`:
 
 ```
-_eep.publisher.example.  IN TXT  "v=EEP1 did=did:web:publisher.example"
+_eep.publisher.example.  IN TXT  "v=eep1; manifest=https://publisher.example/.well-known/eep.json"
 ```
 
-**Format:** `v=EEP1 did=<DID>`. Agents SHOULD treat absence of this record as a trust signal downgrade but MUST NOT treat it as an outright rejection (DNS deployment takes time).
+**Format:** `v=eep1; manifest=<https-url>` — a version token (`eep1`) and `;`-separated `key=value` pairs; the `manifest` URL MUST be HTTPS. This is the format encoded by the manifest schema's `discovery_hints.dns_txt_record` field and parsed by the reference implementation (`@eep-dev/discovery` `parseDnsTxtRecord`); the publisher's DID is resolved from the manifest it points to. Agents SHOULD treat absence of this record as a trust-signal downgrade but MUST NOT treat it as an outright rejection (DNS deployment takes time).
 
 ---
 
