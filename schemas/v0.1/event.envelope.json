@@ -39,7 +39,7 @@
     "type": {
       "type": "string",
       "description": "The event type in reverse-domain dot notation. Format: {reverse-domain}.{entity-type}.{action}. Well-known EEP event types are listed in eep_known_event_types below and documented normatively in SPECIFICATION.md §13.",
-      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)+$",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)+$",
       "minLength": 5,
       "examples": [
         "com.example.entity.updated",

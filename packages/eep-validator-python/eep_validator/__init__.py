@@ -117,7 +117,9 @@ def validate_ssrf_sync(url_string: str, *, allow_http: bool = False) -> None:
 
 # ── Event Type Validation ──────────────────────────────────────────────────────
 
-_EVENT_TYPE_RE = re.compile(r"^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*(\.\*)?$")
+# Underscores are permitted within non-leading segments so the spec's own catalog
+# event types (e.g. com.acme.product.price_changed, gate.access_granted) validate. See §8.
+_EVENT_TYPE_RE = re.compile(r"^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*(\.\*)?$")
 
 
 def validate_event_type_pattern(pattern: str) -> bool:

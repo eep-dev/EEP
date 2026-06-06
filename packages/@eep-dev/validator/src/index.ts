@@ -158,8 +158,10 @@ function ipv4ToBigInt(ip: string): bigint {
  * Supports flat dot-notation and wildcard suffix (e.g., 'com.example.entity.*').
  */
 export function validateEventTypePattern(pattern: string): boolean {
-    // Allow: lowercase.separated.parts and optional .* suffix
-    return /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*(\.\*)?$/.test(pattern);
+    // Allow: lowercase.separated.parts and optional .* suffix. Underscores are
+    // permitted within non-leading segments so the spec's own catalog event types
+    // (e.g. com.acme.product.price_changed, gate.access_granted) validate. See §8.
+    return /^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*(\.\*)?$/.test(pattern);
 }
 
 /**

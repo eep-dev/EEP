@@ -64,6 +64,14 @@ class TestEventTypePattern:
     def test_valid_wildcard(self):
         assert validate_event_type_pattern("com.example.entity.*") is True
 
+    def test_valid_underscore_suffix_segments(self):
+        # §8/§9 catalog uses snake_case in suffix segments; these MUST validate.
+        assert validate_event_type_pattern("com.acme.product.price_changed") is True
+        assert validate_event_type_pattern("gate.access_granted") is True
+
+    def test_rejects_underscore_in_root_segment(self):
+        assert validate_event_type_pattern("com_root.entity") is False
+
     def test_rejects_uppercase(self):
         assert validate_event_type_pattern("com.example.Entity.*") is False
 
