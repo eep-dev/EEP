@@ -208,16 +208,18 @@ IDEA → Draft → Review → Accepted / Rejected → Final → Deprecated
 
 | Stage | Description | Transition Criteria |
 |---|---|---|
-| **Draft** | Author submits PR with `EEIP-{n}-{title}.md`. Open for early feedback. | PR opened to `proposals/` directory |
+| **Draft** | Author submits PR with `EEIP-{n}-{title}.md`. Open for early feedback. | PR opened to the `docs/eeips/` directory |
 | **Review** | EEIP enters a 60-day public comment window. TSC reviews. | TSC acknowledges as Review-Ready via PR label |
-| **Accepted** | TSC votes to accept (majority of TSC members). | TSC vote recorded in PR; EEIP merged |
+| **Accepted** | TSC votes to accept (≥2/3 majority of TSC members). | TSC vote recorded in PR; EEIP merged |
 | **Rejected** | EEIP rejected by TSC with written rationale. | TSC vote + rejection reason posted in PR |
 | **Final** | At least 2 independent, interoperable implementations exist and are documented. | Author submits 2 conformance test results |
 | **Deprecated** | EEIP superseded by a newer EEIP. | New EEIP references old EEIP as `Deprecates` |
 
+> **Decision body and submission directory.** During the `0.x` benevolent-dictator phase the **core team** acts as the EEIP decision body; from `v1.0` this role transfers to the elected **TSC**. Some earlier documents (e.g. `docs/eeips/EEIP-0001-core-base.md`) refer to this body as the *Standards Committee* — these names denote the same role. All EEIPs are submitted to the **`docs/eeips/`** directory (there is no `proposals/` directory); `eep.dev/proposals` is the public web mirror of that directory.
+
 ### Pre-1.0 Fast Track
 
-During Phase 0.x (benevolent dictator), the EEIP process is **optional but encouraged**. The core team may accept changes via regular PRs with a shorter review window (14 days). All G1–G23 changes were applied via this fast track.
+During Phase 0.x (benevolent dictator), the EEIP process is **optional but encouraged**. The core team may accept changes via regular PRs with a shorter review window (14 days) instead of the 60-day formal window. All G1–G23 changes were applied via this fast track.
 
 ### Reference
 

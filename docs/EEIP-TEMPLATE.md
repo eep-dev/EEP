@@ -1,6 +1,6 @@
 # EEIP-TEMPLATE
 
-Use this template to propose changes to the EEP protocol. Copy this file, rename it `EEIP-{number}-{short-title}.md`, and submit a pull request to the `proposals/` directory.
+Use this template to propose changes to the EEP protocol. Copy this file, rename it `EEIP-{number}-{short-title}.md`, and submit a pull request to the `docs/eeips/` directory.
 
 ---
 
