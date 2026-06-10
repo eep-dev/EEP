@@ -6,6 +6,29 @@ All notable changes to this repository are documented here. The format is loosel
 
 ### Security
 
+- **`@eep-dev/gates` (TypeScript) and `eep-gates` (Python) — closed a
+  default-tier wildcard specificity bypass in `resolveAccess` /
+  `resolve_access`.** A gate configuration commonly publishes a broad scope on
+  the no-requirements default tier and carves out a narrower, gated path, e.g.
+  default `public` with `access: ["content.*", "profile.*"]` plus a `paid` tier
+  with `access: ["content.premium.*"]` and `requirements: [...]`. Because
+  `content.*` covers `content.premium.X`, the resolver granted access to the
+  gated resource through the default tier's broad match even when the gated
+  tier's requirements were unmet, so a request with no proofs read premium
+  content. The resolver now applies a specificity override: when the winning
+  tier is the default tier and a gated (requirements-bearing) tier targets the
+  same resource with an **equal-or-more-specific** access pattern, the default
+  grant is suppressed and the request is denied with the gated tier's unmet
+  requirements (a 402 instead of a leak). A *strictly more specific* default
+  pattern keeps its grant (owners can still open a narrower path explicitly),
+  resources no gated tier touches stay public, and resources the default tier
+  does not cover at all fail closed. New helpers `patternSpecificity`,
+  `bestSpecificityFor`, `defaultTierOverriddenByGatedTier` (TypeScript) and
+  `pattern_specificity`, `best_specificity_for`,
+  `default_tier_overridden_by_gated_tier` (Python) are exported for reuse.
+  Resource-less resolution and tiers satisfied by valid proofs are unchanged.
+  Surfaced by the EEP protocol audit.
+
 - **`@eep-dev/middleware` (TypeScript) and `eep-middleware` (Python) — auth
   adapters now fail closed and verify credentials.** The `JWTAuthAdapter`
   previously decoded the JWT payload and emitted `did_verified` identity and

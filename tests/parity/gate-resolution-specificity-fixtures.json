@@ -1,0 +1,119 @@
+[
+  {
+    "name": "bypass_premium_denied",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.*", "profile.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": "content.premium.eep-whitepaper",
+    "expected_granted": false,
+    "expected_tier": "public"
+  },
+  {
+    "name": "non_premium_content_stays_public",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.*", "profile.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": "content.blog.hello-world",
+    "expected_granted": true,
+    "expected_tier": "public"
+  },
+  {
+    "name": "default_only_resource_granted",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.*", "profile.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": "profile.bio",
+    "expected_granted": true,
+    "expected_tier": "public"
+  },
+  {
+    "name": "equal_specificity_tie_denied",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.premium.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": "content.premium.x",
+    "expected_granted": false,
+    "expected_tier": "public"
+  },
+  {
+    "name": "more_specific_default_keeps_grant",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.premium.docs.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.*"] }
+      }
+    },
+    "resource": "content.premium.docs.readme",
+    "expected_granted": true,
+    "expected_tier": "public"
+  },
+  {
+    "name": "default_not_covering_resource_fails_closed",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["profile.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": "content.premium.x",
+    "expected_granted": false,
+    "expected_tier": "public"
+  },
+  {
+    "name": "gated_tier_not_covering_resource_ignored",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["video.*"] }
+      }
+    },
+    "resource": "content.premium.x",
+    "expected_granted": true,
+    "expected_tier": "public"
+  },
+  {
+    "name": "free_non_default_tier_does_not_gate",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.*"] },
+        "open": { "requirements": [], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": "content.premium.x",
+    "expected_granted": true,
+    "expected_tier": "public"
+  },
+  {
+    "name": "resource_less_resolution_granted_default",
+    "config": {
+      "default_tier": "public",
+      "tiers": {
+        "public": { "requirements": [], "access": ["content.*", "profile.*"] },
+        "paid": { "requirements": [{ "type": "trust", "min_score": 20 }], "access": ["content.premium.*"] }
+      }
+    },
+    "resource": null,
+    "expected_granted": true,
+    "expected_tier": "public"
+  }
+]

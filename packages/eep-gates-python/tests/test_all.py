@@ -5,12 +5,13 @@ import pytest
 from eep_gates import (
     # Resource matcher
     match_resource, matches_any, find_tiers_for_resource,
+    pattern_specificity, best_specificity_for,
     # Gate config
     parse_gate_config, serialize_gate_config, GateConfigError,
     # Proof validator
     validate_proof_structure, validate_proofs, ProofVerifier, ProofVerifierRegistry,
     # Access resolver
-    resolve_access,
+    resolve_access, default_tier_overridden_by_gated_tier,
     # HTTP 402
     build_402_response, is_gated_resource,
     # Commerce
@@ -366,3 +367,197 @@ class TestServiceListing:
             "service_id": "svc_test",
         })
         assert r.valid is False
+
+
+# ── Default-tier wildcard specificity override ────────────────────────────────
+#
+# The bypass: a default (no-requirements) tier publishes a broad wildcard
+# (``content.*``) that *covers* a resource a gated tier targets with a
+# strictly-more-specific pattern (``content.premium.*``). Before the fix the
+# resolver granted access via the default tier's broad match even when the
+# gated tier's requirements were unmet, silently bypassing the gate.
+
+BYPASS_CONFIG = {
+    "default_tier": "public",
+    "tiers": {
+        "public": {"requirements": [], "access": ["content.*", "profile.*"]},
+        "paid": {
+            "label": "Premium",
+            "requirements": [{"type": "trust", "min_score": 20}],
+            "access": ["content.premium.*"],
+        },
+    },
+}
+
+EQUAL_SPECIFICITY_CONFIG = {
+    "default_tier": "public",
+    "tiers": {
+        "public": {"requirements": [], "access": ["content.premium.*"]},
+        "paid": {
+            "requirements": [{"type": "trust", "min_score": 20}],
+            "access": ["content.premium.*"],
+        },
+    },
+}
+
+
+class _AllowVerifier(ProofVerifier):
+    @property
+    def supported_types(self):
+        return ["trust", "payment", "identity", "credential", "connection"]
+
+    async def verify(self, proof, requirement):
+        return True
+
+
+def _allow_registry() -> ProofVerifierRegistry:
+    registry = ProofVerifierRegistry()
+    registry.register(_AllowVerifier())
+    return registry
+
+
+class TestPatternSpecificity:
+    def test_universal_wildcard_is_least_specific(self):
+        assert pattern_specificity("*") == 0
+
+    def test_scope_wildcards_ranked_by_length(self):
+        assert pattern_specificity("content.*") == len("content.*")
+        assert pattern_specificity("content.premium.*") == len("content.premium.*")
+        assert pattern_specificity("content.premium.*") > pattern_specificity("content.*")
+
+    def test_exact_patterns_beat_wildcards(self):
+        assert pattern_specificity("content.premium.x") == len("content.premium.x") + 1000
+        assert pattern_specificity("a") > pattern_specificity("verylongprefix.*")
+
+
+class TestBestSpecificityFor:
+    def test_returns_best_matching_specificity(self):
+        assert best_specificity_for(["content.*", "profile.*"], "content.premium.x") == len("content.*")
+
+    def test_prefers_more_specific_match(self):
+        assert best_specificity_for(["content.*", "content.premium.*"], "content.premium.x") == len("content.premium.*")
+
+    def test_keeps_higher_score_when_later_pattern_is_less_specific(self):
+        # First matching pattern is the most specific; a later, broader match
+        # must not lower the running best (exercises the score<=best branch).
+        assert best_specificity_for(["content.premium.*", "content.*"], "content.premium.x") == len("content.premium.*")
+
+    def test_returns_negative_one_when_nothing_matches(self):
+        assert best_specificity_for(["profile.*", "video.*"], "content.premium.x") == -1
+
+    def test_returns_negative_one_for_empty_list(self):
+        assert best_specificity_for([], "content.premium.x") == -1
+
+
+class TestDefaultTierOverriddenByGatedTier:
+    def test_more_specific_gated_tier_overrides(self):
+        assert default_tier_overridden_by_gated_tier(BYPASS_CONFIG, "content.premium.x") is True
+
+    def test_equal_specificity_tie_overrides(self):
+        assert default_tier_overridden_by_gated_tier(EQUAL_SPECIFICITY_CONFIG, "content.premium.x") is True
+
+    def test_no_gated_tier_covers_resource(self):
+        assert default_tier_overridden_by_gated_tier(BYPASS_CONFIG, "content.blog.post") is False
+
+    def test_missing_default_tier_fails_closed(self):
+        config = {
+            "default_tier": "ghost",
+            "tiers": {
+                "paid": {"requirements": [{"type": "trust", "min_score": 20}], "access": ["content.premium.*"]},
+            },
+        }
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.x") is True
+
+    def test_default_tier_not_covering_resource_fails_closed(self):
+        config = {
+            "default_tier": "public",
+            "tiers": {
+                "public": {"requirements": [], "access": ["profile.*"]},
+                "paid": {"requirements": [{"type": "trust", "min_score": 20}], "access": ["content.premium.*"]},
+            },
+        }
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.x") is True
+
+    def test_free_non_default_tier_does_not_override(self):
+        config = {
+            "default_tier": "public",
+            "tiers": {
+                "public": {"requirements": [], "access": ["content.*"]},
+                "open": {"requirements": [], "access": ["content.premium.*"]},
+            },
+        }
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.x") is False
+
+    def test_tier_without_requirements_field_does_not_override(self):
+        config = {
+            "default_tier": "public",
+            "tiers": {
+                "public": {"requirements": [], "access": ["content.*"]},
+                "weird": {"access": ["content.premium.*"]},
+            },
+        }
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.x") is False
+
+    def test_gated_tier_not_covering_resource_is_ignored(self):
+        config = {
+            "default_tier": "public",
+            "tiers": {
+                "public": {"requirements": [], "access": ["content.*"]},
+                "paid": {"requirements": [{"type": "trust", "min_score": 20}], "access": ["video.*"]},
+            },
+        }
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.x") is False
+
+    def test_more_specific_default_tier_keeps_grant(self):
+        config = {
+            "default_tier": "public",
+            "tiers": {
+                "public": {"requirements": [], "access": ["content.premium.docs.*"]},
+                "paid": {"requirements": [{"type": "trust", "min_score": 20}], "access": ["content.*"]},
+            },
+        }
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.docs.readme") is False
+
+    def test_parsed_model_config_overrides(self):
+        config = parse_gate_config(BYPASS_CONFIG)
+        assert default_tier_overridden_by_gated_tier(config, "content.premium.x") is True
+
+
+class TestSpecificityOverrideResolution:
+    @pytest.mark.asyncio
+    async def test_bypass_resource_is_denied(self):
+        result = await resolve_access([], BYPASS_CONFIG, "content.premium.eep-whitepaper")
+        assert result.granted is False
+        assert result.tier == "public"
+        assert any(u.type == "trust" for u in result.unmet)
+
+    @pytest.mark.asyncio
+    async def test_bypass_resource_granted_when_requirements_met(self):
+        proofs = [{"type": "trust", "self_attested": True}]
+        result = await resolve_access(proofs, BYPASS_CONFIG, "content.premium.eep-whitepaper", verifier_registry=_allow_registry())
+        assert result.granted is True
+        assert result.tier == "paid"
+
+    @pytest.mark.asyncio
+    async def test_non_premium_content_stays_public(self):
+        result = await resolve_access([], BYPASS_CONFIG, "content.blog.hello-world")
+        assert result.granted is True
+        assert result.tier == "public"
+
+    @pytest.mark.asyncio
+    async def test_default_only_resource_still_granted(self):
+        result = await resolve_access([], BYPASS_CONFIG, "profile.bio")
+        assert result.granted is True
+        assert result.tier == "public"
+
+    @pytest.mark.asyncio
+    async def test_equal_specificity_tie_is_denied(self):
+        result = await resolve_access([], EQUAL_SPECIFICITY_CONFIG, "content.premium.x")
+        assert result.granted is False
+        assert result.tier == "public"
+
+    @pytest.mark.asyncio
+    async def test_resource_less_resolution_unchanged(self):
+        result = await resolve_access([], BYPASS_CONFIG)
+        assert result.granted is True
+        assert result.tier == "public"

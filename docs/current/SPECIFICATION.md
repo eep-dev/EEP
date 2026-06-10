@@ -227,6 +227,8 @@ Proof validation is two-step:
 
 The protocol defines structural validation. Implementing platforms provide a `ProofVerifier` for semantic checks.
 
+**Informative (non-normative) — tier matching precedence:** When more than one tier's access patterns match a requested resource, implementations SHOULD resolve to the **most specific** matching tier rather than the most permissive one. In particular, a `default_tier` wildcard (for example `content.*`) MUST NOT silently grant access to a resource that a gated tier protects with an equal-or-more-specific pattern (for example `content.premium.*`): an agent that has not satisfied the gated tier's requirements is denied (402) instead of falling through to the default tier. Pattern specificity ranks an exact pattern (`a.b.c`) above any scope wildcard (`a.b.*`, longer prefix more specific) above the universal wildcard (`*`). Resources that only the default tier covers stay public. The reference `@eep-dev/gates` / `eep_gates` libraries implement this as `defaultTierOverriddenByGatedTier` / `default_tier_overridden_by_gated_tier`.
+
 ---
 
 ## 4. Layer 2: signal stream (SSE)

@@ -30,6 +30,36 @@ def matches_any(patterns: List[str], resource: str) -> bool:
     return any(match_resource(p, resource) for p in patterns)
 
 
+def pattern_specificity(pattern: str) -> int:
+    """Comparable specificity score for an access pattern (higher = more specific).
+
+      "*"          -> 0                   (universal wildcard, least specific)
+      "a.b.*"      -> len(pattern)         (scope wildcard, longer prefix wins)
+      "a.b.c"      -> len(pattern) + 1000  (exact literal, always beats a wildcard)
+
+    The score is only meaningful for a pattern that already matches the resource;
+    callers should guard with ``match_resource`` first (see ``best_specificity_for``).
+    """
+    if pattern == "*":
+        return 0
+    if pattern.endswith(".*"):
+        return len(pattern)
+    return len(pattern) + 1000
+
+
+def best_specificity_for(patterns: List[str], resource: str) -> int:
+    """Specificity of the most specific pattern in ``patterns`` that matches
+    ``resource``, or ``-1`` when none of the patterns match."""
+    best = -1
+    for pattern in patterns:
+        if not match_resource(pattern, resource):
+            continue
+        score = pattern_specificity(pattern)
+        if score > best:
+            best = score
+    return best
+
+
 def find_tiers_for_resource(
     tiers: Dict[str, Dict],
     resource: str,
@@ -44,13 +74,7 @@ def find_tiers_for_resource(
         access = tier.get("access", []) if isinstance(tier, dict) else tier.access
         for pattern in access:
             if match_resource(pattern, resource):
-                if pattern == "*":
-                    specificity = 0
-                elif pattern.endswith(".*"):
-                    specificity = len(pattern)
-                else:
-                    specificity = len(pattern) + 1000
-                matches.append((key, specificity))
+                matches.append((key, pattern_specificity(pattern)))
                 break
 
     matches.sort(key=lambda m: m[1], reverse=True)

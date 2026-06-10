@@ -102,10 +102,10 @@ export type {
 export { parseGateConfig, serializeGateConfig, getUsedRequirementTypes, GateConfigError } from './gate-config.js';
 
 // ── Resource Matching ─────────────────────────────────────────────────────────
-export { matchResource, matchesAny, findTiersForResource } from './resource-matcher.js';
+export { matchResource, matchesAny, findTiersForResource, patternSpecificity, bestSpecificityFor } from './resource-matcher.js';
 
 // ── Access Resolution ─────────────────────────────────────────────────────────
-export { resolveAccess, type ResolveAccessOptions } from './access-resolver.js';
+export { resolveAccess, defaultTierOverriddenByGatedTier, type ResolveAccessOptions } from './access-resolver.js';
 
 // ── Proof Validation ──────────────────────────────────────────────────────────
 export {

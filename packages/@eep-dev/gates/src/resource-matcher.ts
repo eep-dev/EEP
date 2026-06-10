@@ -42,6 +42,36 @@ export function matchesAny(patterns: string[], resource: string): boolean {
 }
 
 /**
+ * Comparable specificity score for an access pattern (higher = more specific):
+ *
+ *   "*"          → 0                  (universal wildcard, least specific)
+ *   "a.b.*"      → pattern.length     (scope wildcard, longer prefix wins)
+ *   "a.b.c"      → pattern.length+1000 (exact literal, always beats any wildcard)
+ *
+ * The score is only meaningful for a pattern that already matches the resource;
+ * callers should guard with `matchResource` first (see `bestSpecificityFor`).
+ */
+export function patternSpecificity(pattern: string): number {
+    if (pattern === '*') return 0;
+    if (pattern.endsWith('.*')) return pattern.length;
+    return pattern.length + 1000;
+}
+
+/**
+ * Specificity of the most specific pattern in `patterns` that matches
+ * `resource`, or -1 when none of the patterns match.
+ */
+export function bestSpecificityFor(patterns: string[], resource: string): number {
+    let best = -1;
+    for (const pattern of patterns) {
+        if (!matchResource(pattern, resource)) continue;
+        const score = patternSpecificity(pattern);
+        if (score > best) best = score;
+    }
+    return best;
+}
+
+/**
  * Find all tiers that grant access to a specific resource.
  * Returns tier keys sorted by specificity (exact matches first, then wildcards).
  */
@@ -54,11 +84,7 @@ export function findTiersForResource(
     for (const [key, tier] of Object.entries(tiers)) {
         for (const pattern of tier.access) {
             if (matchResource(pattern, resource)) {
-                // Higher specificity = more specific pattern
-                const specificity = pattern === '*' ? 0 :
-                    pattern.endsWith('.*') ? pattern.length :
-                        pattern.length + 1000; // Exact matches are most specific
-                matches.push({ key, specificity });
+                matches.push({ key, specificity: patternSpecificity(pattern) });
                 break; // One match per tier is enough
             }
         }
