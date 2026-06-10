@@ -60,6 +60,46 @@ Exports:
 - `createEEPApp` — Hono (`@eep-dev/middleware/hono`)
 - `createEEPMiddleware` — Koa (`@eep-dev/middleware/koa`)
 
+## Authentication adapters
+
+Auth adapters turn inbound credentials into EEP **proofs**. They fail closed: a token is trusted
+only after its signature (or the authorization server) is verified. An adapter that cannot verify
+anything emits no proofs (and logs a one-time warning) rather than trusting attacker-controlled input.
+
+- **`JWTAuthAdapter`** — verifies the JWT before emitting `did_verified` / capability proofs.
+  `alg: none` is always rejected, and expired / not-yet-valid tokens are rejected (60s default skew).
+  - HS256/384/512: pass a shared `secret`.
+  - RSA / ECDSA / EdDSA: pass a `verifyToken` callback (e.g. wrapping `jose`) that returns the
+    verified claims, or `null` if the token does not verify.
+  - With neither `secret` nor `verifyToken`, the adapter emits no proofs.
+
+  ```typescript
+  import { JWTAuthAdapter } from "@eep-dev/middleware";
+
+  const auth = new JWTAuthAdapter({ secret: process.env.JWT_SECRET });
+  // asymmetric, delegating verification to your JWT library:
+  // new JWTAuthAdapter({ verifyToken: async (t) => (await jwtVerify(t, key)).payload });
+  ```
+
+- **`OAuthAuthAdapter`** — requires an RFC 7662 `introspect` callback. Granted scope and the subject
+  DID come from the authorization server's response, never from a client-supplied `X-OAuth-Scope` header.
+
+  ```typescript
+  import { OAuthAuthAdapter } from "@eep-dev/middleware";
+
+  const auth = new OAuthAuthAdapter({
+    introspect: async (token) => {
+      const res = await fetch(introspectionUrl, {
+        method: "POST",
+        body: new URLSearchParams({ token })
+      });
+      return res.json(); // { active: boolean, scope?: string, sub?: string }
+    }
+  });
+  ```
+
+- **`APIKeyAuthAdapter`** — resolves an API key to `{ did, capabilities }` via your `resolver`.
+
 ## After `setup-cli`
 
 Generate config with `@eep-dev/setup-cli`, then wire runtime using **[integrate-eep-after-setup-cli.md](../../../docs/guides/integrate-eep-after-setup-cli.md)**.
