@@ -52,6 +52,16 @@ EEP follows [Semantic Versioning](https://semver.org/) (semver):
 - `1.x` — Stable. No breaking changes in patch releases. Minor versions add features but must remain additive. Breaking changes require a new major version.
 - Platforms must advertise their supported EEP version in all responses via the `EEP-Version` header.
 
+### 0.x breaking-change procedure
+
+Because `0.x` permits breaking changes between minor versions, each such change MUST be announced with a **30-day notice** delivered through *all* of:
+
+- a `### Breaking changes (pending)` entry in [`CHANGELOG.md`](./CHANGELOG.md) under **Unreleased**, naming the change and its target version;
+- a pinned **GitHub Discussions** post in the *Announcements* category;
+- the `EEP-Version` negotiation path ([SPECIFICATION.md §3.1.1](./docs/current/SPECIFICATION.md)): servers SHOULD advertise the upcoming version once the notice opens, and MAY emit a `Deprecation` / `Sunset` response header on affected endpoints.
+
+The 30-day clock starts when the change merges to `main` behind its pending-version flag. This interim procedure applies until the formal 18-month deprecation policy takes effect at `v1.0`.
+
 ## License
 
 The EEP specification uses the Apache 2.0 license. Implementations are free to be open or proprietary.
