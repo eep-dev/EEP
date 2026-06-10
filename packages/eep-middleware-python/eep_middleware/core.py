@@ -4,6 +4,9 @@ import json
 import time
 from typing import Any, Callable
 
+from eep_gates import ProofVerifier, ProofVerifierRegistry, build_402_response, resolve_access
+from eep_validator import SSRFError, validate_ssrf
+
 from eep_middleware.adapters import AuthAdapter, CloudEvent, DBAdapter, EventBusAdapter, SubscriptionRecord
 from eep_middleware.db.in_memory import InMemoryDBAdapter
 from eep_middleware.event_bus.in_memory import InMemoryEventBusAdapter
@@ -33,6 +36,7 @@ class EEPServer:
         auth_adapter: AuthAdapter | None = None,
         db_adapter: DBAdapter | None = None,
         event_bus_adapter: EventBusAdapter | None = None,
+        proof_verifiers: list[ProofVerifier] | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.did = did
@@ -46,6 +50,12 @@ class EEPServer:
         self.auth_adapter = auth_adapter or HeaderProofAuthAdapter()
         self.db_adapter = db_adapter or InMemoryDBAdapter()
         self.event_bus_adapter = event_bus_adapter or InMemoryEventBusAdapter()
+        # Semantic proof verifiers (e.g. payment settlement, trust lookup). Without a
+        # verifier for a requirement type, that requirement stays unmet under strict
+        # verification — the server fails closed rather than trusting unverified proofs.
+        self.verifier_registry = ProofVerifierRegistry()
+        for verifier in proof_verifiers or []:
+            self.verifier_registry.register(verifier)
 
     def manifest_payload(self) -> dict[str, Any]:
         return {
@@ -77,16 +87,17 @@ class EEPServer:
     async def resolve_gated_resource(self, resource: str | None, headers: dict[str, str]) -> tuple[int, dict[str, Any]]:
         target_resource = resource or "entity.public.profile"
         proofs = await self.auth_adapter.extract_proofs(headers, None)
-        if target_resource == "entity.public.profile":
-            return 200, {"resource": target_resource, "tier": "public", "data": {"value": "access_granted"}}
-        if any(isinstance(item, dict) and item.get("type") == "payment" and item.get("token") == "tok_valid" for item in proofs):
-            return 200, {"resource": target_resource, "tier": "premium", "data": {"value": "access_granted"}}
-        return 402, {
-            "error": "access_restricted",
-            "resource": target_resource,
-            "required_tier": "premium",
-            "current_tier": "public",
-        }
+        access = await resolve_access(
+            proofs,
+            self.gate_config,
+            target_resource,
+            self.verifier_registry,
+            strict_semantic_verification=True,
+        )
+        if not access.granted:
+            payload = await build_402_response(self.gate_config, target_resource, proofs)
+            return 402, payload
+        return 200, {"resource": target_resource, "tier": access.tier, "data": {"value": "access_granted"}}
 
     async def create_subscription(self, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         source_did = payload.get("source_did")
@@ -94,11 +105,27 @@ class EEPServer:
         if not isinstance(source_did, str) or delivery_method not in {"sse", "webhook"}:
             return 400, {"error": "invalid_request", "message": "source_did and delivery_method are required"}
 
+        delivery_url = str(payload["delivery_url"]) if isinstance(payload.get("delivery_url"), str) else None
+
+        # Webhook deliveries are fetched server-side, so the callback URL is an SSRF
+        # vector: validate it points at a public address before persisting it. SSE
+        # deliveries are client-initiated and need no callback URL.
+        if delivery_method == "webhook":
+            if not delivery_url:
+                return 400, {
+                    "error": "invalid_request",
+                    "message": "delivery_url is required when delivery_method is webhook",
+                }
+            try:
+                await validate_ssrf(delivery_url)
+            except SSRFError as err:
+                return 400, {"error": "invalid_request", "message": f"delivery_url is not allowed: {err}"}
+
         subscription = SubscriptionRecord(
             subscription_id=f"sub_{int(time.time() * 1000)}",
             source_did=source_did,
             delivery_method=str(delivery_method),
-            callback_url=str(payload["delivery_url"]) if isinstance(payload.get("delivery_url"), str) else None,
+            callback_url=delivery_url,
             created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         )
         await self.db_adapter.save_subscription(subscription)

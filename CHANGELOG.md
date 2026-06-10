@@ -4,7 +4,19 @@ All notable changes to this repository are documented here. The format is loosel
 
 ## Unreleased
 
-- (nothing yet)
+### Security
+
+- **`eep-middleware` (Python) — removed a gate bypass and added webhook SSRF
+  validation.** `EEPServer.resolve_gated_resource` previously granted premium
+  access to any request carrying a hard-coded `{"type":"payment","token":"tok_valid"}`
+  proof, ignoring the gate config and any semantic verifier. It now resolves
+  access through `eep_gates.resolve_access` with strict semantic verification
+  (fails closed; register `proof_verifiers` for real checks), reaching parity
+  with the TypeScript `@eep-dev/middleware`. `POST /eep/subscribe` now requires
+  a `delivery_url` for webhook subscriptions and validates it with
+  `eep_validator.validate_ssrf` before persisting, rejecting callbacks to
+  private / loopback / link-local addresses. `eep-gates` and `eep-validator`
+  are now declared dependencies. Surfaced by the EEP protocol audit.
 
 ## [0.1.0] - 2026-05-19
 

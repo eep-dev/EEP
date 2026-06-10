@@ -24,6 +24,11 @@ classifiers = [
 ]
 dependencies = [
     "fastapi>=0.110",
+    # Gate resolution + SSRF validation are shared with the TypeScript middleware.
+    # In the monorepo these resolve to the sibling packages installed editable
+    # (see test.sh / CI). When published they resolve from PyPI.
+    "eep-gates>=0.1.0",
+    "eep-validator>=0.1.0",
 ]
 
 [project.optional-dependencies]

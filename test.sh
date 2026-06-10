@@ -62,7 +62,10 @@ echo "━━━ Python: eep-mcp-bridge ━━━"
 
 echo ""
 echo "━━━ Python: eep-middleware ━━━"
-(cd "$ROOT_DIR/packages/eep-middleware-python" && pip install -e '.[dev]' -q && python3 -m pytest -q)
+(cd "$ROOT_DIR/packages/eep-middleware-python" \
+  && pip install -e ../eep-gates-python -e ../eep-validator-python -q \
+  && pip install -e '.[dev]' -q \
+  && python3 -m pytest -q)
 
 echo ""
 echo "━━━ llms.txt / llms-full.txt ━━━"
