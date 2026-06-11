@@ -1,5 +1,5 @@
 # EEP llms-full.txt — Comprehensive Knowledge Base (v0.1)
-# Generated: 2026-04-15T19:27:21Z
+# Generated: 2026-06-01T18:18:10Z
 
 This file concatenates the normative specification, key guides, compliance tooling, and examples.
 Use file headers for RAG context.
@@ -13,12 +13,34 @@ Use file headers for RAG context.
 [![CloudEvents](https://img.shields.io/badge/CloudEvents-v1.0.2-orange)](https://cloudevents.io)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](./LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](./CODE_OF_CONDUCT.md)
+[![EEP compatible](./assets/badges/eep-compatible.svg)](./docs/current/SPECIFICATION.md)
+
+<p align="center">
+  <img src="./assets/realworld-demo.gif" alt="Two terminal panes running in parallel: an agent fetching the same quarterly report via current-web HTML scraping (~26s, ~46 KB, ~11.5K tokens, 2 simulated human steps) vs EEP (~10s, ~2.2 KB, ~386 tokens, 0 human steps). Deterministic, no LLM calls." width="1000"/>
+</p>
+<p align="center"><sub>Two agent paths, side by side. Deterministic — no LLM spend. <a href="./realworld-simulation/">Reproduce it →</a></sub></p>
 
 ## Stability (v0.1)
 
 The specification and reference packages are **v0.1**: the spec, schemas, CI and libraries here are meant to be implemented against, but **breaking changes can still happen** while the ecosystem is small. Pin versions in production and read [CHANGELOG.md](./CHANGELOG.md) before upgrades. Governance details: [GOVERNANCE.md](./GOVERNANCE.md).
 
 **Community and safety:** [Code of Conduct](./CODE_OF_CONDUCT.md) · [Security](./SECURITY.md) (reports: **hello@eep.dev** with `[Security]` in the subject) · [Releasing](./RELEASING.md) (maintainers)
+
+## Origins
+
+EEP grew out of engineering work at [more.md](https://more.md), where the team built a platform around the idea of one canonical URL per digital entity. Once the protocol stabilized, it was extracted from that codebase, generalized and open-sourced under Apache 2.0 so any publisher and any agent can speak the same wire format. The more.md team continues to maintain the specification alongside the rest of the core team listed in [GOVERNANCE.md](./GOVERNANCE.md) and operates the production reference implementation that exercises every conformance tier and gate type defined here.
+
+## EEP?
+
+MCP, A2A, webhooks and ActivityPub standards solve different problems. EEP composes with all of them.
+
+- **MCP** lets an LLM *call a tool*. EEP lets an LLM *follow an entity over time* — discover it, subscribe and react to verified events from it.
+- **A2A** lets two agents *collaborate on a task*. EEP defines how either agent learns that an entity changed at all.
+- **Plain webhooks** require a custom protocol per publisher (auth, signing, retries, replay window). EEP is one wire format with HMAC-signed delivery, SSE and a 60-second replay window — implemented once, reusable everywhere.
+- **ActivityPub** federates accounts in a social graph. EEP delivers state-change events from any entity (person org, agent, product, listing) to authorized subscribers, with optional payment / credential / identity gates.
+- **DIDs and Verifiable Credentials** identify *who* an entity is. EEP defines *what they tell their subscribers* and *how subscribers verify it*.
+
+If you are building anything labelled "agentic," EEP is the missing layer between *the agent knows about the world* (DIDs, MCP, your data store) and *the agent reacts when the world changes* (today: bespoke per-vendor integrations).
 
 ## Official repositories
 
@@ -27,7 +49,7 @@ The specification and reference packages are **v0.1**: the spec, schemas, CI and
 
 ## In this repository
 
-If you are deciding whether to star, fork, or integrate, here is what is actually here:
+If you are deciding whether to star, fork or integrate, here is what is actually here:
 
 | Artifact | Where |
 |----------|--------|
@@ -39,17 +61,20 @@ If you are deciding whether to star, fork, or integrate, here is what is actuall
 | MCP bridge (tool runtime ↔ EEP) | [`@eep-dev/mcp-bridge`](./packages/@eep-dev/mcp-bridge/) + [`eep-mcp-bridge-python`](./packages/eep-mcp-bridge-python/) |
 | HTTP middleware for existing APIs | [`@eep-dev/middleware`](./packages/@eep-dev/middleware/) + [`eep-middleware-python`](./packages/eep-middleware-python/) |
 | Project wizard (`init` / `inject` / `apply` / `verify`) | [`@eep-dev/setup-cli`](./packages/@eep-dev/setup-cli/) |
+| **Agent adopt** (inject → apply → verify → report) | [`@eep-dev/agent-adopt`](./packages/@eep-dev/agent-adopt/) — see [AGENTS.md](./AGENTS.md) |
+| Adopters (seed list, static JSON) | [registry/adopters.json](./registry/adopters.json) — [eep.dev/adopters](https://eep.dev/adopters) |
+| Day-0 strategy & distribution | [docs/strategy/](./docs/strategy/) |
 | Docker reference stack (Node + Python + Postgres + Redis) | [examples/eep-reference-implementation/](./examples/eep-reference-implementation/) |
 | Scripted “Old Web vs EEP” terminal demo | [realworld-simulation/](./realworld-simulation/) (`npm run demo`) |
 | LangGraph/Claude agent example | [examples/langgraph-eep-agent/](./examples/langgraph-eep-agent/) |
 | Interactive playground (browser) | [eep.dev/playground](https://eep.dev/playground) — event validation + HMAC signing |
 | How to run tests | [TESTING.md](./TESTING.md) |
 
-Nothing here promises a particular ranking, traffic, or business outcome. It does promise a **documented wire format**, **libraries you can import** and **commands you can run** to check behavior.
+Nothing here promises a particular ranking, traffic or business outcome. It does promise a **documented wire format**, **libraries you can import** and **commands you can run** to check behavior.
 
 ## What is EEP?
 
-The Entity Engagement Protocol (EEP) describes how digital entities (people, organizations, products, agents) **publish state changes** and how **authorized subscribers** receive them **as events**, with optional **access gates** (identity, credentials, payment, agreements) and **signatures** so subscribers can tell real traffic from forgery.
+The Entity Engagement Protocol (EEP) describes how digital entities (people organizations, products, agents) **publish state changes** and how **authorized subscribers** receive them **as events**, with optional **access gates** (identity, credentials, payment, agreements) and **signatures** so subscribers can tell real traffic from forgery.
 
 Much of the web still relies on polling or bespoke feeds, so clients often see stale data or one-off integrations. EEP standardizes **discovery**, **subscription**, **delivery** (SSE and webhooks at minimum) and optional **WebSocket** negotiation so integrations look the same across publishers.
 
@@ -67,13 +92,13 @@ Implementations must provide the **signal stream**. State resolution and network
 
 ## Why it exists
 
-Automated clients (mobile apps, backends, or agents) repeatedly hit the same problems: knowing **when** something changed, subscribing **without** a custom protocol per publisher and checking that an event **really** came from that entity. EEP combines shared discovery, push delivery and cryptographic checks.
+Automated clients (mobile apps, backends or agents) repeatedly hit the same problems: knowing **when** something changed, subscribing **without** a custom protocol per publisher and checking that an event **really** came from that entity. EEP combines shared discovery, push delivery and cryptographic checks.
 
 **Publishers and strategists:** structured discovery, manifests versus sitemaps and *generative engine optimization* (GEO) are discussed as **industry context** in the [Whitepaper](docs/WHITEPAPER.tex) and non-normative spec notes. GEO is **not** a conformance test for EEP.
 
 ## Protocol positioning
 
-EEP is the contract for **agent ↔ entity** engagement: discovery, realtime streams, gate proofs and payment-aware access. It sits next to, not in place of, other stacks.
+EEP is the contract for **agent ↔ entity** engagement: discovery, realtime streams, gate proofs and payment-aware access. It sits next to other stacks.
 
 | Protocol | Primary scope | Interaction | What it standardizes |
 |----------|----------------|---------------|----------------------|
@@ -82,7 +107,9 @@ EEP is the contract for **agent ↔ entity** engagement: discovery, realtime str
 | **A2A** | Agent collaboration | agent ↔ agent | delegation and lifecycle |
 | **ANP** | Decentralized agent networking | agent ↔ agent | DID-centric coordination |
 
-See [eep-positioning-complementary.md](./docs/guides/eep-positioning-complementary.md) for a short comparison.
+See [eep-positioning-complementary.md](./docs/guides/eep-positioning-complementary.md) for a short comparison and
+[discovery-crosswalk-v1.md](./docs/guides/discovery-crosswalk-v1.md) for a copy-paste recipe that co-locates EEP,
+A2A Agent Card, MCP discovery and `llms.txt` on a single origin without conflict.
 
 ## Quick start
 
@@ -92,7 +119,18 @@ See [eep-positioning-complementary.md](./docs/guides/eep-positioning-complementa
 bash scripts/bootstrap.sh
 ```
 
-Run the full test matrix: [TESTING.md](./TESTING.md) (`bash test.sh` after bootstrap).
+### Testing
+Run the test matrix: [TESTING.md](./TESTING.md)
+
+```bash
+bash test.sh
+```
+
+To run the *full* test matrix including cross-implementation network tests (this implicitly starts a background server):
+
+```bash
+bash test.sh --full
+```
 
 ### For subscribers (sketch)
 
@@ -201,6 +239,7 @@ Shipped as npm packages (TypeScript, Node 18+ where noted) with Python counterpa
 - **`@eep-dev/mcp-bridge`** / **`eep-mcp-bridge`**: bridge MCP tool traffic with EEP.
 - **`@eep-dev/middleware`** / **`eep-middleware-python`**: drop-in HTTP adapters (Express, Fastify, Hono, Koa; FastAPI, Flask, Django).
 - **`@eep-dev/setup-cli`**: project detection, codegen, verify/doctor/watch.
+- **`@eep-dev/agent-adopt`**: one-shot `inject` + `apply` + `verify`, optional framework patch, `EEP_ADOPTION_REPORT.md`.
 
 ### [@eep-dev/signer](./packages/@eep-dev/signer/)
 
@@ -256,13 +295,12 @@ Tier types include payment, trust, identity, credential, connection, capability,
 
 ## Reference deployment
 
-The **eep-api** reference stack lives in [examples/eep-reference-implementation/](./examples/eep-reference-implementation/):
+EEP ships with two reference deployments at different levels of completeness:
 
-- Node service: `examples/eep-reference-implementation/node`
-- Python (FastAPI): `examples/eep-reference-implementation/python`
-- Compose file: `examples/eep-reference-implementation/compose.yml` (build context is the **EEP repo root** so local `packages/@eep-dev/*` paths resolve)
+- **In-tree minimal stack** — [examples/eep-reference-implementation/](./examples/eep-reference-implementation/). A small Node + Python + Postgres + Redis Compose project used by contributors and CI to exercise Layer 1 discovery, Layer 2 subscribe/stream, Layer 3 pulse and the gate endpoints against shared parity fixtures. Smoke script from repo root: `bash scripts/eep-reference-smoke.sh` (see [Five-minute proof](./docs/guides/five-minute-proof.md)).
+- **Production reference — [more.md](https://more.md)** — the platform where EEP originated. It runs every conformance tier (Core, Standard, Full), all gate types (credential, identity, agreement, data_request, payment, trust, allowlist, reciprocal, custom `x-*`), the commerce state machine and the WebSocket pulse end-to-end in production. Implementors who want to see EEP exercised at full scope can point clients and `@eep-dev/compliance-cli` at a more.md endpoint.
 
-Both implementations cover Layer 1 discovery, Layer 2 subscribe/stream, Layer 3 pulse and gate endpoints against shared parity fixtures. Smoke script from repo root: `bash scripts/eep-reference-smoke.sh` (see [Five-minute proof](./docs/guides/five-minute-proof.md)).
+The minimal stack is sufficient to read the spec and run conformance probes locally; more.md is the reference for *what a complete EEP deployment looks like in production*.
 
 ## Conformance levels
 
@@ -282,7 +320,7 @@ Publishers should enforce per-subscriber **429** limits with `Retry-After` and `
 
 EEP uses a BDFN model for **0.x** and plans a steering committee at **v1.0**. Details: [GOVERNANCE.md](./GOVERNANCE.md).
 
-- [ROADMAP.md](./ROADMAP.md) — milestones for v0.2, v0.3, and v1.0 (TSC formation, IETF/W3C submission, foundation transition)
+- [ROADMAP.md](./ROADMAP.md) — milestones for v0.2, v0.3 and v1.0 (TSC formation, IETF/W3C submission, foundation transition)
 - [MAINTAINERS.md](./MAINTAINERS.md) — current maintainer tiers and per-package ownership
 - [CHANGELOG.md](./CHANGELOG.md) — Keep-a-Changelog-style release notes
 - [eep-site sync checklist](./docs/guides/eep-site-sync-checklist.md) — keep landing-site copy in lockstep with the spec
@@ -1321,7 +1359,7 @@ Superset of Core. Suitable for: B2B data APIs, financial feeds, subscription ser
 - [x] All Core requirements above, plus:
 - [x] Webhook subscription endpoint (`POST /eep/subscribe`) with full lifecycle (create/pause/resume/delete)
 - [x] WebSub intent verification before activating any webhook subscription
-- [x] HMAC-SHA256 signature on all webhook deliveries (`X-EEP-Signature` header)
+- [x] HMAC-SHA256 signature on all webhook deliveries (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature` per §5)
 - [x] Exponential backoff retry policy for failed webhook deliveries (min 5 attempts, max 24h window)
 - [x] `credential` gate: W3C VC 2.0 presentation verification from named issuer DID
 - [x] `payment` gate: on-chain transaction hash verification with configurable confirmation threshold
@@ -2396,6 +2434,943 @@ The reference Node service demonstrates protocol behavior (gates, SSE, subscript
 | Enterprise rollout | [enterprise-implementation-playbook.md](./enterprise-implementation-playbook.md) | Broader than CLI |
 
 If something is missing for your stack, open an issue or PR against **`docs/guides/`** with the framework-specific snippet you needed.
+
+
+=== FILE: EEP/docs/guides/how-to-subscribe.md ===
+# How to subscribe to EEP events (agent guide)
+
+> **Audience:** AI agents, developer tools, and any system handling real-time updates from EEP-compliant platforms.
+
+---
+
+## Overview
+
+EEP supports three subscription models:
+1. **Webhooks**: The platform pushes events to a URL you control (recommended for production backends).
+2. **SSE (server-sent events)**: You open a long-lived connection and receive events in real time (ideal for scripts, CLIs, and frontends).
+3. **Network pulse (WebSockets)**: Bidirectional, low-latency channel for A2A task negotiation and live dashboards.
+
+## LLM-first execution contract
+
+Use this section when an agent needs deterministic, click-free integration steps.
+
+### Required input bundle
+
+```json
+{
+  "base_url": "https://api.example.com",
+  "api_key": "Bearer ...",
+  "source_did": "did:web:example.com:u:acme-corp",
+  "delivery_method": "webhook|sse|ws",
+  "event_types": ["com.example.entity.*"]
+}
+```
+
+### Deterministic output checks
+
+```json
+{
+  "webhook": ["subscription_id", "status=pending_verification|active"],
+  "sse": ["content-type=text/event-stream", "event frames received"],
+  "ws": ["connected ack", "monotonic seq per source"]
+}
+```
+
+### Fast verification commands
+
+```bash
+# Layer 1 discovery
+curl -fsS "https://api.example.com/.well-known/eep.json" | jq .
+
+# Gate discoverability
+curl -fsS "https://api.example.com/eep/gates/did:web:example.com:u:acme-corp" | jq .
+```
+
+---
+
+## Option A: Webhook subscription
+
+### Step 1: Set up a receiver endpoint
+
+Your webhook receiver must:
+- Accept `POST` requests at a publicly accessible URL.
+- Verify the `webhook-signature` header (REQUIRED for security).
+- Return HTTP `200` within 10 seconds.
+- Be idempotent (ignore duplicate events that share the same `id`).
+
+**Quick start with Express:**
+```typescript
+import express from 'express';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+const app = express();
+app.use(express.raw({ type: 'application/json' }));  // Parse as raw Buffer for signature verification
+
+app.post('/hooks/eep', (req, res) => {
+  const webhookId = req.headers['webhook-id'] as string;
+  const timestamp = req.headers['webhook-timestamp'] as string;
+  const signature = req.headers['webhook-signature'] as string;
+  const rawBody = req.body.toString();
+  const secret = process.env.EEP_WEBHOOK_SECRET!;
+
+  // Verify signature
+  const signedContent = `${webhookId}.${timestamp}.${rawBody}`;
+  const expected = createHmac('sha256', secret).update(signedContent).digest('base64');
+  const incoming = signature.replace('v1,', '');
+
+  if (!timingSafeEqual(Buffer.from(expected), Buffer.from(incoming))) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  const event = JSON.parse(rawBody);
+  console.log(`Received EEP event: ${event.type} from ${event.source}`);
+  
+  // Process the event...
+  
+  res.status(200).json({ status: 'ok' });
+});
+
+app.listen(3000);
+```
+
+### Step 2: Register your webhook
+
+```bash
+curl -X POST https://api.example.com/eep/subscribe \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_did": "did:web:example.com:u:acme-corp",
+    "event_types": ["com.example.entity.*", "com.example.trust.changed"],
+    "delivery_method": "webhook",
+    "delivery_url": "https://your-agent.example.com/hooks/eep"
+  }'
+```
+
+**Response:**
+```json
+{
+  "subscription_id": "sub_01HN3QK7GX",
+  "status": "pending_verification",
+  "message": "A verification challenge has been sent to your delivery_url. Your endpoint must respond within 10 seconds."
+}
+```
+
+### Step 3: Pass the intent verification challenge
+
+The platform immediately sends a `GET` request to your `delivery_url`:
+
+```
+GET https://your-agent.example.com/hooks/eep
+  ?hub.mode=subscribe
+  &hub.topic=did:web:example.com:u:acme-corp
+  &hub.challenge=Xk9Lm3Pq...
+  &hub.lease_seconds=2592000
+```
+
+Your handler must respond with HTTP `200` and the exact `hub.challenge` value as the body:
+
+```typescript
+app.get('/hooks/eep', (req, res) => {
+  const { 'hub.mode': mode, 'hub.challenge': challenge } = req.query;
+  if (mode === 'subscribe' && challenge) {
+    return res.status(200).send(challenge);  // Return ONLY the challenge string
+  }
+  res.status(400).send('Bad request');
+});
+```
+
+After successful verification, your subscription status changes to `active`.
+
+### Step 4: Store your webhook secret
+
+When your subscription activates, the platform generates a `delivery_secret`. Keep it secure:
+
+```bash
+# In your environment
+EEP_WEBHOOK_SECRET="whsec_ABCxyz..."
+```
+
+---
+
+## Option B: SSE (server-sent events)
+
+SSE is great for scripts, CLIs, and cases where you can't expose a public webhook endpoint.
+
+### Basic SSE connection
+
+```bash
+# Using curl
+curl -N "https://api.example.com/eep/stream?source=acme-corp" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Accept: text/event-stream"
+```
+
+### SSE with event type filtering
+
+```bash
+# Only receive entity and trust events
+curl -N "https://api.example.com/eep/stream?source=acme-corp&events=entity.updated,trust.changed" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### SSE with missed event replay
+
+If your connection drops, reconnect with the last ID you saved:
+
+```bash
+curl -N "https://api.example.com/eep/stream?source=acme-corp" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Last-Event-ID: 01HN3QK7GX-1708123456000"
+```
+
+The server will replay any events you missed since that ID before resuming the live stream.
+
+### Node.js SSE client
+
+```typescript
+import { EventSource } from 'eventsource';
+
+const sse = new EventSource(
+  'https://api.example.com/eep/stream?source=acme-corp',
+  { headers: { Authorization: `Bearer ${process.env.API_KEY}` } }
+);
+
+let lastEventId: string | null = null;
+
+sse.onmessage = (event) => {
+  lastEventId = event.lastEventId;
+  const data = JSON.parse(event.data);
+  console.log(`Event: ${data.type} | Source: ${data.source}`);
+};
+
+sse.onerror = () => {
+  // EventSource auto-reconnects with Last-Event-ID
+  console.log('Reconnecting...');
+};
+```
+
+---
+
+## Managing subscriptions
+
+### List your subscriptions
+```bash
+curl "https://api.example.com/eep/subscriptions" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Pause a subscription
+```bash
+curl -X POST "https://api.example.com/eep/subscriptions/sub_01HN3QK7GX/pause" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Resume a paused subscription
+```bash
+curl -X POST "https://api.example.com/eep/subscriptions/sub_01HN3QK7GX/resume" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Delete a subscription
+```bash
+curl -X DELETE "https://api.example.com/eep/subscriptions/sub_01HN3QK7GX" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Test your webhook
+```bash
+# Trigger a test event delivery
+curl -X POST "https://api.example.com/eep/subscriptions/sub_01HN3QK7GX/test" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+---
+
+## Event payload reference
+
+```json
+{
+  "specversion": "1.0",
+  "id": "01HN3QK7GX-1708123456000",
+  "source": "did:web:example.com:u:acme-corp",
+  "type": "com.example.entity.updated",
+  "time": "2026-02-22T14:30:00Z",
+  "datacontenttype": "application/json",
+  "eep_version": "0.1",
+  "eep_subscription_id": "sub_01HN3QK7GX",
+  "eep_trust_score": 87,
+  "eep_actor_type": "human",
+  "data": {
+    "entity_id": "acme-corp",
+    "changed_fields": ["bio"],
+    "bio": "Updated company bio..."
+  }
+}
+```
+
+**Key fields:**
+- `id`: Use this for deduplication.
+- `source`: The DID of the entity that changed.
+- `type`: The event type. You can use standard string matching (like `type.startsWith('com.example.trust')`) for filtering.
+- `time`: An ISO 8601 timestamp. Use it to order events locally, not to assume the delivery sequence.
+- `eep_actor_type`: Shows who triggered the event (`human`, `agent`, `system`, or `cron`).
+
+---
+
+## Option C: Network pulse (WebSockets)
+
+Use Network pulse for bidirectional, low-latency tasks like A2A task negotiation, live dashboards, or agent-to-agent conversations.
+
+### Connect to network pulse
+
+```javascript
+const ws = new WebSocket('wss://api.example.com/eep/pulse', {
+  headers: { 'Authorization': `Bearer ${API_KEY}` }
+});
+
+ws.onopen = () => {
+  // Subscribe to an entity's event stream
+  ws.send(JSON.stringify({
+    v: 1,
+    type: 'system',
+    action: 'subscribe',
+    data: { source_did: 'did:web:example.com:u:acme-corp' }
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  switch (msg.type) {
+    case 'entity':
+      console.log(`Entity event: ${msg.action} (seq: ${msg.seq})`);
+      break;
+    case 'system':
+      if (msg.action === 'auth_expiring') {
+        // Re-authenticate before connection closes
+        ws.send(JSON.stringify({
+          v: 1, type: 'system', action: 'auth_refresh',
+          data: { token: NEW_API_KEY }
+        }));
+      }
+      if (msg.action === 'gap_detected') {
+        // Missed events detected — request replay
+        console.warn(`Gap: expected seq ${msg.data.expected_seq}, got ${msg.data.received_seq}`);
+        ws.send(JSON.stringify({
+          v: 1, type: 'system', action: 'replay',
+          data: { source_did: msg.data.source_did, from_seq: msg.data.expected_seq }
+        }));
+      }
+      break;
+  }
+};
+```
+
+### Message envelope format
+
+All messages use the same structure:
+```json
+{
+  "v": 1,
+  "type": "entity | a2a | system",
+  "action": "subscribe | unsubscribe | replay | auth_refresh | ...",
+  "seq": 42,
+  "data": { }
+}
+```
+
+### System actions
+
+| Action | Direction | Description |
+|--------|-----------|-------------|
+| `subscribe` | Client → Server | Subscribe to an entity's channel |
+| `unsubscribe` | Client → Server | Unsubscribe from an entity |
+| `replay` | Client → Server | Request missed events from a sequence number |
+| `auth_refresh` | Client → Server | Re-authenticate with a new token |
+| `pong` | Client → Server | Response to server ping |
+| `connected` | Server → Client | Confirmation with connection ID |
+| `subscribed` | Server → Client | Subscription confirmed |
+| `ping` | Server → Client | Keepalive (every 15s) |
+| `auth_expiring` | Server → Client | Warning: token expires soon |
+| `auth_refreshed` | Server → Client | Token refresh confirmed |
+| `gap_detected` | Server → Client | Missing events detected |
+| `replay_complete` | Server → Client | Replay finished |
+| `error` | Server → Client | Error message |
+
+### WebSocket close codes (EEP-defined)
+
+EEP publishers use the following standard close codes. Agents MUST handle these appropriately:
+
+| Code | Constant | Meaning | Agent Action |
+|------|----------|---------|------|
+| `4000` | `WsCloseCode.BACKPRESSURE` | **Backpressure**: subscriber is too far behind the event stream. Publisher disconnects rather than buffering indefinitely (DoS prevention). | Reconnect immediately with `Last-Event-ID` to replay missed events |
+| `4001` | `WsCloseCode.SESSION_REVOKED` | Session has been revoked by the publisher | Re-authenticate from scratch; do not reconnect with same token |
+| `4002` | `WsCloseCode.RATE_LIMITED` | DID-based rate limit exceeded | Wait for `Retry-After` period before reconnecting |
+| `4003` | `WsCloseCode.PROOF_EXPIRED` | Gate proof or session token has expired | Re-satisfy gate requirements before reconnecting |
+| `4004` | `WsCloseCode.VERSION_MISMATCH` | Incompatible EEP protocol version | Perform version negotiation; consult publisher's `eep_versions` manifest field |
+
+---
+
+## Gated access (gates)
+
+Some entities restrict access to certain resources behind gates. When you try to access a gated resource without the right proofs, you get an HTTP 402 response.
+
+### Check gate configuration
+
+Before subscribing, check what tiers are available:
+
+```bash
+curl -s https://api.example.com/eep/gates/did:web:example.com:u:acme-corp | jq .
+```
+
+This returns the entity's gate config with tier names, requirements, and access patterns.
+
+### Handle 402 responses
+
+If you request a resource you don't have access to:
+
+```json
+{
+  "error": "access_restricted",
+  "resource": "content.papers.full_text",
+  "current_tier": "public",
+  "required_tier": "academic",
+  "unmet_requirements": [
+    { "type": "credential", "resolution_hint": "Verifiable Credential required: AcademicAffiliation" }
+  ]
+}
+```
+
+Your agent should parse `unmet_requirements` and decide whether to fulfill them (e.g., present a credential, make a payment) or fall back to a lower tier.
+
+### Subscribe with a tier
+
+```bash
+curl -X POST https://api.example.com/eep/subscribe \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_did": "did:web:example.com:u:acme-corp",
+    "event_types": ["com.example.entity.*"],
+    "delivery_method": "sse",
+    "tier": "premium",
+    "gate_proofs": [
+      { "type": "payment", "token": "tok_stripe_xxx", "issued_at": "2026-03-01T00:00:00Z", "expires_at": "2026-04-01T00:00:00Z" }
+    ]
+  }'
+```
+
+### Commerce negotiation
+
+For negotiable services, you can trade offers over WebSocket:
+
+```javascript
+// Send an offer
+ws.send(JSON.stringify({
+  v: 1, type: 'commerce', action: 'offer',
+  data: {
+    negotiation_id: 'neg_' + Date.now(),
+    service: 'consulting',
+    pricing: { model: 'fixed', amount: 50, currency: 'usd' }
+  }
+}));
+
+// Handle counter-offers, invoices, receipts...
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === 'commerce') {
+    console.log(`Commerce: ${msg.action}`, msg.data);
+  }
+};
+```
+
+---
+
+## Rate limits
+
+Publishers enforce per-subscriber rate limits to prevent abuse. Each platform determines its specific limits.
+
+When a publisher enforces rate limits, it will return the following headers in its responses:
+```
+X-RateLimit-Limit: {max_requests}
+X-RateLimit-Remaining: {remaining}
+X-RateLimit-Reset: {unix_timestamp}
+```
+
+If you exceed your limit, the publisher returns an HTTP `429` status code with a `Retry-After` header:
+```json
+{
+  "error": "rate_limit_exceeded",
+  "retry_after": 3600,
+  "message": "Rate limit exceeded. See platform documentation for tier details."
+}
+```
+
+---
+
+## Publisher requirements: SSE/WS backpressure (G33)
+
+> **This section is for publishers implementing EEP endpoints, not subscribers.**
+
+### Why backpressure is mandatory
+
+An SSE or WebSocket subscriber that stops reading (slow consumer, network stall, malicious actor) will cause event buffers to grow indefinitely. Without a backpressure mechanism, a single slow subscriber can exhaust the publisher's memory — a denial-of-service attack vector.
+
+Per **Whitepaper §9.6**, EEP mandates:
+> *"when a subscriber falls too far behind the event stream, the connection is gracefully terminated with a `4000` close code rather than buffering indefinitely, preventing memory exhaustion attacks from slow consumers."*
+
+### Required implementation
+
+Publishers MUST implement connection-level backpressure using `WsCloseCode.BACKPRESSURE` (4000):
+
+```typescript
+import { WsCloseCode, SSE_BACKPRESSURE_THRESHOLD_EVENTS } from '@eep-dev/gates';
+
+// Example: Node.js SSE publisher backpressure check
+function checkSubscriberLag(
+  subscriber: SSESubscriber,
+  currentEventSeq: number
+): void {
+  const lag = currentEventSeq - subscriber.lastAckSeq;
+  if (lag > SSE_BACKPRESSURE_THRESHOLD_EVENTS) {
+    // Gracefully terminate — do NOT buffer indefinitely
+    subscriber.close(
+      WsCloseCode.BACKPRESSURE,
+      'Subscriber too far behind event stream. Reconnect with Last-Event-ID to replay.'
+    );
+  }
+}
+```
+
+For WebSocket connections, use the standard WebSocket close frame:
+
+```typescript
+import { WsCloseCode } from '@eep-dev/gates';
+
+// WebSocket backpressure enforcement
+ws.on('drain', () => {
+  const queuedBytes = ws.bufferedAmount;
+  if (queuedBytes > MAX_BUFFER_BYTES) {
+    ws.close(WsCloseCode.BACKPRESSURE, 'Backpressure: subscriber too slow');
+  }
+});
+```
+
+### Subscriber reconnection after 4000
+
+Agents receiving a `4000` close code MUST:
+1. Record the last `Last-Event-ID` before disconnecting.
+2. Reconnect with `Last-Event-ID` header to replay missed events.
+3. Implement exponential backoff if the publisher repeatedly closes with 4000 (indicates sustained lag).
+
+```typescript
+const sse = new EventSource(streamUrl, { headers });
+let lastId = '';
+
+sse.addEventListener('message', (e) => { lastId = e.lastEventId; });
+
+sse.onerror = async () => {
+  // Reconnect with replay — EventSource auto-includes Last-Event-ID
+  console.log(`Reconnecting from event ${lastId}...`);
+};
+```
+
+
+=== FILE: EEP/docs/guides/how-to-dispatch.md ===
+# How to dispatch EEP events (platform guide)
+
+> **Audience:** Platform engineers building systems where entities live and emit events.
+
+---
+
+## Overview
+
+As an EEP-compliant publisher, your platform handles:
+1. Emitting events to an internal event bus when entity state changes.
+2. Routing those events to active subscribers (via Webhooks or SSE).
+3. Signing payloads with HMAC-SHA256.
+4. Protecting against SSRF and managing delivery retries.
+
+## Machine-actionable operator profile
+
+This profile is optimized for agentic operations and automation runners.
+
+### Environment contract
+
+```bash
+export EEP_BASE_URL="https://api.yourplatform.com"
+export EEP_SIGNING_SECRET="whsec_..."
+export EEP_API_KEY="..."
+```
+
+### Pre-deploy invariant checks
+
+```bash
+curl -fsS "$EEP_BASE_URL/.well-known/eep.json" | jq '.did,.eep_version'
+curl -fsS "$EEP_BASE_URL/eep/services/did:web:yourplatform.com:u:test-entity" | jq '.services | length'
+```
+
+### Post-deploy smoke checks
+
+```bash
+# Gate endpoint shape
+curl -fsS "$EEP_BASE_URL/eep/gates/did:web:yourplatform.com:u:test-entity" | jq '.default_tier,.tiers'
+
+# Gated resource should deterministically return 200 or 402
+curl -s -o /dev/null -w "%{http_code}\n" "$EEP_BASE_URL/eep/content/did:web:yourplatform.com:u:test-entity/content.papers.full_text"
+```
+
+This guide walks through implementing an EEP dispatcher.
+
+---
+
+## Architecture
+
+```
+Entity State Change
+        │
+        ▼
+Internal Event Publisher
+(emit to Redis Streams or RabbitMQ)
+        │
+        ▼
+EEP Dispatcher Worker
+        ├──► SSE fan-out (Redis pub/sub → open connections)
+        └──► Webhook delivery (SSRF check → sign → POST → retry)
+```
+
+---
+
+## Step 1: Define your event bus
+
+EEP doesn't care which message bus you use. It works with Redis Streams, RabbitMQ, Kafka, or any pub/sub system. Use what you already have in your stack.
+
+**Example with Redis Streams:**
+```typescript
+// Publish an event when a profile is updated
+async function publishEntityUpdate(entityId: string, changes: object) {
+  const event = {
+    specversion: '1.0',
+    id: `${entityId}-${Date.now()}`,
+    source: `did:web:yourplatform.com:entity:${entityId}`,
+    type: 'platform.entity.updated',
+    time: new Date().toISOString(),
+    datacontenttype: 'application/json',
+    eep_version: '0.1',
+    eep_actor_type: 'human',
+    data: changes
+  };
+
+  await redis.xadd(
+    `eep:events:${entityId}`,
+    '*',  // Auto-generate Redis stream ID
+    'event', JSON.stringify(event)
+  );
+}
+```
+
+---
+
+## Step 2: Install the EEP dispatcher packages
+
+```bash
+npm install @eep-dev/signer @eep-dev/validator
+```
+
+---
+
+## Step 3: Build the webhook dispatcher
+
+```typescript
+import { EEPSigner } from '@eep-dev/signer';
+import { validateSSRF } from '@eep-dev/validator';
+
+async function dispatchWebhook(
+  subscription: WebhookSubscription,
+  event: EEPEvent
+): Promise<DeliveryResult> {
+  const { delivery_url, delivery_secret, id: subscriptionId } = subscription;
+
+  // 1. SSRF Protection
+  await validateSSRF(delivery_url);  // Throws if URL is an internal address
+
+  const webhookId = `msg_${generateId()}`;
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const body = JSON.stringify({ ...event, eep_subscription_id: subscriptionId });
+
+  // 2. Sign the payload
+  const signer = new EEPSigner(delivery_secret);
+  const signature = signer.sign(webhookId, timestamp, body);
+
+  // 3. Dispatch
+  const response = await fetch(delivery_url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'webhook-id': webhookId,
+      'webhook-timestamp': timestamp,
+      'webhook-signature': signature,
+      'EEP-Version': '0.1',
+    },
+    body,
+    signal: AbortSignal.timeout(10_000),  // 10 second timeout
+    redirect: 'manual',  // Never follow redirects (SSRF prevention)
+  });
+
+  return { success: response.ok, statusCode: response.status };
+}
+```
+
+---
+
+## Step 4: Implement exponential backoff
+
+```typescript
+const RETRY_DELAYS_MS = [0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000];
+
+async function dispatchWithRetry(subscription: WebhookSubscription, event: EEPEvent) {
+  let consecutiveFailures = 0;
+
+  for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt++) {
+    if (attempt > 0) {
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+
+    const result = await dispatchWebhook(subscription, event);
+
+    if (result.success) {
+      await db.resetFailureCount(subscription.id);
+      return;
+    }
+
+    consecutiveFailures++;
+
+    // Auto-pause after 5 consecutive failures
+    if (consecutiveFailures >= 5) {
+      await db.pauseSubscription(subscription.id);
+      await notifySubscriberOfPause(subscription);
+      return;
+    }
+  }
+
+  await db.markEventUndeliverable(subscription.id, event.id);
+}
+```
+
+---
+
+## Step 5: Implement WebSub intent verification
+
+Before activating any webhook subscription, send a challenge to make sure the endpoint actually requested it:
+
+```typescript
+async function verifyWebhookIntent(subscription: PendingSubscription): Promise<boolean> {
+  const challenge = generateSecureRandom(32);
+  const params = new URLSearchParams({
+    'hub.mode': 'subscribe',
+    'hub.topic': subscription.source_did,
+    'hub.challenge': challenge,
+    'hub.lease_seconds': '2592000',
+  });
+
+  try {
+    const response = await fetch(`${subscription.delivery_url}?${params}`, {
+      signal: AbortSignal.timeout(10_000),
+      redirect: 'manual',  // No redirects
+    });
+
+    if (!response.ok) return false;
+
+    const body = await response.text();
+    return body.trim() === challenge;  // Exact match required
+  } catch {
+    return false;
+  }
+}
+```
+
+---
+
+## Step 6: Build the SSE fan-out
+
+```typescript
+// Redis pub/sub channel per entity
+const CHANNEL = (entityId: string) => `eep:fanout:${entityId}`;
+
+// Publisher side: when an event is emitted
+async function fanOutToSSEClients(event: EEPEvent) {
+  await redis.publish(CHANNEL(event.source), JSON.stringify(event));
+}
+
+// SSE handler (one per connected client)
+app.get('/eep/stream', async (req, res) => {
+  const { source, events: eventFilter, last_event_id } = req.query;
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  // Replay missed events
+  if (last_event_id) {
+    const missed = await redis.xrange(`eep:events:${source}`, `(${last_event_id}`, '+');
+    for (const [id, fields] of missed) {
+      const event = JSON.parse(fields[1]);
+      if (matchesFilter(event.type, eventFilter)) {
+        res.write(`id: ${id}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+      }
+    }
+  }
+
+  // Subscribe to live events
+  const subscriber = redis.duplicate();
+  await subscriber.subscribe(CHANNEL(source));
+  subscriber.on('message', (_, message) => {
+    const event = JSON.parse(message);
+    if (matchesFilter(event.type, eventFilter)) {
+      res.write(`id: ${event.id}\nevent: ${event.type}\ndata: ${message}\n\n`);
+    }
+  });
+
+  // Heartbeat every 15s
+  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15_000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    subscriber.unsubscribe();
+    subscriber.quit();
+  });
+});
+```
+
+---
+
+## Database schema
+
+Add this migration to your database to store subscriptions:
+
+```sql
+CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  subscriber_id TEXT NOT NULL,        -- Who subscribed (user/agent ID)
+  source_did TEXT NOT NULL,           -- Entity DID being watched
+  event_types TEXT[] NOT NULL,        -- Array of event type patterns
+  delivery_method TEXT NOT NULL,      -- 'webhook' | 'sse'
+  delivery_url TEXT,                  -- For webhooks only
+  delivery_secret TEXT,               -- HMAC signing key
+  delivery_format TEXT DEFAULT 'cloudevents/v1.0',
+  status TEXT DEFAULT 'pending_verification',
+  failure_count INTEGER DEFAULT 0,
+  consecutive_failures INTEGER DEFAULT 0,
+  last_failure_at TIMESTAMPTZ,
+  last_success_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  CONSTRAINT valid_status CHECK (status IN (
+    'pending_verification', 'active', 'paused', 'rejected', 'deleted'
+  )),
+  CONSTRAINT valid_delivery CHECK (
+    delivery_method != 'webhook' OR delivery_url IS NOT NULL
+  )
+);
+
+CREATE INDEX idx_ws_source_status ON webhook_subscriptions(source_did, status);
+CREATE INDEX idx_ws_subscriber ON webhook_subscriptions(subscriber_id);
+```
+
+---
+
+## Step 7: Add gate configuration (optional, for standard conformance)
+
+If your entities offer tiered access, configure gates using `@eep-dev/gates`:
+
+```bash
+npm install @eep-dev/gates
+```
+
+### Serve gate configuration
+
+```typescript
+import { parseGateConfig, resolveAccess, build402Response, ProofVerifierRegistry } from '@eep-dev/gates';
+
+// Load gate config per entity (from database, config file, etc.)
+const config = parseGateConfig(entityGateConfig);
+
+app.get('/eep/gates/:did', (req, res) => {
+  res.json(entityGateConfig);
+});
+```
+
+### Return 402 for gated resources
+
+```typescript
+app.get('/eep/content/:did/:path*', async (req, res) => {
+  const proofs = parseProofsFromRequest(req); // from headers or body
+  const result = await resolveAccess(proofs, gateConfig, req.params.path, registry);
+
+  if (!result.granted) {
+    const body = await build402Response(gateConfig, req.params.path, proofs);
+    return res.status(402).json(body);
+  }
+
+  // Serve the resource at the granted tier
+  res.json({ tier: result.tier, content: getContent(req.params.path, result.tier) });
+});
+```
+
+### Accept gated subscriptions
+
+When a subscriber includes `tier` and `gate_proofs` in their subscription request, verify proofs before activating:
+
+```typescript
+if (body.tier && body.tier !== gateConfig.default_tier) {
+  const result = await resolveAccess(body.gate_proofs ?? [], gateConfig, '*', registry);
+  if (!result.granted || result.tier !== body.tier) {
+    return res.status(402).json(await build402Response(gateConfig, '*', body.gate_proofs ?? []));
+  }
+}
+```
+
+### Tier-aware event delivery
+
+When dispatching events to tier-aware subscribers, include the `eep_tier` extension attribute:
+
+```typescript
+const event = {
+  ...baseEvent,
+  eep_tier: subscription.tier, // e.g., "premium"
+};
+```
+
+Filter event data based on tier if needed — premium subscribers might get richer payloads.
+
+---
+
+## Step 8: Publish a service catalog (optional, for full conformance)
+
+```typescript
+app.get('/eep/services/:did', (req, res) => {
+  res.json({
+    entity_did: req.params.did,
+    services: [
+      {
+        id: 'svc_data_feed',
+        name: 'Real-time Data Feed',
+        category: 'data',
+        pricing: { model: 'subscription', amount: 29, currency: 'usd', period: 'month' },
+        delivery: 'sse',
+        availability: { type: 'always' },
+        negotiable: true,
+        status: 'active',
+      },
+    ],
+  });
+});
+```
+
 
 
 === FILE: EEP/docs/guides/five-minute-proof.md ===
