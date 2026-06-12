@@ -16,6 +16,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -99,34 +100,35 @@ def test_signed_bundle_round_trips(entry: dict) -> None:
 # ─── Python signer parity (when available) ───────────────────────────
 
 
-def test_python_signer_verifies_valid_fixture() -> None:
-    """If eep_signer is importable, the valid-fresh-signature fixture
-    MUST verify with the same wire format the TS signer produces."""
+def test_python_signer_matches_recorded_wire_format() -> None:
+    """The Python signer MUST reproduce the exact ``webhook-signature``
+    recorded in the canonical fixture (which the TS signer produced) —
+    a genuine cross-language parity check, not an inline self-recompute.
+
+    Uses ``sign()`` rather than ``verify()`` so the check is independent
+    of wall-clock freshness and cannot silently skip on a frozen-time
+    technicality. When ``EEP_REQUIRE_PYTHON_SIGNER=1`` (set by CI and
+    ``test.sh --full``, which install the package), a missing import is a
+    FAILURE rather than a skip, so this parity check can never quietly
+    no-op where it is meant to run.
+    """
     try:
         from eep_signer import EEPSigner  # type: ignore
-    except Exception:
+    except Exception as exc:  # pragma: no cover - exercised via env in CI
+        if os.environ.get("EEP_REQUIRE_PYTHON_SIGNER") == "1":
+            raise AssertionError(
+                f"eep_signer must be importable when EEP_REQUIRE_PYTHON_SIGNER=1: {exc}"
+            )
         pytest.skip("eep_signer not installed in this environment")
 
     bundle = FIXTURES_DIR / "signature/valid-fresh-signature"
     body = (bundle / "body.txt").read_text()
     headers = json.loads((bundle / "headers.json").read_text())
     secret = (bundle / "secret.txt").read_text().strip()
-    now = int((bundle / "now.txt").read_text().strip())
 
-    signer = EEPSigner(secret)
-    # Force the verifier's "now" to the fixture's frozen time. The
-    # Python signer's verify() should accept an explicit `now` arg, or
-    # at minimum a generous tolerance window for offline tests. If
-    # neither is available, we skip rather than fail.
-    try:
-        ok = signer.verify(
-            headers["webhook-id"],
-            headers["webhook-timestamp"],
-            headers["webhook-signature"],
-            body,
-            now=now,  # type: ignore[arg-type]
-        )
-    except TypeError:
-        pytest.skip("eep_signer.verify() does not accept `now` kwarg; can't pin time offline")
-
-    assert ok is True
+    produced = EEPSigner(secret).sign(
+        headers["webhook-id"],
+        headers["webhook-timestamp"],
+        body,
+    )
+    assert produced == headers["webhook-signature"]
