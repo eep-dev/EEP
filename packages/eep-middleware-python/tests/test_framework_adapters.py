@@ -1,14 +1,43 @@
+from typing import Any, Dict, List
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from eep_gates import ProofVerifier
 from eep_middleware import create_eep_blueprint, create_eep_router, get_eep_urlpatterns
 from eep_middleware.core import EEPServer
 
 
+class _PaymentVerifier(ProofVerifier):
+    @property
+    def supported_types(self) -> List[str]:
+        return ["payment"]
+
+    async def verify(self, proof: Dict[str, Any], requirement: Dict[str, Any]) -> bool:
+        return proof.get("token") == "tok_valid"
+
+
+_GATED_CONFIG = {
+    "default_tier": "public",
+    "tiers": {
+        "public": {"requirements": [], "access": ["entity.public.profile"]},
+        "premium": {
+            "requirements": [{"type": "payment", "amount": 1, "currency": "usd", "per": "request"}],
+            "access": ["content.papers.full_text"],
+        },
+    },
+}
+
+
 @pytest.mark.asyncio
 async def test_fastapi_router_endpoints() -> None:
-    server = EEPServer(base_url="https://api.example.com", did="did:web:example.com")
+    server = EEPServer(
+        base_url="https://api.example.com",
+        did="did:web:example.com",
+        gate_config=_GATED_CONFIG,
+        proof_verifiers=[_PaymentVerifier()],
+    )
     app = FastAPI()
     app.include_router(create_eep_router(server))
     client = TestClient(app)

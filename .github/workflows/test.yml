@@ -304,6 +304,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      # Gate resolution + SSRF validation live in sibling packages. Install them
+      # editable first so the eep-gates / eep-validator requirements resolve locally
+      # instead of from PyPI (mirrors the TS test-middleware workspace build step).
+      - run: pip install -e ../eep-gates-python -e ../eep-validator-python
       - run: pip install -e '.[dev]'
       - run: python -m pytest -q
 
