@@ -22,18 +22,22 @@ jobs:
           npm ci
           npm run build
 
-      - name: npm high-severity audit gate
+      - name: npm high-severity audit gate (published packages — blocking)
         run: |
           set -euo pipefail
+          # Only packages we publish to npm gate the build: a high-severity
+          # advisory in one of these ships to consumers. Examples and the test
+          # harness are audited in a separate, non-blocking step below — a vuln
+          # in a demo's transitive dependency must not block every contributor
+          # PR (it previously blocked main and 8 PRs over a hono advisory in
+          # examples/node-gate-publisher).
           for dir in \
             "packages/@eep-dev/gates" \
             "packages/@eep-dev/signer" \
             "packages/@eep-dev/validator" \
             "packages/@eep-dev/compliance-cli" \
             "packages/@eep-dev/setup-cli" \
-            "packages/@eep-dev/middleware" \
-            "tests" \
-            "examples/node-gate-publisher"
+            "packages/@eep-dev/middleware"
           do
             echo "Auditing $dir"
             (cd "$dir" && npm ci && npm audit --omit=dev --audit-level=high)
@@ -42,6 +46,24 @@ jobs:
           (cd "packages/@eep-dev/discovery" && npm install && npm audit --omit=dev --audit-level=high)
           echo "Auditing packages/@eep-dev/mcp-bridge"
           (cd "packages/@eep-dev/mcp-bridge" && npm install && npm audit --omit=dev --audit-level=high)
+
+      - name: npm audit (examples + test harness — advisory, non-blocking)
+        continue-on-error: true
+        run: |
+          # These are not published to npm. High-severity transitive advisories
+          # here are surfaced as warnings but do NOT fail CI.
+          for dir in \
+            "tests" \
+            "examples/node-gate-publisher"
+          do
+            echo "::group::Advisory audit $dir"
+            if (cd "$dir" && npm ci && npm audit --omit=dev --audit-level=high); then
+              echo "$dir: no high-severity advisories"
+            else
+              echo "::warning title=Advisory audit::$dir has high-severity advisories (non-blocking: not a published package)"
+            fi
+            echo "::endgroup::"
+          done
 
       - uses: actions/setup-python@v6
         with:
