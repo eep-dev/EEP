@@ -1,6 +1,10 @@
 # Copyright 2026 EEP Contributors — Apache-2.0
 """Tests for eep_compliance_cli — Python port of @eep-dev/compliance-cli."""
 
+import base64
+import hashlib
+import hmac
+
 from eep_compliance_cli.helpers import (
     TestRunner,
     normalize_target,
@@ -8,7 +12,15 @@ from eep_compliance_cli.helpers import (
     validate_cloudevents_envelope,
     validate_eep_extensions,
     check_webhook_headers,
+    verify_webhook_signature,
 )
+
+
+def _sign(secret: str, webhook_id: str, timestamp: str, raw_body: str) -> str:
+    """Produce a Standard Webhooks v1 token over the exact raw bytes."""
+    signed = f"{webhook_id}.{timestamp}.{raw_body}"
+    digest = hmac.new(secret.encode(), signed.encode(), hashlib.sha256).digest()
+    return "v1," + base64.b64encode(digest).decode()
 
 
 class TestTestRunner:
@@ -102,6 +114,58 @@ class TestEEPExtensions:
 
     def test_missing(self):
         assert "eep_version" in validate_eep_extensions({})
+
+
+class TestVerifyWebhookSignature:
+    SECRET = "whsec_test"
+    WID = "msg_abc"
+    TS = "1700000000"
+    # Raw body whose re-serialization would differ (spacing + key order),
+    # which is exactly why the verifier must hash the raw bytes, not a parse.
+    RAW = '{"type":"com.example.entity.updated",  "id":"evt_1"}'
+
+    def test_valid_signature_over_raw_bytes(self):
+        sig = _sign(self.SECRET, self.WID, self.TS, self.RAW)
+        result = verify_webhook_signature(self.WID, self.TS, self.RAW, self.SECRET, sig)
+        assert result == {"valid": True, "reason": "ok"}
+
+    def test_reserialized_body_would_fail(self):
+        # Demonstrates the original bug: signing the raw bytes but verifying a
+        # re-serialized parse no longer matches.
+        import json
+
+        sig = _sign(self.SECRET, self.WID, self.TS, self.RAW)
+        reserialized = json.dumps(json.loads(self.RAW))
+        assert reserialized != self.RAW
+        result = verify_webhook_signature(self.WID, self.TS, reserialized, self.SECRET, sig)
+        assert result["valid"] is False
+        assert result["reason"] == "signature_mismatch"
+
+    def test_multi_signature_rotation(self):
+        good = _sign(self.SECRET, self.WID, self.TS, self.RAW)
+        header = f"v1,AAAA {good}"  # first token is wrong length / bogus
+        result = verify_webhook_signature(self.WID, self.TS, self.RAW, self.SECRET, header)
+        assert result == {"valid": True, "reason": "ok_via_multi_signature"}
+
+    def test_missing_secret(self):
+        assert verify_webhook_signature(self.WID, self.TS, self.RAW, "", "v1,x") == {
+            "valid": False,
+            "reason": "missing_secret",
+        }
+
+    def test_malformed_header(self):
+        assert verify_webhook_signature(self.WID, self.TS, self.RAW, self.SECRET, "")[
+            "reason"
+        ] == "malformed_header"
+
+    def test_no_v1_token(self):
+        assert verify_webhook_signature(self.WID, self.TS, self.RAW, self.SECRET, "v2,abc")[
+            "reason"
+        ] == "no_v1_token"
+
+    def test_signature_mismatch(self):
+        result = verify_webhook_signature(self.WID, self.TS, self.RAW, self.SECRET, "v1,AAAA")
+        assert result == {"valid": False, "reason": "signature_mismatch"}
 
 
 class TestWebhookHeaders:
