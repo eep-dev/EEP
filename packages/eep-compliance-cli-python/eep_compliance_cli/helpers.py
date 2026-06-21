@@ -43,15 +43,27 @@ class TestRunner:
 
     def conformance_label(self, level: str) -> str:
         s = self.summary()
-        if s["failed"] == 0:
-            labels = {
-                "core": "🥉 Core EEP Compliant",
-                "standard": "🥈 Standard EEP Compliant",
-                "full": "🏆 Full EEP Compliant",
-            }
-            return labels.get(level, f"✅ {level.title()} EEP Compliant")
-        count = s["failed"]
-        return f"❌ Not EEP Compliant ({count} failure{'s' if count != 1 else ''})"
+        if s["failed"] > 0:
+            count = s["failed"]
+            return f"❌ Not EEP Compliant ({count} failure{'s' if count != 1 else ''})"
+        # A conformance claim must be *earned*, not granted by omission. A run
+        # with zero passing checks, or with skipped checks, has not actually
+        # verified the level — so it must not receive a compliance medal even
+        # though ``failed == 0``. (Otherwise a near-empty or fully-skipped run
+        # would print "Full EEP Compliant".)
+        if s["passed"] == 0:
+            return "❌ Not EEP Compliant (no checks verified)"
+        if s["skipped"] > 0:
+            return (
+                f"⚠️ {level.title()} EEP: incomplete "
+                f"({s['skipped']} skipped, {s['passed']} passed)"
+            )
+        labels = {
+            "core": "🥉 Core EEP Compliant",
+            "standard": "🥈 Standard EEP Compliant",
+            "full": "🏆 Full EEP Compliant",
+        }
+        return labels.get(level, f"✅ {level.title()} EEP Compliant")
 
 
 def normalize_target(url: str) -> str:
