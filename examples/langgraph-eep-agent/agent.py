@@ -74,43 +74,77 @@ def subscribe(subscribe_url: str, entity_did: str, webhook_url: str, api_key: st
     return data
 
 
-def handle_gate_challenge(target: str, entity: str, status: int, body: dict) -> dict | None:
-    """Construct gate proof based on 402/403 response."""
-    if status == 402:
-        gate_type = body.get("gate_type", "payment")
-        print(f"[gate] 402 Payment Required — gate_type={gate_type}", file=sys.stderr)
+def _proof_for_requirement(req: dict) -> dict | None:
+    """Construct a (demo) gate proof matching one unmet requirement.
+
+    Proof shapes mirror @eep-dev/gates `GateProof`. The values here are
+    placeholders — a real agent would pay, present a real Verifiable
+    Credential, or sign the agreement document — but the *structure* and the
+    requirement-type routing are exactly what a publisher's proof verifier
+    expects (see packages/@eep-dev/gates/src/types.ts).
+    """
+    rtype = req.get("type", "")
+    if rtype == "payment":
+        # PaymentRequirement: { amount, currency, per, payment_methods?, x402? }
+        return {"type": "payment", "token": "demo_payment_token", "provider": "demo"}
+    if rtype == "credential":
+        # CredentialRequirement: { credential_type, issuer?, accepted_formats? }
+        fmt = (req.get("accepted_formats") or ["jwt_vc"])[0]
+        return {"type": "credential", "credential": "<demo_jwt_vc>", "format": fmt}
+    if rtype == "agreement":
+        # AgreementRequirement: { document_hash, document_url, signature_algo? }
+        doc_hash = req.get("document_hash", "")
         return {
-            "gate_type": gate_type,
-            "proof": {
-                "type": "payment",
-                "tx_hash": "0x_demo_payment_hash",
-                "amount": body.get("amount", "0.01"),
-                "currency": body.get("currency", "USD"),
-            },
+            "type": "agreement",
+            "document_hash": doc_hash,
+            "signature": f"did:key:agent_demo_sig_{doc_hash[:8]}",
         }
-    elif status == 403:
-        error = body.get("error", "")
-        if error == "agreement_required":
-            print("[gate] 403 Agreement Required — signing agreement hash", file=sys.stderr)
-            doc_hash = body.get("agreement_hash", "")
-            return {
-                "gate_type": "agreement",
-                "proof": {
-                    "type": "agreement",
-                    "document_hash": doc_hash,
-                    "signature": f"did:key:agent_demo_sig_{doc_hash[:8]}",
-                },
-            }
-        elif error == "credential_required":
-            print("[gate] 403 Credential Required — presenting VC", file=sys.stderr)
-            return {
-                "gate_type": "credential",
-                "proof": {
-                    "type": "credential",
-                    "verifiable_presentation": {"holder": "did:key:agent_demo", "proof": "..."},
-                },
-            }
+    if rtype == "identity":
+        return {"type": "identity", "method": req.get("method", "did_verified"), "evidence": "did:key:agent_demo"}
+    if rtype == "trust":
+        return {"type": "trust", "self_attested": True}
+    if rtype == "connection":
+        return {"type": "connection", "subscriber_did": "did:key:agent_demo", "relation": req.get("relation", "follower")}
+    # Unknown / custom x-* requirement: nothing the demo can auto-satisfy.
     return None
+
+
+def handle_gate_challenge(status: int, body: dict) -> dict | None:
+    """Parse a canonical EEP 402/403 gate response and build matching proofs.
+
+    The canonical body (`gate.402-response.json` / `gate.403-response.json`) is:
+
+        { "error": "access_restricted" | "access_forbidden",
+          "resource": "...", "current_tier": "...", "required_tier": "...",
+          "unmet_requirements": [ { "type": ..., "resolution_hint": ..., ... } ],
+          "available_tiers"?: {...} }
+
+    It is NOT a flat ``{gate_type, amount, currency}`` object. *Every* gate type
+    (payment, credential, agreement, identity, ...) arrives as an entry in
+    ``unmet_requirements``, each carrying a machine-readable ``resolution_hint``
+    so the agent needs no LLM to decide what to do. We build one proof per
+    requirement we can satisfy and return them together for the retry.
+    """
+    if body.get("error") not in ("access_restricted", "access_forbidden"):
+        return None
+
+    proofs: list[dict] = []
+    for req in body.get("unmet_requirements", []) or []:
+        hint = req.get("resolution_hint", "")
+        print(f"[gate] HTTP {status} unmet '{req.get('type')}': {hint}", file=sys.stderr)
+        proof = _proof_for_requirement(req)
+        if proof:
+            proofs.append(proof)
+
+    if not proofs:
+        print("[gate] no auto-satisfiable requirements in challenge", file=sys.stderr)
+        return None
+
+    return {
+        "resource": body.get("resource"),
+        "required_tier": body.get("required_tier"),
+        "proofs": proofs,
+    }
 
 
 # ─── Webhook Signature Verification ──────────────────────────────────────────
@@ -338,9 +372,9 @@ def main():
         except Exception:
             pass
 
-        proof = handle_gate_challenge(EEP_TARGET, "u/acme-corp", e.response.status_code, body)
+        proof = handle_gate_challenge(e.response.status_code, body)
         if proof:
-            print(f"[gate] Would retry with proof: {json.dumps(proof, indent=2)}", file=sys.stderr)
+            print(f"[gate] Would retry with proofs: {json.dumps(proof, indent=2)}", file=sys.stderr)
         else:
             print(f"[error] HTTP {e.response.status_code}: {e}", file=sys.stderr)
         sys.exit(1)
