@@ -1,0 +1,85 @@
+name: Clone count badge
+
+# Maintains the total git-clone count shown by the badge in README.md.
+#
+# GitHub's traffic API only retains the last 14 days of clone data, so this job
+# runs daily, fetches the current window, and merges it into a running total
+# stored in a public Gist. shields.io reads that Gist to render the badge.
+#
+# Hardened vs. the upstream recipe (MShawon/github-clone-count-badge): the
+# accumulation script is vendored (.github/scripts/accumulate_clones.py) instead
+# of curl-piped into python3, the action is pinned, permissions are read-only,
+# and nothing is committed back to the repo.
+#
+# ── One-time setup (see docs/ops/clone-count-badge.md) ───────────────────────
+#   1. Create a PUBLIC gist with a single file `clone.json` containing:
+#          {"count": 0, "uniques": 0, "clones": []}
+#      Note its id (the hash in the gist URL).
+#   2. Create a classic PAT with the `repo` and `gist` scopes and add it as the
+#      `SECRET_TOKEN` Actions secret (Settings → Secrets and variables → Actions).
+#   3. Add a repository variable `GIST_ID` = the gist id from step 1
+#      (Settings → Secrets and variables → Actions → Variables).
+#   4. Replace `__GIST_ID__` in the README badge URL with the same gist id.
+# The total accumulates from the first run onward (historical clones are not
+# exposed by GitHub).
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # daily, 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clone-count:
+    runs-on: ubuntu-latest
+    env:
+      GIST_USER: ucekmez
+      GIST_ID: ${{ vars.GIST_ID }}
+    steps:
+      - uses: actions/checkout@v6 # renovate: pin
+
+      - name: Guard — GIST_ID configured
+        run: |
+          if [ -z "${GIST_ID}" ]; then
+            echo "::error::Repository variable GIST_ID is not set. See docs/ops/clone-count-badge.md"
+            exit 1
+          fi
+
+      - name: Fetch current 14-day clone window
+        env:
+          TOKEN: ${{ secrets.SECRET_TOKEN }}
+        run: |
+          curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/traffic/clones" \
+            -o clone.json
+
+      - name: Download running total from the gist
+        run: |
+          if ! curl -fsSL "https://gist.githubusercontent.com/${GIST_USER}/${GIST_ID}/raw/clone.json" -o clone_before.json; then
+            echo "Gist not readable yet — seeding an empty total."
+            echo '{"count": 0, "uniques": 0, "clones": []}' > clone_before.json
+          fi
+
+      - name: Accumulate into the running total
+        run: python3 .github/scripts/accumulate_clones.py
+
+      - name: Update the gist
+        env:
+          TOKEN: ${{ secrets.SECRET_TOKEN }}
+        run: |
+          # Embed the file contents as a JSON string (python handles escaping).
+          python3 - <<'PY' > payload.json
+          import json
+          body = open("clone.json", encoding="utf-8").read()
+          print(json.dumps({"files": {"clone.json": {"content": body}}}))
+          PY
+          curl -fsSL -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            "https://api.github.com/gists/${GIST_ID}" \
+            -d @payload.json -o /dev/null
+          echo "Updated gist ${GIST_ID} — total clones: $(python3 -c "import json;print(json.load(open('clone.json'))['count'])")"
