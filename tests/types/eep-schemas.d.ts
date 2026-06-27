@@ -224,14 +224,7 @@ export interface AuditEntry {
    * For gate events: the type of gate requirement (credential, payment, agreement, data_request, identity, combined).
    */
   gate_type?:
-    | 'credential'
-    | 'payment'
-    | 'agreement'
-    | 'data_request'
-    | 'identity'
-    | 'allowlist'
-    | 'reciprocal'
-    | 'combined';
+    'credential' | 'payment' | 'agreement' | 'data_request' | 'identity' | 'allowlist' | 'reciprocal' | 'combined';
   /**
    * Short machine-readable reason code for failures. Not surfaced to requesting agents (logged internally only per EEP §10.8).
    */
@@ -2122,14 +2115,7 @@ export interface RegistryEntry {
    * Gate requirement types supported by this publisher. Agents filter by gate type when selecting interaction partners (e.g., ?gate=payment).
    */
   gate_types?: (
-    | 'credential'
-    | 'identity'
-    | 'agreement'
-    | 'data_request'
-    | 'payment'
-    | 'combined'
-    | 'proof_of_intent'
-    | 'public'
+    'credential' | 'identity' | 'agreement' | 'data_request' | 'payment' | 'combined' | 'proof_of_intent' | 'public'
   )[];
   /**
    * Protocol layers supported. Agents filter by layer capability (e.g., ?supports=sse).

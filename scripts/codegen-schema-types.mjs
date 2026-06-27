@@ -14,9 +14,15 @@
  *   node scripts/codegen-schema-types.mjs            # generate
  *   node scripts/codegen-schema-types.mjs --check    # generate to a temp dir and compare
  *
- * Dependencies (devDependencies of the repo root):
- *   - json-schema-to-typescript
+ * Dependencies (pin these EXACTLY — json-schema-to-typescript formats its
+ * output with prettier, so an unpinned prettier silently reformats the
+ * generated types and breaks the drift gate with no schema change):
+ *   - json-schema-to-typescript@15.0.4
+ *   - prettier@3.9.0
  *   - datamodel-code-generator (Python, run via pipx in CI)
+ *
+ * Install locally before regenerating:
+ *   npm install --no-save --no-package-lock json-schema-to-typescript@15.0.4 prettier@3.9.0
  *
  * This script is intentionally modest: it does not aim to replace the
  * hand-maintained TypeScript surfaces in @eep-dev/* packages. Its job
