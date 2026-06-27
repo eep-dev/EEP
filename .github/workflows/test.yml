@@ -417,7 +417,14 @@ jobs:
           node-version: '22'
 
       - name: Install codegen dependency
-        run: npm install --no-save --no-package-lock json-schema-to-typescript@^15
+        # Pin BOTH json-schema-to-typescript and prettier to exact versions.
+        # jstt formats its output with prettier (dep range "^3.2.5"), so an
+        # unpinned install silently adopts new prettier releases and reformats
+        # the generated types — drift with no schema change. prettier 3.9.0
+        # (2026-06-27) collapsed short union types onto one line and broke this
+        # gate on main. The committed tests/types/eep-schemas.d.ts is generated
+        # against exactly these versions; bump them here and regenerate together.
+        run: npm install --no-save --no-package-lock json-schema-to-typescript@15.0.4 prettier@3.9.0
 
       - name: Check generated schema types are up to date
         # The script's --check mode generates the output to memory and
