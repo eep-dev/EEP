@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](./LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](./CODE_OF_CONDUCT.md)
 [![EEP compatible](./assets/badges/eep-compatible.svg)](./docs/current/SPECIFICATION.md)
-[![GitHub Clones](https://img.shields.io/badge/dynamic/json?color=success&label=clones&query=count&url=https://gist.githubusercontent.com/ucekmez/__GIST_ID__/raw/clone.json&logo=github)](./docs/ops/clone-count-badge.md)
+[![GitHub Clones](https://img.shields.io/badge/dynamic/json?color=success&label=clones&query=count&url=https://gist.githubusercontent.com/ucekmez/ac633ddad9279deaf1639238c6258057/raw/clone.json&logo=github)](./docs/ops/clone-count-badge.md)
 
 <p align="center">
   <img src="./assets/realworld-demo.gif" alt="Two terminal panes running in parallel: an agent fetching the same quarterly report via current-web HTML scraping (~26s, ~46 KB, ~11.5K tokens, 2 simulated human steps) vs EEP (~10s, ~2.2 KB, ~386 tokens, 0 human steps). Deterministic, no LLM calls." width="1000"/>
