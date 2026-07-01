@@ -28,9 +28,19 @@ export { createFastifyPlugin } from "./adapters/fastify.js";
 export { createEEPApp } from "./adapters/hono.js";
 export { createEEPMiddleware } from "./adapters/koa.js";
 
-export { JWTAuthAdapter } from "./auth/jwt.js";
+export {
+  JWTAuthAdapter,
+  type JWTAuthAdapterOptions,
+  type JWTVerifyTokenFn,
+  type HmacAlgorithm
+} from "./auth/jwt.js";
 export { APIKeyAuthAdapter, type APIKeyResolver } from "./auth/api-key.js";
-export { OAuthAuthAdapter } from "./auth/oauth.js";
+export {
+  OAuthAuthAdapter,
+  type OAuthAuthAdapterOptions,
+  type OAuthIntrospectFn,
+  type OAuthIntrospectionResult
+} from "./auth/oauth.js";
 
 export { InMemoryEventBusAdapter } from "./event-bus/in-memory.js";
 export { RedisEventBusAdapter, type RedisClientLike } from "./event-bus/redis.js";

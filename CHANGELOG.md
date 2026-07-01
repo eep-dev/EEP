@@ -6,6 +6,20 @@ All notable changes to this repository are documented here. The format is loosel
 
 ### Security
 
+- **`@eep-dev/middleware` (TypeScript) and `eep-middleware` (Python) — auth
+  adapters now fail closed and verify credentials.** The `JWTAuthAdapter`
+  previously decoded the JWT payload and emitted `did_verified` identity and
+  capability proofs **without checking the signature or `alg`**, so any
+  attacker-crafted (including `alg: none`) token granted whatever the claims
+  asserted. It now rejects `alg: none` unconditionally, verifies HS256/384/512
+  signatures against a configured `secret` (constant-time), delegates asymmetric
+  algorithms to a `verifyToken` / `verify_token` callback, enforces
+  `exp`/`nbf`/`iat` with a configurable clock-skew tolerance, and emits nothing
+  (warning once) when no verification material is configured. The TypeScript
+  `OAuthAuthAdapter` no longer trusts a client-supplied `X-OAuth-Scope` header;
+  it requires an RFC 7662 `introspect` callback and reads scope/subject only from
+  the authorization server's response. Surfaced by the EEP protocol audit.
+
 - **`eep-middleware` (Python) — removed a gate bypass and added webhook SSRF
   validation.** `EEPServer.resolve_gated_resource` previously granted premium
   access to any request carrying a hard-coded `{"type":"payment","token":"tok_valid"}`
