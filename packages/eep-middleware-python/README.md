@@ -111,6 +111,20 @@ rejected with a 400.
 - **DB:** `InMemoryDBAdapter`, `PostgresDBAdapter`
 - **Event bus:** `InMemoryEventBusAdapter`, `RedisEventBusAdapter`
 
+`JWTAuthAdapter` fails closed: it verifies the JWT signature before emitting
+`did_verified` / capability proofs, always rejects `alg: none`, and rejects expired
+tokens. Configure a shared `secret` for HS256/384/512, or a `verify_token` callback
+(sync or async, returning the verified claims or `None`) for asymmetric algorithms.
+Without either it emits no proofs and warns once.
+
+```python
+from eep_middleware.auth.jwt import JWTAuthAdapter
+
+auth = JWTAuthAdapter(secret=os.environ["JWT_SECRET"])
+# asymmetric, delegating verification to your JWT library:
+# JWTAuthAdapter(verify_token=lambda token: my_jwt_lib.decode(token, public_key))
+```
+
 ## After `setup-cli`
 
 See **[integrate-eep-after-setup-cli.md](../../docs/guides/integrate-eep-after-setup-cli.md)** for aligning generated **`eep-generated/`** artifacts with runtime options.
