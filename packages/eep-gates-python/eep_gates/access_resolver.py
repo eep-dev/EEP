@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .models import AccessResult, UnmetRequirement
-from .resource_matcher import matches_any
+from .resource_matcher import matches_any, best_specificity_for
 from .proof_validator import validate_proof_structure, ProofVerifierRegistry
 
 
@@ -64,6 +64,19 @@ async def resolve_access(
         if best_tier_obj:
             bt_access = best_tier_obj.access if hasattr(best_tier_obj, "access") else best_tier_obj.get("access", [])
             if matches_any(bt_access, resource):
+                # Specificity override. Reaching here with ``best_tier`` still
+                # equal to the default tier means no gated (requirements-bearing)
+                # tier was satisfied. The default tier must NOT grant the resource
+                # through a broad wildcard (e.g. "content.*") when a gated tier
+                # targets the same resource with an equal-or-more-specific pattern
+                # (e.g. "content.premium.*"); otherwise the broad public grant
+                # silently bypasses the gate. Deny and surface the gated tier's
+                # unmet requirements instead.
+                if best_tier == default_tier and default_tier_overridden_by_gated_tier(config, resource):
+                    unmet_for_resource = await _get_unmet_for_resource(
+                        config, resource, proofs_by_type, verifier_registry, strict_semantic_verification
+                    )
+                    return AccessResult(granted=False, tier=best_tier, unmet=unmet_for_resource)
                 return AccessResult(granted=True, tier=best_tier, unmet=[])
 
         unmet_for_resource = await _get_unmet_for_resource(
@@ -72,6 +85,62 @@ async def resolve_access(
         return AccessResult(granted=False, tier=best_tier, unmet=unmet_for_resource)
 
     return AccessResult(granted=True, tier=best_tier, unmet=[])
+
+
+def default_tier_overridden_by_gated_tier(config: Any, resource: str) -> bool:
+    """Decide whether the default tier's grant of ``resource`` must be suppressed
+    because a gated, non-default tier targets the same resource with an
+    equal-or-more-specific access pattern.
+
+    Gate configs are commonly shaped so the default tier publishes a broad scope
+    and a gated tier carves out a more specific path::
+
+        default "public": access = ["content.*", "profile.*"]
+        "paid":            access = ["content.premium.*"], requirements = [...]
+
+    Here ``content.*`` in the public tier covers ``content.premium.X``, so a
+    request with no proofs would otherwise leak through the default tier. The
+    owner's intent is "premium is more specific than public, so it gates" — this
+    returns ``True`` in that case so the resolver denies and emits a 402 instead.
+
+    The default's grant is suppressed when a gated tier's best matching pattern
+    is at least as specific as the default tier's best match. A *strictly more
+    specific* default pattern keeps its grant (the owner explicitly opened that
+    narrower path), and a resource the default tier does not cover at all is
+    treated as authoritatively owned by the gated tier (fail closed).
+    """
+    tiers = config.tiers if hasattr(config, "tiers") else config.get("tiers", {})
+    default_tier = config.default_tier if hasattr(config, "default_tier") else config.get("default_tier", "")
+
+    default_tier_obj = tiers.get(default_tier)
+    if not default_tier_obj:
+        return True
+
+    default_access = default_tier_obj.access if hasattr(default_tier_obj, "access") else default_tier_obj.get("access", [])
+    default_best = best_specificity_for(default_access, resource)
+    if default_best < 0:
+        return True
+
+    for tier_key, tier in tiers.items():
+        if tier_key == default_tier:
+            continue
+        # A non-default tier with no requirements is just another free tier; it
+        # does not gate anything, so it cannot override the default's grant.
+        tier_reqs = tier.requirements if hasattr(tier, "requirements") else tier.get("requirements", [])
+        if not tier_reqs:
+            continue
+
+        tier_access = tier.access if hasattr(tier, "access") else tier.get("access", [])
+        gated_best = best_specificity_for(tier_access, resource)
+        if gated_best < 0:
+            continue
+
+        # At least as specific as the default's best match: the gated tier wins,
+        # so the default tier must not bypass its requirements.
+        if gated_best >= default_best:
+            return True
+
+    return False
 
 
 async def _check_one_requirement(

@@ -6,7 +6,7 @@
  */
 
 import type { GateConfig, GateProof, AccessResult, UnmetRequirement, Requirement, CombinedRequirement } from './types.js';
-import { matchesAny } from './resource-matcher.js';
+import { matchesAny, bestSpecificityFor } from './resource-matcher.js';
 import { validateProofStructure } from './proof-validator.js';
 import type { ProofVerifierRegistry } from './proof-validator.js';
 
@@ -77,6 +77,24 @@ export async function resolveAccess(
     if (resource) {
         const bestTierConfig = config.tiers[bestTier];
         if (bestTierConfig && matchesAny(bestTierConfig.access, resource)) {
+            // Specificity override. Reaching here with `bestTier` still equal to
+            // the default tier means no gated (requirements-bearing) tier was
+            // satisfied. The default tier should NOT grant the resource through
+            // a broad wildcard (e.g. "content.*") when a gated tier targets the
+            // same resource with an equal-or-more-specific pattern
+            // (e.g. "content.premium.*"); otherwise the broad public grant
+            // silently bypasses the gate. Deny and surface the gated tier's
+            // unmet requirements instead.
+            if (
+                bestTier === config.default_tier &&
+                defaultTierOverriddenByGatedTier(config, resource)
+            ) {
+                const unmet = await getUnmetForResource(
+                    config, resource, proofsByType, verifierRegistry,
+                    strictSemanticVerification,
+                );
+                return { granted: false, tier: bestTier, unmet };
+            }
             return { granted: true, tier: bestTier, unmet: [] };
         }
 
@@ -89,6 +107,52 @@ export async function resolveAccess(
     }
 
     return { granted: true, tier: bestTier, unmet: [] };
+}
+
+/**
+ * Decide whether the default tier's grant of `resource` must be suppressed
+ * because a gated, non-default tier targets the same resource with an
+ * equal-or-more-specific access pattern.
+ *
+ * Gate configs are commonly shaped so the default tier publishes a broad scope
+ * and a gated tier carves out a more specific path:
+ *
+ *   default "public": access = ["content.*", "profile.*"]
+ *   "paid":            access = ["content.premium.*"], requirements = [...]
+ *
+ * Here `content.*` in the public tier covers `content.premium.X`, so a request
+ * with no proofs would otherwise leak through the default tier. The owner's
+ * intent is "premium is more specific than public, so it gates" — this returns
+ * true in that case so the resolver denies and emits a 402 instead.
+ *
+ * The default's grant is suppressed when a gated tier's best matching pattern
+ * is at least as specific as the default tier's best match. A *strictly more
+ * specific* default pattern keeps its grant (the owner explicitly opened that
+ * narrower path), and a resource the default tier does not cover at all is
+ * treated as authoritatively owned by the gated tier (fail closed).
+ */
+export function defaultTierOverriddenByGatedTier(config: GateConfig, resource: string): boolean {
+    const defaultTier = config.tiers[config.default_tier];
+    if (!defaultTier) return true;
+
+    const defaultBest = bestSpecificityFor(defaultTier.access, resource);
+    if (defaultBest < 0) return true;
+
+    for (const [tierKey, tier] of Object.entries(config.tiers)) {
+        if (tierKey === config.default_tier) continue;
+        // A non-default tier with no requirements is just another free tier; it
+        // does not gate anything, so it cannot override the default's grant.
+        if (!tier.requirements || tier.requirements.length === 0) continue;
+
+        const gatedBest = bestSpecificityFor(tier.access, resource);
+        if (gatedBest < 0) continue;
+
+        // At least as specific as the default's best match: the gated tier wins,
+        // so the default tier must not bypass its requirements.
+        if (gatedBest >= defaultBest) return true;
+    }
+
+    return false;
 }
 
 /**

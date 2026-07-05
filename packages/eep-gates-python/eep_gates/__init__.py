@@ -29,10 +29,13 @@ from .models import (
 from .gate_config import parse_gate_config, serialize_gate_config, get_used_requirement_types, GateConfigError
 
 # ── Resource Matching ──────────────────────────────────────────────────────────
-from .resource_matcher import match_resource, matches_any, find_tiers_for_resource
+from .resource_matcher import (
+    match_resource, matches_any, find_tiers_for_resource,
+    pattern_specificity, best_specificity_for,
+)
 
 # ── Access Resolution ──────────────────────────────────────────────────────────
-from .access_resolver import resolve_access
+from .access_resolver import resolve_access, default_tier_overridden_by_gated_tier
 
 # ── Proof Validation ───────────────────────────────────────────────────────────
 from .proof_validator import (
@@ -67,8 +70,9 @@ __all__ = [
     "parse_gate_config", "serialize_gate_config", "get_used_requirement_types", "GateConfigError",
     # Resource Matching
     "match_resource", "matches_any", "find_tiers_for_resource",
+    "pattern_specificity", "best_specificity_for",
     # Access Resolution
-    "resolve_access",
+    "resolve_access", "default_tier_overridden_by_gated_tier",
     # Proof Validation
     "validate_proof_structure", "validate_proofs", "delegation_permits_data_request",
     "ProofVerifier", "ProofVerifierRegistry",

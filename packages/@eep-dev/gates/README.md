@@ -98,6 +98,36 @@ await resolveAccess(proofs, gateConfig, resourcePath, registry, {
 });
 ```
 
+#### Tier specificity (default-tier wildcard override)
+
+When resolving a specific `resource`, a more-specific gated tier always wins
+over a broader default-tier wildcard. With the common shape below, an agent
+with no proofs is denied `content.premium.*` (a 402 carrying the gated tier's
+unmet requirements) even though the default `content.*` pattern technically
+covers it:
+
+```typescript
+const config = {
+  default_tier: 'public',
+  tiers: {
+    public: { requirements: [], access: ['content.*', 'profile.*'] },
+    paid:   { requirements: [{ type: 'trust', min_score: 20 }], access: ['content.premium.*'] },
+  },
+};
+
+await resolveAccess([], config, 'content.premium.x');  // { granted: false, tier: 'public', unmet: [trust] }
+await resolveAccess([], config, 'content.blog.post');  // { granted: true,  tier: 'public' } — public stays public
+```
+
+The default tier's grant is suppressed only when a gated (requirements-bearing)
+tier matches the resource with an **equal-or-more-specific** access pattern.
+A strictly more-specific default pattern keeps its grant, and resources the
+default tier does not cover at all fail closed. Specificity ranks `"*"` below
+any scope wildcard (`"a.b.*"`, longer prefix wins) below any exact pattern. The
+helpers `patternSpecificity`, `bestSpecificityFor`, and
+`defaultTierOverriddenByGatedTier` are exported for callers that re-implement
+the hot path.
+
 ### Proof Validation
 
 ```typescript
