@@ -105,6 +105,31 @@ describe('@eep-dev/compliance-cli helpers', () => {
             runner.fail('t1', 'err');
             expect(runner.conformanceLabel('core')).toBe('❌ Not EEP Compliant (1 failure)');
         });
+
+        it('should NOT award a medal when no checks ran (empty run)', () => {
+            const runner = createTestRunner();
+            expect(runner.conformanceLabel('full')).toBe('❌ Not EEP Compliant (no checks verified)');
+        });
+
+        it('should NOT award a medal when every check skipped', () => {
+            const runner = createTestRunner();
+            runner.skip('t1', 'n/a');
+            runner.skip('t2', 'n/a');
+            expect(runner.conformanceLabel('full')).toBe('❌ Not EEP Compliant (no checks verified)');
+        });
+
+        it('should report "incomplete" when some checks skipped (no failures)', () => {
+            const runner = createTestRunner();
+            runner.pass('t1');
+            runner.skip('t2', 'n/a');
+            expect(runner.conformanceLabel('full')).toBe('⚠️ Full EEP: incomplete (1 skipped, 1 passed)');
+        });
+
+        it('should fall back to a generic compliant label for an unknown level', () => {
+            const runner = createTestRunner();
+            runner.pass('t1');
+            expect(runner.conformanceLabel('enterprise')).toBe('✅ Enterprise EEP Compliant');
+        });
     });
 
     // ── validateArgs ────────────────────────────────────────────────

@@ -40,11 +40,28 @@ export function createTestRunner() {
     }
 
     function conformanceLabel(level: string): string {
-        const { failed } = summary();
-        if (failed === 0 && level === 'core') return '🥉 Core EEP Compliant';
-        if (failed === 0 && level === 'standard') return '🥈 Standard EEP Compliant';
-        if (failed === 0 && level === 'full') return '🏆 Full EEP Compliant';
-        return `❌ Not EEP Compliant (${failed} failure${failed !== 1 ? 's' : ''})`;
+        const { passed, failed, skipped } = summary();
+        const lvl = level.charAt(0).toUpperCase() + level.slice(1);
+        if (failed > 0) {
+            return `❌ Not EEP Compliant (${failed} failure${failed !== 1 ? 's' : ''})`;
+        }
+        // A conformance claim must be *earned*, not granted by omission. A run
+        // with zero passing checks, or with skipped checks, has not actually
+        // verified the level — so it must not receive a compliance medal even
+        // though `failed === 0`. (Otherwise a near-empty or fully-skipped run
+        // would print "Full EEP Compliant".)
+        if (passed === 0) {
+            return '❌ Not EEP Compliant (no checks verified)';
+        }
+        if (skipped > 0) {
+            return `⚠️ ${lvl} EEP: incomplete (${skipped} skipped, ${passed} passed)`;
+        }
+        const labels: Record<string, string> = {
+            core: '🥉 Core EEP Compliant',
+            standard: '🥈 Standard EEP Compliant',
+            full: '🏆 Full EEP Compliant',
+        };
+        return labels[level] ?? `✅ ${lvl} EEP Compliant`;
     }
 
     return { pass, fail, skip, results, summary, conformanceLabel };

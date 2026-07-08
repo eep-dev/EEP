@@ -37,6 +37,27 @@ class TestTestRunner:
         assert "Not EEP Compliant" in label
         assert "1 failure" in label
 
+    def test_conformance_label_empty_run_not_compliant(self):
+        r = TestRunner()
+        assert r.conformance_label("full") == "❌ Not EEP Compliant (no checks verified)"
+
+    def test_conformance_label_all_skipped_not_compliant(self):
+        r = TestRunner()
+        r.skip("A", "n/a")
+        r.skip("B", "n/a")
+        assert r.conformance_label("full") == "❌ Not EEP Compliant (no checks verified)"
+
+    def test_conformance_label_partial_skips_incomplete(self):
+        r = TestRunner()
+        r.pass_("A")
+        r.skip("B", "n/a")
+        assert r.conformance_label("full") == "⚠️ Full EEP: incomplete (1 skipped, 1 passed)"
+
+    def test_conformance_label_unknown_level_fallback(self):
+        r = TestRunner()
+        r.pass_("A")
+        assert r.conformance_label("enterprise") == "✅ Enterprise EEP Compliant"
+
 
 class TestNormalizeTarget:
     def test_strips_trailing_slash(self):
