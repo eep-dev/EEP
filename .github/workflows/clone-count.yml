@@ -38,7 +38,7 @@ jobs:
       GIST_USER: ucekmez
       GIST_ID: ${{ vars.GIST_ID }}
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
 
       - name: Guard — GIST_ID configured
         run: |
