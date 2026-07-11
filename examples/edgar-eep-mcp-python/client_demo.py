@@ -1,6 +1,6 @@
 """
-EEP Client calling gated FundTurkey tools.
-Handles 402 Payment Required challenges by signing agreements and mock payments.
+EEP Client calling gated SEC Edgar tools.
+Handles 402 Payment Required challenge with mock payment.
 """
 
 from __future__ import annotations
@@ -9,11 +9,11 @@ import json
 import httpx
 
 BRIDGE_URL = "http://localhost:3005"
-
+USER_AGENT = "Test-Project info@test.com"
 
 def main() -> None:
-    client = httpx.Client(base_url=BRIDGE_URL, timeout=15.0)
-    print("Connecting to FundTurkey EEP-MCP Bridge...")
+    client = httpx.Client(base_url=BRIDGE_URL, timeout=60.0)
+    print("Connecting to SEC Edgar EEP-MCP Bridge...")
 
     # 1. Manifest Discovery
     r = client.get("/.well-known/eep.json")
@@ -24,16 +24,16 @@ def main() -> None:
     tools = [s["id"] for s in r.json()["services"]]
     print(f"Introspected {len(tools)} tools: {', '.join(tools)}\n")
 
-    # 3. Try to call the gated Premium Comparison tool
+    # 3. Call the gated facts tool
     payload = {
-        "name": "get_fund_comparison_tool",
+        "name": "get_company_facts_tool",
         "arguments": {
-            "fund_code": "AFT",
-            "comparison_funds": ["BIST100", "USD"]
+            "ticker": "AAPL",
+            "user_agent":USER_AGENT
         }
     }
     
-    print("=== Step 1: Attempt to Call Premium Tool ===")
+    print("=== Step 1: Attempt to Call SEC Tool ===")
     r = client.post("/mcp/tools/call", json=payload)
     print(f"Status: {r.status_code}")
     
@@ -51,7 +51,7 @@ def main() -> None:
                 print("Fulfilling payment requirement (Mock USDC token)...")
                 proofs.append({
                     "type": "payment",
-                    "token": "tok_demo_usdc_0.05"
+                    "token": "tok_demo_usdc_0.01"
                 })
         
         payload["gate_proofs"] = proofs
@@ -66,6 +66,9 @@ def main() -> None:
             print(f"Result: {json.dumps(result, indent=2, ensure_ascii=False)}...\n")
         else:
             print(f"Failed: {r.text}")
+
+    elif r.status_code == 200:
+        print(f"Response from Edgar API:\n{r.json()}")
 
 
 if __name__ == "__main__":
