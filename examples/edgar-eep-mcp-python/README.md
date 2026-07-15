@@ -1,0 +1,23 @@
+# SEC EDGAR EEP-MCP Python Example
+
+This example demonstrates gating company facts retrieval from the **SEC EDGAR API** using the **Entity Engagement Protocol (EEP)**.
+
+**EDGAR** should be utilized with your identity and contact information in [Client Demo](./client_demo.py) the `USER_AGENT` should be updated for using this.
+
+## Quick Start
+
+1. Install dependencies and EEP Python bridge:
+   ```bash
+   pip install -r requirements.txt
+   pip install -e ../../packages/eep-mcp-bridge-python
+   ```
+
+2. Run the provider server:
+   ```bash
+   python eep_provider.py
+   ```
+
+3. Call the client demo in another terminal:
+   ```bash
+   python client_demo.py
+   ```

@@ -1,22 +1,21 @@
 """
-FundTurkey (TEFAS) EEP-MCP Provider.
-Exposes FastMCP tools as gated, secure EEP endpoints.
+SEC Edgar EEP-MCP Provider.
+Exposes FastMCP SEC Tools as gated EEP endpoints.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-import asyncio
 from eep_mcp_bridge.bridge import run_bridge_server
-
 from mcp_server import mcp
+import asyncio
 
 tools_from_mcp = asyncio.run(mcp.list_tools())
-resources_from_mcp = asyncio.run(mcp.list_resources())
-
 
 class FastMCPHttpAdapter(BaseHTTPRequestHandler):
     """Wraps FastMCP server instance and exposes standard HTTP endpoints."""
@@ -43,15 +42,7 @@ class FastMCPHttpAdapter(BaseHTTPRequestHandler):
                 "tools": tools_list
             }
         elif self.path == "/resources/list":
-            resources_list = []
-            for resource in resources_from_mcp:
-                resources_list.append({
-                    "uri": resource.uri,
-                    "name": resource.name,
-                    "description": resource.description or "",
-                    "mimeType": resource.mime_type or "application/json"
-                })
-            body = {"resources": resources_list}
+            body = {"resources": []}
         else:
             self.send_response(404)
             self.end_headers()
@@ -74,6 +65,7 @@ class FastMCPHttpAdapter(BaseHTTPRequestHandler):
         payload = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
         tool_name = payload.get("name")
         arguments = payload.get("arguments") or {}
+        
         tool = next((t for t in tools_from_mcp if t.name == tool_name), None)
         if not tool:
             self.send_response(404)
@@ -81,7 +73,6 @@ class FastMCPHttpAdapter(BaseHTTPRequestHandler):
             return
             
         try:
-            # Call the python function directly
             result = tool.fn(**arguments)
             body = {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}]}
             
@@ -113,32 +104,21 @@ def start_adapter(port: int = 8001) -> HTTPServer:
 
 
 def main() -> None:
-    # 1. Start the HTTP proxy for the FastMCP instance
     adapter_port = 8001
     adapter = start_adapter(adapter_port)
     
-    # 2. Configure the EEP bridge
     config = {
-        "did": "did:web:fundturkey.mcp.ai",
+        "did": "did:web:sec-edgar.eep-dev.org",
         "base_url": "http://localhost:3005",
         "mcp_base_url": f"http://localhost:{adapter_port}",
         
-        # Configure business rules and Gates for specific FundTurkey tools
         "gated_tools": {
-            # Gating fund comparison with a Payment Gate (0.05 USD)
-            "get_fund_comparison_tool": {
-                "type": "payment",
-                "amount": 0.05,
-                "currency": "usd"
-            },
-            # Gating general returns with an Agreement Gate (Terms of Service)
-            "get_fund_returns_tool": {
-                "type": "agreement"
+            "get_company_facts_tool": {
+                "type": "public"
             }
         }
     }
     
-    # 3. Start EEP-MCP Bridge on port 3005
     try:
         run_bridge_server(config, host="0.0.0.0", port=3005)
     except KeyboardInterrupt:
