@@ -13,9 +13,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import hashlib
-import hmac as hmac_mod
-import base64
 import json
 import sys
 import time
@@ -32,6 +29,7 @@ from .helpers import (
     validate_cloudevents_envelope,
     validate_eep_extensions,
     check_webhook_headers,
+    verify_webhook_signature,
 )
 
 
@@ -39,6 +37,10 @@ from .helpers import (
 
 _received_webhook: Optional[Dict[str, Any]] = None
 _received_headers: Optional[Dict[str, str]] = None
+# The exact request-body bytes (decoded as UTF-8) the sender hashed. Kept
+# separately from the parsed JSON: HMAC verification must use these bytes, not
+# a re-serialization of the parse (json.dumps reorders keys / changes spacing).
+_received_raw_body: Optional[str] = None
 
 
 class _WebhookHandler(BaseHTTPRequestHandler):
@@ -57,10 +59,11 @@ class _WebhookHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"OK")
 
     def do_POST(self) -> None:
-        global _received_webhook, _received_headers
+        global _received_webhook, _received_headers, _received_raw_body
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length).decode("utf-8")
         _received_headers = {k.lower(): v for k, v in self.headers.items()}
+        _received_raw_body = body
         try:
             _received_webhook = json.loads(body)
         except json.JSONDecodeError:
@@ -177,10 +180,11 @@ def main() -> None:
         print("  ⚪ Subscription creation (skipped)")
 
     # 4. Webhook delivery + verification
-    global _received_webhook, _received_headers
+    global _received_webhook, _received_headers, _received_raw_body
     if subscription_id and webhook_secret:
         _received_webhook = None
         _received_headers = None
+        _received_raw_body = None
 
         try:
             client.post(
@@ -206,23 +210,23 @@ def main() -> None:
                 runner.fail("Standard Webhooks headers present", f"missing: {', '.join(wh['missing'])}")
                 print(f"  ❌ Standard Webhooks headers: missing {wh['missing']}")
 
-            # Verify HMAC
+            # Verify HMAC over the exact received bytes (never a re-serialized
+            # parse — that is the anti-pattern the TS CLI warns against and the
+            # reason this check used to fail against compliant publishers).
             if wh["hasSignature"]:
-                wid = _received_headers.get("webhook-id", "")
-                wts = _received_headers.get("webhook-timestamp", "")
-                wsig = _received_headers.get("webhook-signature", "")
-                raw = json.dumps(_received_webhook)
-                signed = f"{wid}.{wts}.{raw}"
-                expected = base64.b64encode(
-                    hmac_mod.new(webhook_secret.encode(), signed.encode(), hashlib.sha256).digest()
-                ).decode()
-                sig_b64 = wsig.replace("v1,", "")
-                if hmac_mod.compare_digest(expected, sig_b64):
+                result = verify_webhook_signature(
+                    webhook_id=_received_headers.get("webhook-id", ""),
+                    timestamp=_received_headers.get("webhook-timestamp", ""),
+                    raw_body=_received_raw_body or "",
+                    secret=webhook_secret,
+                    signature_header=_received_headers.get("webhook-signature", ""),
+                )
+                if result["valid"]:
                     runner.pass_("HMAC-SHA256 signature is valid")
                     print("  ✅ HMAC-SHA256 signature is valid")
                 else:
-                    runner.fail("HMAC-SHA256 signature is valid", "signature mismatch")
-                    print("  ❌ HMAC-SHA256 signature mismatch")
+                    runner.fail("HMAC-SHA256 signature is valid", result["reason"])
+                    print(f"  ❌ HMAC-SHA256 signature: {result['reason']}")
 
             # CloudEvents
             ce_missing = validate_cloudevents_envelope(_received_webhook)

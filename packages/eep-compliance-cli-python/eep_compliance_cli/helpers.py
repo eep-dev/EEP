@@ -7,6 +7,10 @@ Python port of @eep-dev/compliance-cli/src/helpers.ts.
 
 from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
+import hmac
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -108,6 +112,61 @@ def validate_eep_extensions(event: Dict[str, Any]) -> List[str]:
     if not event.get("eep_version"):
         missing.append("eep_version")
     return missing
+
+
+def verify_webhook_signature(
+    webhook_id: str,
+    timestamp: str,
+    raw_body: str,
+    secret: str,
+    signature_header: str,
+) -> Dict[str, Any]:
+    """Verify a Standard Webhooks v1 HMAC-SHA256 signature.
+
+    Python port of ``verifyWebhookSignature`` in
+    ``@eep-dev/compliance-cli/src/helpers.ts`` (EEP SPECIFICATION.md §5.3).
+
+    The signed content is ``f"{webhook_id}.{timestamp}.{raw_body}"`` where
+    ``raw_body`` MUST be the exact bytes the sender hashed — never a
+    re-serialized parse of the JSON. Re-serializing (``json.dumps`` of a parsed
+    body) changes key order, whitespace, and unicode escaping, so every
+    signature would falsely fail.
+
+    The header MAY carry space-separated tokens (secret rotation), e.g.
+    ``v1,sigA v1,sigB``; non-``v1`` schemes are ignored. Comparison is
+    timing-safe on the raw digest bytes.
+
+    Returns ``{"valid": bool, "reason": str}`` where ``reason`` is one of:
+    ``ok``, ``ok_via_multi_signature``, ``missing_secret``,
+    ``malformed_header``, ``no_v1_token``, ``signature_mismatch``.
+    """
+    if not secret:
+        return {"valid": False, "reason": "missing_secret"}
+    if not isinstance(signature_header, str) or signature_header == "":
+        return {"valid": False, "reason": "malformed_header"}
+
+    signed_content = f"{webhook_id}.{timestamp}.{raw_body}"
+    expected = hmac.new(secret.encode("utf-8"), signed_content.encode("utf-8"), hashlib.sha256).digest()
+
+    tokens = [t for t in signature_header.split(" ") if t]
+    v1_tokens = [t for t in tokens if t.startswith("v1,")]
+    if not v1_tokens:
+        return {"valid": False, "reason": "no_v1_token"}
+
+    for token in v1_tokens:
+        try:
+            incoming = base64.b64decode(token[len("v1,"):], validate=True)
+        except (binascii.Error, ValueError):
+            continue
+        if len(incoming) != len(expected):
+            continue
+        if hmac.compare_digest(incoming, expected):
+            return {
+                "valid": True,
+                "reason": "ok_via_multi_signature" if len(v1_tokens) > 1 else "ok",
+            }
+
+    return {"valid": False, "reason": "signature_mismatch"}
 
 
 def check_webhook_headers(headers: Dict[str, Optional[str]]) -> Dict[str, Any]:
