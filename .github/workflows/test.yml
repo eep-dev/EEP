@@ -10,9 +10,9 @@ jobs:
   dependency-policy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -91,8 +91,8 @@ jobs:
       run:
         working-directory: tests
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm ci
@@ -104,8 +104,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/validator
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm ci
@@ -117,8 +117,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/signer
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm ci
@@ -130,8 +130,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/gates
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm ci
@@ -143,8 +143,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/compliance-cli
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm ci
@@ -157,8 +157,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/discovery
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm install
@@ -170,8 +170,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/mcp-bridge
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Build @eep-dev/gates (required by mcp-bridge)
@@ -188,8 +188,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/setup-cli
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: npm install
@@ -201,8 +201,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/agent-adopt
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       # @eep-dev/setup-cli ships `types` from dist/; dist/ is gitignored. tsc in agent-adopt
@@ -224,8 +224,8 @@ jobs:
       run:
         working-directory: packages/@eep-dev/middleware
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Build workspace dependencies (required by middleware)
@@ -244,7 +244,7 @@ jobs:
       run:
         working-directory: packages/eep-signer-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -257,7 +257,7 @@ jobs:
       run:
         working-directory: packages/eep-validator-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -270,7 +270,7 @@ jobs:
       run:
         working-directory: packages/eep-gates-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -283,7 +283,7 @@ jobs:
       run:
         working-directory: packages/eep-compliance-cli-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -296,7 +296,7 @@ jobs:
       run:
         working-directory: packages/eep-discovery-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -309,7 +309,7 @@ jobs:
       run:
         working-directory: packages/eep-mcp-bridge-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -322,7 +322,7 @@ jobs:
       run:
         working-directory: packages/eep-middleware-python
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -336,9 +336,9 @@ jobs:
   test-cross-impl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -400,7 +400,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
         with:
           fetch-depth: 0
 
@@ -432,9 +432,9 @@ jobs:
     name: Schema types drift gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
 
-      - uses: actions/setup-node@v6 # renovate: pin
+      - uses: actions/setup-node@v7 # renovate: pin
         with:
           node-version: '22'
 
