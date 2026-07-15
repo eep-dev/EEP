@@ -2,6 +2,8 @@
 
 This example demonstrates gating company facts retrieval from the **SEC EDGAR API** using the **Entity Engagement Protocol (EEP)**.
 
+**EDGAR** should be utilized with your identity and contact information in [Client Demo](./client_demo.py) the `USER_AGENT` should be updated for using this.
+
 ## Quick Start
 
 1. Install dependencies and EEP Python bridge:
