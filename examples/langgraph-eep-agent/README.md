@@ -6,8 +6,10 @@
 
 1. **Discovery**: Agent resolves an entity via Layer 1 REST, reads `Link` headers and `/.well-known/eep.json`.
 2. **Subscription**: Agent subscribes to entity events via `POST /eep/subscribe` (Layer 2 webhook delivery).
-3. **Gate handling**: When the agent hits a 402 (payment) or 403 (credential/agreement), it uses `eep-gates-python` to construct and submit gate proofs.
-4. **Event processing**: Incoming webhook events are validated with `eep-validator-python`, signature-checked with `eep-signer-python`, and routed to a LangGraph processing graph.
+3. **Gate handling**: When the agent hits a `402 access_restricted` or `403 access_forbidden` response, it parses the canonical `unmet_requirements[]` (each carries a machine-readable `resolution_hint`) and constructs a matching gate proof **per requirement** — no LLM needed to decide what to do.
+4. **Event processing**: Incoming webhook events are validated against the CloudEvents envelope and signature-checked with a Standard Webhooks HMAC verifier (the algorithm in `eep-signer`), then routed to a LangGraph processing graph.
+
+> This example implements the EEP wire contracts (canonical gate response, Standard Webhooks HMAC) **inline** so it reads as a single self-contained file. In production, import [`eep-gates`](../../packages/eep-gates-python/), [`eep-signer`](../../packages/eep-signer-python/), and [`eep-validator`](../../packages/eep-validator-python/) instead of re-implementing them.
 5. **Claude reasoning**: Each event is summarized and acted on by Claude (via `langchain-anthropic`).
 
 ## Architecture
@@ -61,13 +63,31 @@ python agent.py
 
 ## How gate handling works
 
-When the agent encounters a gated resource:
+Both `402 access_restricted` and `403 access_forbidden` use the same canonical
+body (`gate.402-response.json` / `gate.403-response.json`):
 
-- **402 Payment Required**: The agent reads the `gate_type` and payment requirements from the response body, constructs a payment proof (x402 or on-chain hash), and retries with `gate_proofs` in the request.
-- **403 Forbidden (credential)**: The agent presents a Verifiable Presentation from its credential store.
-- **403 Forbidden (agreement)**: The agent fetches the agreement document, computes its hash, signs it with the agent DID private key, and retries.
+```json
+{
+  "error": "access_restricted",
+  "resource": "content.papers.full_text",
+  "current_tier": "free",
+  "required_tier": "paid",
+  "unmet_requirements": [
+    { "type": "payment", "amount": 0.1, "currency": "USD", "per": "request",
+      "resolution_hint": "Pay $0.10 via the payment_methods URL" }
+  ]
+}
+```
 
-These flows use `eep_gates.proof_validator` and `eep_gates.access_resolver` from the `eep-gates-python` package.
+`handle_gate_challenge()` iterates `unmet_requirements` and builds one proof per
+entry, routed on each requirement's `type` (`payment` → `token`, `credential` →
+a VC in the accepted format, `agreement` → a signature over `document_hash`,
+`identity`/`trust`/`connection`, …). Every requirement carries a
+`resolution_hint`, so the agent decides what to satisfy **without** an LLM call.
+Requirement types the demo cannot auto-satisfy (e.g. custom `x-*`) are skipped.
+
+`test_agent.py` asserts this parsing against the canonical shapes (run
+`python -m pytest test_agent.py`).
 
 ## Related
 
