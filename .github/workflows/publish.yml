@@ -21,10 +21,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
 
       # TS packages
-      - uses: actions/setup-node@v6 # renovate: pin
+      - uses: actions/setup-node@v7 # renovate: pin
         with:
           node-version: '22'
 
@@ -98,7 +98,7 @@ jobs:
           (cd "packages/@eep-dev/mcp-bridge" && npm install && npm audit --omit=dev --audit-level=high)
 
       # Python packages
-      - uses: actions/setup-python@v6 # renovate: pin
+      - uses: actions/setup-python@v7 # renovate: pin
         with:
           python-version: '3.12'
 
@@ -200,7 +200,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
 
       - name: Generate CycloneDX SBOM (repository scope)
         uses: anchore/sbom-action@v0 # renovate: pin
@@ -236,9 +236,9 @@ jobs:
       contents: read
       id-token: write   # required for npm provenance via OIDC
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
 
-      - uses: actions/setup-node@v6 # renovate: pin
+      - uses: actions/setup-node@v7 # renovate: pin
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -330,9 +330,9 @@ jobs:
           - eep-mcp-bridge-python
           - eep-middleware-python
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
 
-      - uses: actions/setup-python@v6 # renovate: pin
+      - uses: actions/setup-python@v7 # renovate: pin
         with:
           python-version: '3.12'
 
@@ -410,7 +410,7 @@ jobs:
       contents: write    # required for Release creation
       id-token: write    # required for sigstore/cosign keyless signing
     steps:
-      - uses: actions/checkout@v6 # renovate: pin
+      - uses: actions/checkout@v7 # renovate: pin
         with:
           fetch-depth: 0
 
