@@ -12,7 +12,7 @@
         "ws": "^8.21.3"
     },
     "devDependencies": {
-        "tsx": "^4.23.1",
+        "tsx": "^4.23.12",
         "typescript": "^5.0.0",
         "@types/ws": "^8.5.0"
     }
