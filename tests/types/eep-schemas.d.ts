@@ -2695,6 +2695,2790 @@ export interface EEPSubscriptionRequest {
    */
   event_types: [string, ...string[]];
   /**
+   * Optional publisher-side content filter (SPECIFICATION.md §5.1.3). Narrows what `event_types` already selected; it never widens. Deliberately not Turing-complete and with no regex operator, so a subscriber cannot hand the publisher an expensive pattern to evaluate on every delivery.
+   */
+  filter?: {
+    /**
+     * 'all' requires every condition to hold; 'any' requires at least one.
+     */
+    match: 'all' | 'any';
+    /**
+     * @minItems 1
+     * @maxItems 20
+     */
+    conditions:
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ]
+      | [
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          },
+          {
+            /**
+             * Dotted path into the event envelope, e.g. 'subject' or 'data.field'. At most 8 segments; may not traverse object internals.
+             */
+            path: string;
+            op: 'eq' | 'ne' | 'in' | 'nin' | 'prefix' | 'exists' | 'gt' | 'lt';
+            /**
+             * Operand. An array for 'in'/'nin', a string for 'prefix', a number for 'gt'/'lt', and absent for 'exists'.
+             */
+            value?: {
+              [k: string]: unknown | undefined;
+            };
+          }
+        ];
+  };
+  /**
    * How events should be delivered to the subscriber.
    */
   delivery_method: 'webhook' | 'sse';

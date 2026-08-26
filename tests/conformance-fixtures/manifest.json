@@ -235,6 +235,28 @@
       "asserts_valid": false
     },
     {
+      "id": "subscription-filter-valid",
+      "category": "subscription",
+      "tier": "Standard",
+      "spec_section": "\u00a75.1.3 Subscription filters",
+      "schema": "schemas/v0.1/subscription.request.json",
+      "input": "subscription/filter-valid.input.json",
+      "expected": "subscription/filter-valid.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "subscription-filter-unknown-operator",
+      "category": "subscription",
+      "tier": "Standard",
+      "spec_section": "\u00a75.1.3 Subscription filters",
+      "schema": "schemas/v0.1/subscription.request.json",
+      "input": "subscription/filter-unknown-operator.input.json",
+      "expected": "subscription/filter-unknown-operator.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
+    },
+    {
       "id": "discovery-crosswalk-host-bundle",
       "category": "discovery",
       "tier": "Informative",

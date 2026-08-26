@@ -1,0 +1,26 @@
+{
+  "source_did": "did:web:test.eep.dev:u:alice",
+  "event_types": [
+    "com.example.entity.updated"
+  ],
+  "delivery_method": "webhook",
+  "delivery_url": "https://agent.example.com/hooks/eep",
+  "filter": {
+    "match": "all",
+    "conditions": [
+      {
+        "path": "subject",
+        "op": "prefix",
+        "value": "listing/"
+      },
+      {
+        "path": "data.status",
+        "op": "in",
+        "value": [
+          "published",
+          "archived"
+        ]
+      }
+    ]
+  }
+}

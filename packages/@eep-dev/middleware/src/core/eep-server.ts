@@ -12,6 +12,7 @@ import {
 } from "@eep-dev/gates";
 import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
 import { withConditional } from "./conditional.js";
+import { validateFilter, FilterValidationError, type EventFilter } from "./event-filter.js";
 import {
   InMemoryEventStore,
   RetentionWindowExceededError,
@@ -391,6 +392,22 @@ export class EEPServer {
         }
       }
 
+      // §5.1.3 — reject a malformed filter rather than accepting and ignoring
+      // it. A subscriber that believes it is filtering, but is not, receives
+      // traffic it thought it had asked to be spared and cannot tell from its
+      // own side.
+      let filter: EventFilter | undefined;
+      if (body.filter !== undefined) {
+        try {
+          filter = validateFilter(body.filter);
+        } catch (err) {
+          if (err instanceof FilterValidationError) {
+            return { status: 400, body: { error: "invalid_request", message: err.message } };
+          }
+          throw err;
+        }
+      }
+
       // A per-subscription HMAC secret used to sign webhook deliveries.
       // Returned to the subscriber once, on creation, and never again.
       const deliverySecret = deliveryMethod === "webhook" ? randomBytes(24).toString("base64url") : undefined;
@@ -412,6 +429,7 @@ export class EEPServer {
         status: "active",
         failure_count: 0,
         expires_at: expiresAt.toISOString(),
+        ...(filter ? { filter } : {}),
         delivery_secret: deliverySecret,
         metadata,
         tier,
