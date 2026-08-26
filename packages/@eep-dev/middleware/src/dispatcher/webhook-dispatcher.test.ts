@@ -59,6 +59,54 @@ describe("WebhookDispatcher", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
   });
 
+  // SPECIFICATION.md §7.1 — W3C Trace Context is mirrored into HTTP headers
+  // per the CloudEvents Distributed Tracing extension. EEP is multi-hop by
+  // design, and without propagation the causal chain breaks at every
+  // publisher/subscriber boundary.
+  describe("trace context propagation (§7.1)", () => {
+    const TRACEPARENT = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+
+    const deliver = async (overrides: Partial<CloudEvent>) => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription());
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+      await dispatcher.dispatch(event(overrides));
+      return calls[0]!.headers;
+    };
+
+    it("forwards a well-formed traceparent as an HTTP header", async () => {
+      const headers = await deliver({ traceparent: TRACEPARENT } as Partial<CloudEvent>);
+      expect(headers.traceparent).toBe(TRACEPARENT);
+    });
+
+    it("forwards tracestate alongside traceparent", async () => {
+      const headers = await deliver({
+        traceparent: TRACEPARENT,
+        tracestate: "vendor=abc123"
+      } as Partial<CloudEvent>);
+      expect(headers.tracestate).toBe("vendor=abc123");
+    });
+
+    it("sends no trace headers when the event carries none", async () => {
+      const headers = await deliver({});
+      expect(headers.traceparent).toBeUndefined();
+      expect(headers.tracestate).toBeUndefined();
+    });
+
+    // A malformed traceparent is worse than none: it silently roots the
+    // subscriber's spans under a trace that does not exist.
+    it("drops a malformed traceparent rather than forwarding it", async () => {
+      const headers = await deliver({ traceparent: "not-a-trace-context" } as Partial<CloudEvent>);
+      expect(headers.traceparent).toBeUndefined();
+    });
+
+    it("drops tracestate when traceparent is absent or invalid", async () => {
+      const headers = await deliver({ tracestate: "vendor=abc123" } as Partial<CloudEvent>);
+      expect(headers.tracestate).toBeUndefined();
+    });
+  });
+
   // SPECIFICATION.md §10.2: an elapsed lease means no more deliveries. Checked
   // at delivery time rather than by a sweeper, so the rule holds in a
   // deployment with no background job — an unenforced lease is no lease.

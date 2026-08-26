@@ -50,6 +50,39 @@
       "asserts_valid": false
     },
     {
+      "id": "envelope-standard-attributes",
+      "category": "envelope",
+      "tier": "Core",
+      "spec_section": "\u00a77.1 Standard CloudEvents attributes",
+      "schema": "schemas/v0.1/event.envelope.json",
+      "input": "envelope/standard-attributes.input.json",
+      "expected": "envelope/standard-attributes.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "envelope-claim-check-dataref",
+      "category": "envelope",
+      "tier": "Core",
+      "spec_section": "\u00a77.1 Claim Check (dataref)",
+      "schema": "schemas/v0.1/event.envelope.json",
+      "input": "envelope/claim-check-dataref.input.json",
+      "expected": "envelope/claim-check-dataref.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "envelope-malformed-traceparent",
+      "category": "envelope",
+      "tier": "Core",
+      "spec_section": "\u00a77.1 Distributed tracing",
+      "schema": "schemas/v0.1/event.envelope.json",
+      "input": "envelope/malformed-traceparent.input.json",
+      "expected": "envelope/malformed-traceparent.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
+    },
+    {
       "id": "signature-valid-fresh",
       "category": "signature",
       "tier": "Standard",

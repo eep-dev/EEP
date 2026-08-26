@@ -1,0 +1,4 @@
+{
+  "valid": true,
+  "reason": "subject, dataschema, traceparent and tracestate are CloudEvents-defined attributes (SPECIFICATION.md \u00a77.1)"
+}
