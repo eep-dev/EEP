@@ -1,0 +1,4 @@
+{
+  "valid": true,
+  "reason": "lease_seconds is an optional integer within publisher policy bounds"
+}
