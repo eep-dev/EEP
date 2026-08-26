@@ -361,12 +361,16 @@ The key is the `delivery_secret` established at subscription time.
 
 **Receiving platforms MUST:**
 1. Verify the signature using `crypto.timingSafeEqual()` (or equivalent constant-time comparison) to prevent timing attacks.
-2. Reject requests where the `webhook-timestamp` is more than **60 seconds** in the past or future to prevent replay attacks.
-3. Return HTTP `200` within 10 seconds, or the publisher will treat the delivery as failed.
+2. Compare buffers of equal length only. `crypto.timingSafeEqual()` **throws** when its arguments differ in length, so implementations MUST check the length first and return a verification failure — never propagate the exception. A caller that omits this check turns an attacker-supplied truncated `webhook-signature` into an unhandled error rather than an authentication failure.
+3. Accept a `webhook-signature` header carrying **multiple** space-delimited signatures (`v1,<sigA> v1,<sigB>`) and treat the request as verified if **any** of them matches. Publishers send more than one signature while rotating a `delivery_secret`; a receiver that parses only the first value rejects valid traffic for the duration of every rotation.
+4. Reject requests where the `webhook-timestamp` is more than **60 seconds** in the past or future to prevent replay attacks.
+5. Return HTTP `200` within 10 seconds, or the publisher will treat the delivery as failed.
 
 **Example verification (Node.js):**
 ```typescript
 import { createHmac, timingSafeEqual } from 'crypto';
+
+const TOLERANCE_SECONDS = 60;
 
 function verifyWebhook(
   rawBody: string,
@@ -375,15 +379,36 @@ function verifyWebhook(
   webhookSignature: string,
   secret: string
 ): boolean {
+  // 1. Reject stale or future-dated deliveries (replay protection).
+  const timestamp = Number.parseInt(webhookTimestamp, 10);
+  if (!Number.isFinite(timestamp)) return false;
+  const age = Math.floor(Date.now() / 1000) - timestamp;
+  if (Math.abs(age) > TOLERANCE_SECONDS) return false;
+
+  // 2. Compute the expected signature over the RAW body bytes.
   const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`;
-  const expected = createHmac('sha256', secret)
-    .update(signedContent)
-    .digest('base64');
-  
-  const incoming = webhookSignature.replace('v1,', '');
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(incoming));
+  const expected = Buffer.from(
+    `v1,${createHmac('sha256', secret).update(signedContent, 'utf8').digest('base64')}`
+  );
+
+  // 3. Compare against every offered signature. The length guard is
+  //    required: timingSafeEqual throws a RangeError on a length
+  //    mismatch, which would surface as a 500 instead of a 401.
+  for (const candidate of webhookSignature.split(' ')) {
+    const incoming = Buffer.from(candidate);
+    if (incoming.length === expected.length && timingSafeEqual(incoming, expected)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 ```
+
+> The reference implementation of this algorithm is
+> [`@eep-dev/signer`](https://www.npmjs.com/package/@eep-dev/signer) (`EEPSigner.verify`)
+> and its Python sibling `eep-signer`. Prefer importing it over
+> re-implementing the comparison by hand.
 
 ### 5.4 Retry policy (exponential backoff)
 

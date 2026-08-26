@@ -440,5 +440,26 @@ describe('@eep-dev/compliance-cli helpers', () => {
             expect(result.valid).toBe(fx.expected.valid);
             expect(result.reason).toBe('ok_via_multi_signature');
         });
+
+        // A truncated token is attacker-controlled input whose only purpose
+        // is to reach `timingSafeEqual` with mismatched buffer lengths. The
+        // verifier MUST return a failure rather than throw — a propagated
+        // RangeError surfaces as HTTP 500 instead of 401. See
+        // SPECIFICATION.md §5.3, receiving-platform requirement 2.
+        it('matches fixture: signature/truncated-signature → invalid, and does not throw', () => {
+            const fx = loadFixture('truncated-signature');
+            const call = () =>
+                verifyWebhookSignature({
+                    webhookId: fx.headers['webhook-id'],
+                    timestamp: fx.headers['webhook-timestamp'],
+                    rawBody: fx.body,
+                    secret: fx.secret,
+                    signatureHeader: fx.headers['webhook-signature'],
+                });
+            expect(call).not.toThrow();
+            const result = call();
+            expect(result.valid).toBe(fx.expected.valid);
+            expect(result.reason).toBe('signature_mismatch');
+        });
     });
 });
