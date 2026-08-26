@@ -30,12 +30,24 @@ class TestManifestDiscovery:
         assert "did" in schema.get("required", [])
 
     def test_schema_required_fields(self):
-        """Schema must require the 6 mandatory fields per §4.1."""
+        """Schema must require the 4 mandatory fields per §4.1.
+
+        ``pqc_ready`` and ``x402_enabled`` were required until the manifest was
+        de-vendored: they are capabilities a publisher *advertises*, not bars it
+        must clear, so requiring a payment-rail flag in every manifest tied
+        conformance to one ecosystem. They are now optional with a documented
+        default of ``false``.
+        """
         with open(SCHEMA_PATH) as f:
             schema = json.load(f)
         required = set(schema["required"])
-        expected = {"did", "eep_version", "layers", "supported_content_types", "pqc_ready", "x402_enabled"}
+        expected = {"did", "eep_version", "layers", "supported_content_types"}
         assert expected.issubset(required), f"Missing required: {expected - required}"
+        # Still defined, still constrained — just no longer mandatory.
+        for optional in ("pqc_ready", "x402_enabled"):
+            assert optional not in required, f"{optional} should be optional"
+            assert optional in schema["properties"], f"{optional} should still be defined"
+            assert schema["properties"][optional].get("default") is False
 
     def test_schema_layers_requires_layer1(self):
         """layers object must require layer1."""

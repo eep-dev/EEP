@@ -928,9 +928,9 @@ export interface EEPManifest {
     scan_url?: string;
   };
   /**
-   * Post-Quantum Cryptography readiness flag (NIST FIPS 203/204/205 — ref26)
+   * Post-Quantum Cryptography readiness flag (NIST FIPS 203/204/205 — ref26) Absent means false: the publisher does not advertise post-quantum signature verification.
    */
-  pqc_ready: boolean;
+  pqc_ready?: boolean;
   /**
    * Supported PQC algorithms
    */
@@ -963,9 +963,9 @@ export interface EEPManifest {
     )[]
   ];
   /**
-   * Whether this entity accepts x402 protocol payments (ref27)
+   * Whether this entity accepts x402 protocol payments (ref27) Absent means false: the publisher does not advertise HTTP 402 payment gating.
    */
-  x402_enabled: boolean;
+  x402_enabled?: boolean;
   /**
    * x402 payment rail configuration
    */
