@@ -287,18 +287,33 @@ export function createEEPNodeServer(baseUrl = "http://localhost:3100") {
       const body = await readJson(req);
       const method = body.delivery_method === "webhook" ? "webhook" : "sse";
       const subscription_id = `sub_ref_${Date.now()}`;
+      // The wire field is `delivery_url` — that is what
+      // schemas/v0.1/subscription.request.json defines and what every
+      // conformant subscriber sends. `callback_url` is this stack's own
+      // internal column name and was never part of the request body;
+      // reading it here silently discarded the delivery target.
+      const deliveryUrl =
+        typeof body.delivery_url === "string"
+          ? body.delivery_url
+          : typeof body.callback_url === "string"
+            ? body.callback_url // deprecated alias, accepted for older demos
+            : undefined;
       const entry: SubscriptionEntry = {
         subscription_id,
         source_did: String(body.source_did ?? "did:web:api.eep.dev:u:acme-corp"),
         delivery_method: method,
-        callback_url: typeof body.callback_url === "string" ? body.callback_url : undefined,
+        callback_url: deliveryUrl,
         created_at: new Date().toISOString(),
       };
       await subscriptions.save(entry);
-      return sendJson(res, 200, {
+      return sendJson(res, 201, {
         subscription_id,
         status: method === "webhook" ? "pending_verification" : "active",
         source_did: entry.source_did,
+        // Echo the stored target so a subscriber (and the conformance
+        // suite) can confirm it was actually recorded.
+        delivery_url: entry.callback_url,
+        created_at: entry.created_at,
       });
     }
 
