@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EEPSigner, generateSigningKeyPair, verifyEd25519 } from "@eep-dev/signer";
 import { WebhookDispatcher, DEFAULT_RETRY_SCHEDULE_MS, type WebhookHttpClient } from "./webhook-dispatcher.js";
+import { BATCH_CONTENT_TYPE } from "./content-mode.js";
 import { InMemoryDBAdapter } from "../db/in-memory.js";
 import { InMemoryEventBusAdapter } from "../event-bus/in-memory.js";
 import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
@@ -57,6 +58,121 @@ const NO_DELAY = [0];
 describe("WebhookDispatcher", () => {
   it("uses the spec's 7-attempt retry schedule by default", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
+  });
+
+  // SPECIFICATION.md §5.2.2 — one event per POST means a high-frequency
+  // entity pays a TLS handshake, a signature and a 10s ack round-trip per
+  // event. Batching amortises all three.
+  describe("batched delivery (§5.2.2)", () => {
+    const setup = async (maxBatchSize: number, script: Array<number | "throw"> = [200]) => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ max_batch_size: maxBatchSize }));
+      const { client, calls } = mockClient(script);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+      return { db, dispatcher, calls };
+    };
+
+    const batch = (n: number) => Array.from({ length: n }, (_, i) => event({ id: `evt_${i + 1}` }));
+
+    it("combines events into one POST with the CloudEvents batch media type", async () => {
+      const { dispatcher, calls } = await setup(10);
+      const results = await dispatcher.dispatchBatch(batch(3), "sub_1");
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.headers["content-type"]).toBe(BATCH_CONTENT_TYPE);
+      expect(JSON.parse(calls[0]!.body)).toHaveLength(3);
+      // One result per event, so callers still see per-event outcomes.
+      expect(results).toHaveLength(3);
+      expect(results.every((r) => r.delivered)).toBe(true);
+    });
+
+    it("keeps each envelope's own id so per-event dedup still works", async () => {
+      const { dispatcher, calls } = await setup(10);
+      await dispatcher.dispatchBatch(batch(3), "sub_1");
+      const sent = JSON.parse(calls[0]!.body) as Array<{ id: string }>;
+      expect(sent.map((e) => e.id)).toEqual(["evt_1", "evt_2", "evt_3"]);
+    });
+
+    it("signs the whole array once", async () => {
+      const { dispatcher, calls } = await setup(10);
+      await dispatcher.dispatchBatch(batch(3), "sub_1");
+      const call = calls[0]!;
+      expect(
+        new EEPSigner(SECRET).verify(
+          call.headers["webhook-id"]!,
+          call.headers["webhook-timestamp"]!,
+          call.headers["webhook-signature"]!,
+          call.body
+        )
+      ).toBe(true);
+    });
+
+    it("splits into several deliveries at max_batch_size", async () => {
+      const { dispatcher, calls } = await setup(2, [200, 200]);
+      const results = await dispatcher.dispatchBatch(batch(4), "sub_1");
+      expect(calls).toHaveLength(2);
+      expect(JSON.parse(calls[0]!.body)).toHaveLength(2);
+      expect(JSON.parse(calls[1]!.body)).toHaveLength(2);
+      expect(results).toHaveLength(4);
+    });
+
+    // max_batch_size 1 must be byte-identical to the unbatched path.
+    it("sends a single event unbatched when max_batch_size is 1", async () => {
+      const { dispatcher, calls } = await setup(1);
+      await dispatcher.dispatchBatch(batch(1), "sub_1");
+      expect(calls[0]!.headers["content-type"]).toBe("application/json");
+      expect(JSON.parse(calls[0]!.body)).toMatchObject({ id: "evt_1" });
+    });
+
+    it("applies the subscription filter before batching", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(
+        subscription({
+          max_batch_size: 10,
+          filter: { match: "all", conditions: [{ path: "id", op: "eq", value: "evt_2" }] }
+        })
+      );
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+      await dispatcher.dispatchBatch(batch(3), "sub_1");
+      const sent = JSON.parse(calls[0]!.body) as Array<{ id: string }>;
+      expect(sent).toHaveLength(1);
+      expect(sent[0]!.id).toBe("evt_2");
+      // Still the batch media type: a subscriber that opted into batching gets
+      // one parsing path regardless of how many events were ready.
+      expect(calls[0]!.headers["content-type"]).toBe(BATCH_CONTENT_TYPE);
+    });
+
+    // A failed batch is ONE failed delivery, not one per event — otherwise a
+    // single failure of a large batch would pause a subscription instantly.
+    it("counts a failed batch as one failed delivery", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ max_batch_size: 10 }));
+      const { client } = mockClient(["throw"]);
+      const dispatcher = new WebhookDispatcher({
+        db,
+        httpClient: client,
+        retryScheduleMs: NO_DELAY,
+        pauseAfterFailures: 2
+      });
+
+      await dispatcher.dispatchBatch(batch(5), "sub_1");
+      const after = await db.getSubscription("sub_1");
+      expect(after?.failure_count).toBe(1);
+      expect(after?.status).toBe("active");
+    });
+
+    it("delivers nothing for an unknown subscription", async () => {
+      const { dispatcher, calls } = await setup(10);
+      expect(await dispatcher.dispatchBatch(batch(2), "sub_missing")).toEqual([]);
+      expect(calls).toHaveLength(0);
+    });
+
+    it("delivers nothing for an empty batch", async () => {
+      const { dispatcher, calls } = await setup(10);
+      expect(await dispatcher.dispatchBatch([], "sub_1")).toEqual([]);
+      expect(calls).toHaveLength(0);
+    });
   });
 
   // SPECIFICATION.md §5.2.1 — binary content mode relocates attributes to

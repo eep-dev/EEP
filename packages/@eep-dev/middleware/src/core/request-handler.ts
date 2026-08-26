@@ -94,6 +94,13 @@ export type SubscriptionRecord = {
    * Defaults to structured.
    */
   delivery_format?: DeliveryFormat;
+  /**
+   * Maximum events combined into one delivery (SPECIFICATION.md §5.2.2).
+   * 1 or absent preserves one-event-per-POST.
+   */
+  max_batch_size?: number;
+  /** Milliseconds the publisher may hold an event waiting for the batch to fill. */
+  max_batch_wait_ms?: number;
   /** Requested access tier; matched against gate config on delivery. */
   tier?: string;
   created_at: string;

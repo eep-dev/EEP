@@ -3,7 +3,7 @@ import { matchesAnyPattern } from "@eep-dev/validator";
 import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
 import type { EventStore } from "../core/event-store.js";
 import { eventMatchesFilter } from "../core/event-filter.js";
-import { renderDelivery } from "./content-mode.js";
+import { renderDelivery, renderBatch } from "./content-mode.js";
 import type {
   CloudEvent,
   DBAdapter,
@@ -40,6 +40,9 @@ export const DEFAULT_PAUSE_AFTER_FAILURES = 5;
  * Per-attempt HTTP timeout. A response slower than this counts as a failure
  * (delivery_guarantees.md §2: "No response received within 10 seconds").
  */
+/** Upper bound on `max_batch_size`, per SPECIFICATION.md §5.2.2. */
+export const MAX_BATCH_SIZE = 500;
+
 export const DEFAULT_DELIVERY_TIMEOUT_MS = 10_000;
 
 /** Minimal HTTP response shape the dispatcher needs to judge an attempt. */
@@ -215,6 +218,49 @@ export class WebhookDispatcher {
     return Promise.all(targets.map((sub) => this.deliverWithRetry(event, sub)));
   }
 
+  /**
+   * Deliver several events to one subscription as a single batch (§5.2.2).
+   *
+   * Callers accumulate events per subscription — the accumulation policy
+   * (`max_batch_wait_ms`, flush triggers) belongs to the deployment's queue,
+   * not to an in-process dispatcher. This method is the delivery half: it
+   * enforces `max_batch_size`, signs the whole array once, and treats the
+   * acknowledgement as all-or-nothing.
+   *
+   * A failed batch counts as ONE failed delivery against the §10 counter, not
+   * one per event — otherwise a single failure of a 100-event batch would
+   * pause a subscription instantly.
+   */
+  async dispatchBatch(events: CloudEvent[], subscriptionId: string): Promise<DeliveryResult[]> {
+    if (events.length === 0) return [];
+    const sub = (await this.db.listSubscriptions()).find(
+      (s) => s.subscription_id === subscriptionId
+    );
+    if (!sub) return [];
+
+    const eligible = events.filter((event) => this.isTarget(sub, event));
+    if (eligible.length === 0) return [];
+
+    const limit = Math.max(1, Math.min(sub.max_batch_size ?? 1, MAX_BATCH_SIZE));
+
+    // A subscription that opted into batching always receives the batch media
+    // type, even when a chunk happens to hold one event. Switching format
+    // based on how many events happened to be ready would give the subscriber
+    // two parsing paths and no way to predict which it will get.
+    const batched = limit > 1;
+
+    const results: DeliveryResult[] = [];
+    for (let i = 0; i < eligible.length; i += limit) {
+      const chunk = eligible.slice(i, i + limit);
+      results.push(
+        ...(batched
+          ? await this.deliverBatchWithRetry(chunk, sub)
+          : [await this.deliverWithRetry(chunk[0]!, sub)])
+      );
+    }
+    return results;
+  }
+
   private isTarget(sub: SubscriptionRecord, event: CloudEvent): boolean {
     const deliverable =
       sub.delivery_method === "webhook" &&
@@ -254,6 +300,47 @@ export class WebhookDispatcher {
     const expiresAt = Date.parse(sub.expires_at);
     if (Number.isNaN(expiresAt)) return false;
     return expiresAt <= Date.now();
+  }
+
+  private async deliverBatchWithRetry(
+    events: CloudEvent[],
+    sub: SubscriptionRecord
+  ): Promise<DeliveryResult[]> {
+    // The batch is identified as a whole; each envelope keeps its own `id` so
+    // per-event deduplication on the subscriber side is unchanged.
+    const batchId = `msg_batch_${events[0]!.id}_${events.length}`;
+    let lastStatus: number | undefined;
+
+    const outcomeFor = (delivered: boolean, attempts: number, aborted?: boolean): DeliveryResult[] =>
+      events.map((event) =>
+        this.report({
+          subscription_id: sub.subscription_id,
+          event_id: event.id,
+          delivered,
+          attempts,
+          ...(lastStatus === undefined ? {} : { last_status: lastStatus }),
+          ...(aborted ? { aborted: true } : {})
+        })
+      );
+
+    for (let attempt = 0; attempt < this.retrySchedule.length; attempt++) {
+      const delay = this.retrySchedule[attempt] ?? 0;
+      if (delay > 0) await sleep(delay);
+      if (this.stopped) return outcomeFor(false, attempt, true);
+
+      const outcome = await this.attemptDelivery(events, sub, batchId);
+      lastStatus = outcome.status;
+      // All-or-nothing: a 2xx acknowledges every event in the batch, anything
+      // else fails the whole batch and it is retried whole.
+      if (outcome.ok) {
+        await this.recordSuccess(sub.subscription_id);
+        return outcomeFor(true, attempt + 1);
+      }
+    }
+
+    // One failed batch is one failed delivery, not one per event.
+    await this.recordFailure(sub.subscription_id);
+    return outcomeFor(false, this.retrySchedule.length);
   }
 
   private async deliverWithRetry(event: CloudEvent, sub: SubscriptionRecord): Promise<DeliveryResult> {
@@ -305,8 +392,9 @@ export class WebhookDispatcher {
   }
 
   private async attemptDelivery(
-    event: CloudEvent,
-    sub: SubscriptionRecord
+    event: CloudEvent | CloudEvent[],
+    sub: SubscriptionRecord,
+    batchId?: string
   ): Promise<{ ok: boolean; status?: number }> {
     const secret = sub.delivery_secret ?? this.fallbackSecret;
     const url = sub.callback_url;
@@ -318,10 +406,15 @@ export class WebhookDispatcher {
     // §5.2.1 — render in the subscription's content mode. The signature is
     // computed over whatever body this produces, so a binary-mode subscriber
     // verifies exactly what it received without reassembling an envelope.
-    const { body, headers: contentHeaders } = renderDelivery(event, sub.delivery_format);
+    // Batches (§5.2.2) are structured-mode only: binary mode maps attributes
+    // to headers, and a batch has many events with different values.
+    const { body, headers: contentHeaders } = Array.isArray(event)
+      ? renderBatch(event)
+      : renderDelivery(event, sub.delivery_format);
     // Stable across retries so subscribers can deduplicate; the event `id`
-    // is the idempotency key per delivery_guarantees.md §1.
-    const webhookId = `msg_${event.id}`;
+    // is the idempotency key per delivery_guarantees.md §1. For a batch the
+    // id identifies the batch, and each envelope keeps its own.
+    const webhookId = batchId ?? `msg_${(event as CloudEvent).id}`;
     // Re-signed per attempt with a current timestamp so a late retry still
     // lands inside the subscriber's replay window.
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -360,7 +453,7 @@ export class WebhookDispatcher {
           // §7.1). Without this the subscriber's spans are orphaned and a
           // multi-hop agent workflow cannot be correlated back to the
           // originating event.
-          ...traceHeaders(event)
+          ...(Array.isArray(event) ? {} : traceHeaders(event))
         },
         body,
         signal: controller.signal
