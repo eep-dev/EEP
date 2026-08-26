@@ -18,9 +18,34 @@ The CLI runs tests across **three conformance levels**:
 
 | Level | Tests | What's Verified |
 |-------|-------|----------------|
-| 🥉 **Core** | Platform reachability, EEP discovery (Link headers), subscription creation, WebSub intent verification, webhook delivery, Standard Webhooks headers, HMAC-SHA256 signature, CloudEvents envelope | Signal stream basics |
-| 🥈 **Standard** | All Core tests + SSE stream endpoint, rate limit headers | SSE + rate limiting |
+| 🥉 **Core** | Platform reachability, EEP discovery (Link headers), subscription creation, WebSub intent verification, webhook delivery, Standard Webhooks headers, HMAC-SHA256 signature, **timestamp freshness (§5.3)**, CloudEvents envelope **schema-validated** | Signal stream basics |
+| 🥈 **Standard** | All Core tests + SSE stream endpoint, **SSE heartbeat (§4.4)**, **`Last-Event-ID` replay (§4.3)**, rate limit headers | SSE + rate limiting |
 | 🏆 **Full** | All Standard tests + manifest/policy probes + extended probes (Layer 1 content negotiation, 402 payment gate, WebSocket pulse, CloudEvents/EEP helper validation) | Advanced baseline checks (partial full-tier automation) |
+
+### Offline mode (`--fixtures`)
+
+Every EEP release ships `eep-conformance-vectors-vX.Y.Z.tar.gz`: bytes-on-the-wire
+test vectors for discovery documents, event envelopes, signatures, gate responses
+and subscription requests. `--fixtures` replays them with **no publisher, no
+network and no API key**, so you can check a new implementation before you have
+anything deployed:
+
+```bash
+tar xzf eep-conformance-vectors-v0.1.0.tar.gz
+npx @eep-dev/compliance-cli --fixtures ./conformance-fixtures
+```
+
+Both modes write the same `--report-json` / `--report-md` / `--report-html`
+artifacts and use the same exit codes.
+
+### JSON Schema validation
+
+Both modes validate documents against the normative schemas in `schemas/v0.1/`,
+which are bundled into the published package at build time. Live manifests are
+checked against `eep-manifest.json` in full and delivered events against
+`event.envelope.json`, rather than spot-checking a handful of attribute names.
+If the schemas cannot be located, the affected probes **skip with a stated
+reason** — an unvalidated run never reports as a clean one.
 
 > `--level full` currently performs **partial** full-tier automation. WebSocket commerce state machine, PoI cryptographic verification, and some sector-specific checks still require manual/stack-specific validation.
 
@@ -76,7 +101,7 @@ node --experimental-strip-types src/index.ts \
 
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--target` | `-t` | `string` | — | **Required.** Platform base URL |
+| `--target` | `-t` | `string` | — | Platform base URL. Required unless `--fixtures` is used. |
 | `--api-key` | `-k` | `string` | — | API key for authenticated requests |
 | `--entity` | `-e` | `string` | — | Entity DID or `{prefix}/{username}` to subscribe to |
 | `--level` | `-l` | `string` | `standard` | Conformance level: `core`, `standard`, `full` |
@@ -84,6 +109,8 @@ node --experimental-strip-types src/index.ts \
 | `--report-json` | — | `string` | — | Write machine-readable audit report JSON |
 | `--report-md` | — | `string` | — | Write human-readable audit report markdown |
 | `--report-html` | — | `string` | — | Write self-contained HTML audit report |
+| `--fixtures` | — | `string` | `./tests/conformance-fixtures` | Replay the offline conformance vectors instead of probing a live target. No network, no API key. |
+| `--schemas` | — | `string` | bundled | Override the `schemas/v0.1` directory used for JSON Schema validation |
 | `--help` | `-h` | `boolean` | — | Show help message |
 
 ---
