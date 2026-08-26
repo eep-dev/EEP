@@ -34,6 +34,26 @@ The Entity Engagement Protocol (EEP) defines how digital entities publish real-t
 
 ---
 
+## 0. Machine-readable descriptions
+
+This document is normative. Two companion documents describe the same protocol
+in machine-readable form, and are kept in lockstep with it by CI:
+
+| Document | Covers |
+|---|---|
+| [`schemas/v0.1/openapi.yaml`](../../schemas/v0.1/openapi.yaml) | Layer 1 and the Layer 2 request/response surface |
+| [`schemas/v0.1/asyncapi.yaml`](../../schemas/v0.1/asyncapi.yaml) | Layer 2 SSE and webhook delivery, Layer 3 pulse |
+| [`schemas/v0.1/*.json`](../../schemas/v0.1/) | Payload shapes, referenced by both |
+
+`scripts/check-openapi-routes.mjs` fails the build when `openapi.yaml` and the
+reference middleware disagree about a method, path or `operationId`.
+
+`@eep-dev/setup-cli` still emits a per-deployment OpenAPI document; that
+records the URLs and options a particular publisher deployed, and defers to the
+canonical documents on protocol semantics.
+
+---
+
 ## 1. Terminology
 
 - **Entity**: Any digital subject with a stable identity and state that can change over time (a person, business, AI agent, or product).

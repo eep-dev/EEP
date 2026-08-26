@@ -172,7 +172,18 @@ function buildOpenAPI(config: EEPSetupConfig): Record<string, unknown> {
     info: {
       title: `${config.identity.org_name} EEP API`,
       version: eepVersion,
-      description: `EEP-compliant API surface. Spec: https://eep.dev/docs/current/SPECIFICATION.md`,
+      description: [
+        `EEP-compliant API surface for ${config.identity.org_name}.`,
+        ``,
+        `This document describes THIS deployment. The canonical, protocol-level`,
+        `description lives in the EEP repository at schemas/v0.1/openapi.yaml,`,
+        `with the event-driven surface (SSE, webhooks, pulse) in`,
+        `schemas/v0.1/asyncapi.yaml. Where the two disagree about protocol`,
+        `semantics, the canonical documents win — this one exists to record the`,
+        `URLs and options you actually deployed.`,
+        ``,
+        `Spec: https://eep.dev/docs/current/SPECIFICATION.md`
+      ].join("\n"),
       license: { name: "Apache 2.0", url: "https://www.apache.org/licenses/LICENSE-2.0" }
     },
     servers: [{ url: config.identity.base_url, description: "Primary EEP endpoint" }],

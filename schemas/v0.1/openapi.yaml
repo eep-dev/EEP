@@ -1,0 +1,596 @@
+# Canonical OpenAPI description of the EEP Layer 1 and Layer 2 HTTP surface.
+#
+# This file is normative-adjacent: it does not replace SPECIFICATION.md, but it
+# is the single machine-readable description of the protocol's HTTP endpoints.
+# Before it existed, `@eep-dev/setup-cli` generated a *per-deployment*
+# `openapi-eep.json`, which inverted the dependency — every publisher authored
+# its own description of a shared protocol. That is how the subscription
+# resource came to be addressed five different ways across the repository.
+#
+# `scripts/check-openapi-routes.mjs` diffs these paths against the reference
+# middleware's route table on every PR, so the two cannot drift again.
+#
+# Layer 2 SSE and Layer 3 WebSocket are described in `asyncapi.yaml`; OpenAPI
+# cannot express either meaningfully.
+openapi: 3.1.0
+
+info:
+  title: Entity Engagement Protocol
+  version: 0.1.0
+  summary: Push-based, verifiable communication between digital entities and agents.
+  description: |
+    The HTTP surface of EEP v0.1: Layer 1 state resolution and the Layer 2
+    webhook subscription lifecycle.
+
+    Endpoint semantics are normative in
+    [SPECIFICATION.md](https://github.com/eep-dev/EEP/blob/main/docs/current/SPECIFICATION.md);
+    each operation below cites the section that defines it. Payload shapes are
+    defined by the JSON Schemas alongside this file.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+  contact:
+    name: EEP Core Team
+    url: https://eep.dev
+
+servers:
+  - url: https://api.example.com
+    description: An EEP publisher. Substitute your own origin.
+
+tags:
+  - name: discovery
+    description: Layer 1 — state resolution and capability discovery (§3, §12).
+  - name: subscriptions
+    description: Layer 2 — the subscription resource (§5.1.1).
+  - name: events
+    description: Layer 2 — event history and catch-up (§5.1.2).
+  - name: gates
+    description: Access gates and gated content (§3.4).
+
+paths:
+  /.well-known/eep.json:
+    get:
+      tags: [discovery]
+      operationId: manifest
+      summary: Publisher manifest
+      description: |
+        Discovery document for this publisher (§12.3). Conditionally
+        retrievable: send `If-None-Match` to revalidate instead of
+        re-downloading (§3.2.1).
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The manifest.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema:
+                $ref: 'https://eep.dev/schemas/v0.1/eep-manifest.json'
+        '304': { $ref: '#/components/responses/NotModified' }
+
+  /u/{entityType}/{entityId}:
+    get:
+      tags: [discovery]
+      operationId: entity
+      summary: Resolve an entity
+      description: Layer 1 entity resolution (§3.1). Content-negotiable (§3.1).
+      parameters:
+        - name: entityType
+          in: path
+          required: true
+          schema: { type: string }
+        - name: entityId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The entity representation.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+            Link:
+              description: Discovery links; `rel="subscribe"` MUST be present (§3.2).
+              schema: { type: string }
+            EEP-Version:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { type: object }
+            text/markdown:
+              schema: { type: string }
+        '304': { $ref: '#/components/responses/NotModified' }
+
+  /eep/gates:
+    get:
+      tags: [gates]
+      operationId: gates
+      summary: Gate configuration
+      description: The entity's gate configuration (§3.4).
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Gate configuration.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control:
+              description: '`private` at minimum — gate config is caller-specific (§3.2.1).'
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: 'https://eep.dev/schemas/v0.1/gate.config.json'
+        '304': { $ref: '#/components/responses/NotModified' }
+
+  /eep/services:
+    get:
+      tags: [discovery]
+      operationId: services
+      summary: Service catalog
+      description: Services this entity offers (§15.1).
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Service catalog.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema: { type: object }
+        '304': { $ref: '#/components/responses/NotModified' }
+
+  /healthz:
+    get:
+      tags: [discovery]
+      operationId: health
+      summary: Liveness probe
+      responses:
+        '200':
+          description: The publisher is reachable.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /eep/stream:
+    get:
+      tags: [events]
+      operationId: stream
+      summary: SSE event stream
+      description: |
+        Layer 2 SSE stream (§4). Fully described in `asyncapi.yaml`; listed
+        here so the HTTP entry point, its parameters and its content type are
+        discoverable from a single document.
+      parameters:
+        - name: source
+          in: query
+          schema: { type: string }
+          description: Restrict the stream to one entity.
+        - name: events
+          in: query
+          schema: { type: string }
+          description: Comma-separated event type filter; trailing wildcards allowed.
+        - name: last_event_id
+          in: query
+          schema: { type: string }
+          description: Resume after this event id (§4.3). Equivalent to `Last-Event-ID`.
+        - name: Last-Event-ID
+          in: header
+          schema: { type: string }
+          description: Resume after this event id (§4.3).
+      responses:
+        '200':
+          description: An open event stream.
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /eep/content/{resourcePath}:
+    get:
+      tags: [gates]
+      operationId: gatedContent
+      summary: Gated resource
+      description: Retrieve a gated resource, presenting proofs (§3.4).
+      parameters:
+        - name: resourcePath
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Access granted.
+          content:
+            application/json:
+              schema: { type: object }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccessRestricted' }
+        '451': { $ref: '#/components/responses/LegallyRestricted' }
+
+  /eep/subscribe:
+    post:
+      tags: [subscriptions]
+      operationId: subscribe
+      summary: Create a subscription
+      description: |
+        Creates a subscription (§5.1). This is the URL advertised as
+        `layers.layer2_webhook` in the manifest and as `rel="subscribe"` in the
+        `Link` header, which is why creation stays here while every member
+        operation lives under `/eep/subscriptions` (§5.1.1).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'https://eep.dev/schemas/v0.1/subscription.request.json'
+      responses:
+        '201':
+          description: |
+            Created. This response carries `delivery_secret`, disclosed exactly
+            once and never returned again (§5.1.1).
+          content:
+            application/json:
+              schema: { type: object }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /eep/subscriptions:
+    get:
+      tags: [subscriptions]
+      operationId: listSubscriptions
+      summary: List the caller's subscriptions
+      description: Scoped to the authenticated caller (§5.1.1).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's subscriptions, without `delivery_secret`.
+          headers:
+            RateLimit: { $ref: '#/components/headers/RateLimit' }
+            RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+          content:
+            application/json:
+              schema: { type: object }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /eep/subscriptions/{subscriptionId}:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionId'
+    get:
+      tags: [subscriptions]
+      operationId: subscriptionStatus
+      summary: Read a subscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The subscription, without `delivery_secret`.
+          content:
+            application/json:
+              schema: { type: object }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [subscriptions]
+      operationId: unsubscribe
+      summary: Cancel a subscription
+      description: |
+        Idempotent and terminal (§10.1). A repeat `DELETE` of an
+        already-cancelled subscription returns `204`, not `404` — otherwise a
+        retrying client reads its own success as a failure.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Cancelled, or already cancelled.
+
+  /eep/subscriptions/{subscriptionId}/pause:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionId'
+    post:
+      tags: [subscriptions]
+      operationId: pauseSubscription
+      summary: Pause delivery
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The paused subscription.
+          content:
+            application/json:
+              schema: { type: object }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /eep/subscriptions/{subscriptionId}/resume:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionId'
+    post:
+      tags: [subscriptions]
+      operationId: resumeSubscription
+      summary: Resume a paused subscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The resumed subscription, with its failure counter cleared.
+          content:
+            application/json:
+              schema: { type: object }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /eep/subscriptions/{subscriptionId}/test:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionId'
+    post:
+      tags: [subscriptions]
+      operationId: testSubscriptionDelivery
+      summary: Trigger a synthetic test delivery
+      description: |
+        Sends a fully signed `com.eep.subscription.test` event to the
+        registered `delivery_url` (§5.1.1). This is what makes a publisher's
+        delivery path independently checkable — `@eep-dev/compliance-cli`
+        relies on it to verify Standard Webhooks headers and HMAC correctness
+        without waiting for organic traffic.
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Accepted; the delivery is enqueued.
+          content:
+            application/json:
+              schema: { type: object }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The subscription is not `active`.
+          content:
+            application/problem+json:
+              schema: { type: object }
+
+  /eep/subscriptions/{subscriptionId}/redeliver:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionId'
+    post:
+      tags: [events]
+      operationId: redeliver
+      summary: Re-send specific events
+      description: |
+        Redelivered events keep their original `id`, so an already-processed
+        event is discarded by the ordinary idempotency rule rather than
+        processed twice (§5.1.2).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_ids]
+              properties:
+                event_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items: { type: string }
+      responses:
+        '202':
+          description: |
+            Accepted. `unavailable` names ids outside the retention window,
+            which the subscriber needs to know about rather than have dropped.
+          content:
+            application/json:
+              schema: { type: object }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /eep/subscriptions/{subscriptionId}/delivery-log:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionId'
+    get:
+      tags: [subscriptions]
+      operationId: deliveryLog
+      summary: Per-attempt delivery history
+      description: |
+        How a subscriber distinguishes "the publisher never sent it" from "my
+        endpoint rejected it" (§5.1.2, delivery_guarantees.md §4).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Delivery attempts, most recent last.
+          content:
+            application/json:
+              schema: { type: object }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /eep/events:
+    get:
+      tags: [events]
+      operationId: eventHistory
+      summary: Event history
+      description: |
+        Catch-up for webhook subscribers (§5.1.2). `next_cursor` is present
+        only while events remain — its absence is how a subscriber knows it is
+        caught up.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: source
+          in: query
+          schema: { type: string }
+        - name: since
+          in: query
+          schema: { type: string }
+          description: Return events strictly after this event id.
+        - name: until
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of events.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [events]
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: 'https://eep.dev/schemas/v0.1/event.envelope.json'
+                  next_cursor: { type: string }
+        '410':
+          description: |
+            The cursor is older than the retention window. Deliberately not an
+            empty `200`: that is indistinguishable from "you are up to date"
+            and would let a subscriber believe it caught up while silently
+            losing events (§5.1.2).
+          content:
+            application/problem+json:
+              schema: { type: object }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /eep/audit-log:
+    get:
+      tags: [subscriptions]
+      operationId: auditLog
+      summary: Audit log
+      description: Full-tier audit trail (§16.1).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Audit entries.
+          content:
+            application/json:
+              schema:
+                $ref: 'https://eep.dev/schemas/v0.1/audit-log.json'
+
+  /eep/pulse:
+    get:
+      tags: [events]
+      operationId: pulseUpgrade
+      summary: Layer 3 WebSocket upgrade
+      description: |
+        The pulse channel (§6). Described in `asyncapi.yaml`; a plain `GET`
+        without an upgrade returns `426`.
+      responses:
+        '101':
+          description: Switching protocols.
+        '426':
+          description: Upgrade required — connect over WebSocket.
+          content:
+            application/json:
+              schema: { type: object }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key (§11). Scopes are defined in §11 "Scopes".
+
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: Conditional request validator (§3.2.1).
+    SubscriptionId:
+      name: subscriptionId
+      in: path
+      required: true
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1 }
+      description: Page size. Publishers MUST cap this and MUST document the cap.
+
+  headers:
+    ETag:
+      description: Entity-tag for conditional requests (§3.2.1).
+      schema: { type: string }
+    CacheControl:
+      description: Cache directives (§3.2.1).
+      schema: { type: string }
+    RateLimit:
+      description: 'Current quota state, e.g. `"sub"; r=87; t=120` (§13).'
+      schema: { type: string }
+    RateLimitPolicy:
+      description: 'Quota policy, e.g. `"sub"; q=100; w=3600` (§13).'
+      schema: { type: string }
+    RetryAfter:
+      description: Seconds until the caller may retry.
+      schema: { type: integer }
+
+  responses:
+    NotModified:
+      description: |
+        The caller's validator matches. No body; `ETag` and `Cache-Control`
+        are repeated (§3.2.1).
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/CacheControl' }
+    BadRequest:
+      description: Malformed request.
+      content:
+        application/problem+json:
+          schema: { type: object }
+    NotFound:
+      description: |
+        No such resource. Also returned for a resource belonging to another
+        caller, so the collection cannot be enumerated (§5.1.1).
+      content:
+        application/problem+json:
+          schema: { type: object }
+    Conflict:
+      description: The resource is not in a state that permits this operation.
+      content:
+        application/problem+json:
+          schema: { type: object }
+    PaymentRequired:
+      description: A payment gate is unmet (§3.4).
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'https://eep.dev/schemas/v0.1/gate.402-response.json'
+    AccessRestricted:
+      description: A non-payment gate is unmet (§3.4.3).
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'https://eep.dev/schemas/v0.1/gate.403-response.json'
+    RateLimited:
+      description: Rate limit exceeded (§13).
+      headers:
+        RetryAfter: { $ref: '#/components/headers/RetryAfter' }
+        RateLimit: { $ref: '#/components/headers/RateLimit' }
+        RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'https://eep.dev/schemas/v0.1/gate.429-response.json'
+    LegallyRestricted:
+      description: Unavailable for legal reasons (§3.4.3).
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'https://eep.dev/schemas/v0.1/gate.451-response.json'
