@@ -3,6 +3,7 @@ import { EEPSigner } from "@eep-dev/signer";
 import { WebhookDispatcher, DEFAULT_RETRY_SCHEDULE_MS, type WebhookHttpClient } from "./webhook-dispatcher.js";
 import { InMemoryDBAdapter } from "../db/in-memory.js";
 import { InMemoryEventBusAdapter } from "../event-bus/in-memory.js";
+import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
 import type { CloudEvent, SubscriptionRecord } from "../core/request-handler.js";
 
 const SECRET = "test-secret-abcdefghij";
@@ -56,6 +57,86 @@ const NO_DELAY = [0];
 describe("WebhookDispatcher", () => {
   it("uses the spec's 7-attempt retry schedule by default", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
+  });
+
+  // SPECIFICATION.md §5.1.1: a synthetic test delivery is addressed to ONE
+  // subscription. It must reach that subscriber even though
+  // `com.eep.subscription.test` matches none of their `event_types`, and it
+  // must not fan out to anyone else.
+  describe("test deliveries (§5.1.1)", () => {
+    const testEvent = (subscriptionId: string) =>
+      event({
+        id: "evt_test_1",
+        type: TEST_DELIVERY_EVENT_TYPE,
+        data: { subscription_id: subscriptionId }
+      });
+
+    it("delivers to the addressed subscription despite no event_types match", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ subscription_id: "sub_target" }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(testEvent("sub_target"));
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.delivered).toBe(true);
+      expect(calls).toHaveLength(1);
+
+      // Signed exactly like production traffic — that is what makes the
+      // endpoint usable as a conformance probe.
+      const { headers, body } = calls[0]!;
+      expect(
+        new EEPSigner(SECRET).verify(
+          headers["webhook-id"]!,
+          headers["webhook-timestamp"]!,
+          headers["webhook-signature"]!,
+          body
+        )
+      ).toBe(true);
+    });
+
+    it("does not fan out to other subscriptions", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ subscription_id: "sub_target" }));
+      await db.saveSubscription(
+        subscription({ subscription_id: "sub_bystander", callback_url: "https://other.example/hooks" })
+      );
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(testEvent("sub_target"));
+
+      expect(results).toHaveLength(1);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.url).toBe("https://agent.example/hooks/eep");
+    });
+
+    it("delivers nothing when the addressed subscription does not exist", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ subscription_id: "sub_target" }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(testEvent("sub_missing"));
+
+      expect(results).toHaveLength(0);
+      expect(calls).toHaveLength(0);
+    });
+
+    it("ignores a malformed test event with no subscription_id", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ subscription_id: "sub_target" }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(
+        event({ id: "evt_test_2", type: TEST_DELIVERY_EVENT_TYPE, data: {} })
+      );
+
+      expect(results).toHaveLength(0);
+      expect(calls).toHaveLength(0);
+    });
   });
 
   it("delivers a matching event with verifiable Standard Webhooks headers", async () => {
