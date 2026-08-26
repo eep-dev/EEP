@@ -10,6 +10,7 @@ import {
   type ProofVerifier
 } from "@eep-dev/gates";
 import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
+import { withConditional } from "./conditional.js";
 import {
   TEST_DELIVERY_EVENT_TYPE,
   DEFAULT_LEASE_SECONDS,
@@ -151,8 +152,8 @@ export class EEPServer {
   }
 
   getManifestHandler(): RequestHandler {
-    return async () => {
-      return {
+    return async (request) => {
+      const response: OutgoingResponse = {
         status: 200,
         body: {
           did: this.did,
@@ -170,6 +171,11 @@ export class EEPServer {
           x402_enabled: false
         }
       };
+      // §3.2.1 — the manifest is the most-polled and least-volatile Layer 1
+      // document, so it is the one that benefits most from a 304.
+      return withConditional(response, request.headers, {
+        cacheControl: "public, max-age=300"
+      });
     };
   }
 
@@ -177,7 +183,7 @@ export class EEPServer {
     return async (request) => {
       const entityType = request.params?.entityType ?? "u";
       const entityId = request.params?.entityId ?? "default";
-      return {
+      const response: OutgoingResponse = {
         status: 200,
         headers: {
           "EEP-Version": "0.1",
@@ -195,15 +201,26 @@ export class EEPServer {
           }
         }
       };
+      return withConditional(response, request.headers, {
+        cacheControl: "public, max-age=60"
+      });
     };
   }
 
   getGatesHandler(): RequestHandler {
-    return async () => ({ status: 200, body: this.gateConfig });
+    return async (request) =>
+      withConditional({ status: 200, body: this.gateConfig }, request.headers, {
+        // Gate config describes who may access what. `private` keeps a shared
+        // cache from handing one agent's view to another.
+        cacheControl: "private, max-age=60"
+      });
   }
 
   getServicesHandler(): RequestHandler {
-    return async () => ({ status: 200, body: this.services });
+    return async (request) =>
+      withConditional({ status: 200, body: this.services }, request.headers, {
+        cacheControl: "public, max-age=60"
+      });
   }
 
   getHealthHandler(): RequestHandler {
