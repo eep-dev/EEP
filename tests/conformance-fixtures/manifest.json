@@ -181,6 +181,17 @@
       "asserts_valid": true
     },
     {
+      "id": "gates-402-problem-details",
+      "category": "gates",
+      "tier": "Standard",
+      "spec_section": "\u00a73.3.1 Error responses (RFC 9457)",
+      "schema": "schemas/v0.1/gate.402-response.json",
+      "input": "gates/402-problem-details.input.json",
+      "expected": "gates/402-problem-details.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
       "id": "subscription-valid-webhook-request",
       "category": "subscription",
       "tier": "Core",
