@@ -386,6 +386,8 @@ The subscription sits in the `pending_verification` status until WebSub intent v
 | `POST` | `/eep/subscriptions/{subscription_id}/pause` | Pause an `active` subscription | `200` + subscription object | `write:subscriptions` |
 | `POST` | `/eep/subscriptions/{subscription_id}/resume` | Resume a `paused` subscription | `200` + subscription object | `write:subscriptions` |
 | `POST` | `/eep/subscriptions/{subscription_id}/test` | Trigger a synthetic test delivery | `202` | `write:subscriptions` |
+| `POST` | `/eep/subscriptions/{subscription_id}/redeliver` | Re-send specific events (§5.1.2) | `202` | `write:subscriptions` |
+| `GET` | `/eep/subscriptions/{subscription_id}/delivery-log` | Per-attempt delivery history (§5.1.2) | `200` | `read:subscriptions` |
 
 Publishers MUST NOT return the `delivery_secret` on any of these responses; it is disclosed exactly once, in the `201` body of the creating `POST /eep/subscribe`.
 
@@ -396,6 +398,74 @@ Publishers MUST scope every operation to the authenticated caller and MUST retur
 This table makes normative the API that [How to subscribe](../guides/how-to-subscribe.md#managing-subscriptions) has documented since v0.1; previously the guide was the only place these operations were written down.
 
 > **Compatibility note (v0.1).** Reference middleware released before this section served the member operations under `/eep/subscribe/{subscription_id}`. Implementations SHOULD continue to accept those paths as deprecated aliases through the `0.1.x` line and SHOULD advertise only the `/eep/subscriptions` forms.
+
+#### 5.1.2 Event history and redelivery (normative)
+
+SSE subscribers recover missed events with `Last-Event-ID` (§4.3, minimum 24h
+retention). Layer 3 clients recover with `system`/`replay` from a `seq`
+(§6.3.1). **Webhook subscribers had no equivalent at all.**
+
+That gap is load-bearing. §10 moves a subscription to `paused` after repeated
+delivery failures — precisely when the subscriber's endpoint was down and it
+missed the most. Without catch-up, resuming produces a silent hole: the
+subscription works again and the events from the outage are simply gone.
+
+Publishers MUST expose event history:
+
+```http
+GET /eep/events?source={did}&since={event_id}&limit={n}
+Authorization: Bearer {API_KEY}
+```
+
+| Parameter | Required | Meaning |
+|---|---|---|
+| `source` | no | Restrict to one entity; defaults to everything the caller may read |
+| `since` | no | Return events strictly **after** this event `id` |
+| `until` | no | Return events at or before this event `id` |
+| `limit` | no | Page size; publishers MUST cap it and MUST document the cap |
+
+- The retention floor is the same as SSE replay: **at least 24 hours** (§4.3).
+- Events MUST be returned in emission order for a given `source`.
+- The response MUST include a `next_cursor` when more events remain, and MUST
+  omit it when they do not. A subscriber pages until `next_cursor` is absent.
+- `since` naming an event outside the retention window MUST produce `410 Gone`
+  with the oldest retained id, so the subscriber reconciles from Layer 1 state
+  rather than silently believing it caught up. Publishers MUST NOT fabricate
+  history, and MUST NOT return an empty page for an unsatisfiable cursor —
+  that is indistinguishable from "you are up to date".
+- Access is scoped to the caller. History MUST NOT reveal events for entities
+  or tiers the caller could not have subscribed to, and gate evaluation
+  (§3.4) applies to each event as it would have at delivery time.
+
+This is the endpoint metered by the "Event stream history queries" quota in
+§13, which previously referred to no defined endpoint.
+
+**Redelivery.** Publishers SHOULD accept a targeted redelivery request:
+
+```http
+POST /eep/subscriptions/{subscription_id}/redeliver
+{ "event_ids": ["01HN3QK7GX-1708123456000"] }
+```
+
+Redelivered events MUST carry their original `id`, so a subscriber that already
+processed one discards it by the ordinary idempotency rule
+([delivery_guarantees.md](./delivery_guarantees.md) §6) rather than
+double-processing. They MUST be re-signed with a current
+`webhook-timestamp` (§5.3), and MUST NOT reset the subscription's failure
+counter. Publishers MUST return `202 Accepted` on enqueue and MUST cap the
+number of ids per request.
+
+**Delivery log.** Publishers MUST expose per-attempt delivery history for a
+subscription:
+
+```http
+GET /eep/subscriptions/{subscription_id}/delivery-log
+```
+
+The fields and the 30-day retention floor are specified in
+[delivery_guarantees.md](./delivery_guarantees.md) §4. This endpoint is how a
+subscriber distinguishes "the publisher never sent it" from "my endpoint
+rejected it", which is otherwise unanswerable from the subscriber's side.
 
 ### 5.2 Webhook delivery format
 
@@ -1217,7 +1287,7 @@ Recommended default limits per subscriber:
 | Subscription creation | 100/day |
 | SSE connections | 5 concurrent |
 | Webhook deliveries received | 10,000/day |
-| Event stream history queries | 60/hour |
+| Event stream history queries (`GET /eep/events`, §5.1.2) | 60/hour |
 
 ### 13.1 Cold-start DID trust progression (normative)
 
