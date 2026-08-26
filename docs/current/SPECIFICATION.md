@@ -602,6 +602,77 @@ EEP-Version: 0.1
 }
 ```
 
+### 5.2.1 Content modes (normative)
+
+EEP deliveries default to CloudEvents **structured** content mode: the whole
+envelope is one JSON document in the body. CloudEvents also defines **binary**
+content mode, where context attributes travel as protocol metadata and the
+body carries only `data`. Publishers MAY offer binary mode; subscribers select
+it with `delivery_format` on the subscription request.
+
+**Webhooks.** Binary mode follows the CloudEvents HTTP Protocol Binding:
+each attribute becomes a `ce-`-prefixed header and the body is the raw `data`.
+
+```http
+POST /hooks/eep
+ce-specversion: 1.0
+ce-id: 01HN3QK7GX-1708123456000
+ce-source: did:web:example.com:u:acme-corp
+ce-type: com.example.entity.updated
+ce-time: 2026-02-22T14:30:00Z
+ce-eepversion: 0.1
+content-type: application/json
+webhook-signature: v1,…
+
+{"field":"bio","previous":"Old bio","current":"New bio"}
+```
+
+**Attribute names in binary mode.** CloudEvents restricts context attribute
+names to lowercase ASCII letters and digits — the underscore is excluded. EEP's
+`eep_`-prefixed attributes therefore cannot be carried verbatim as `ce-`
+headers. In binary mode the underscores are removed: `eep_version` becomes
+`ce-eepversion`, `eep_subscription_id` becomes `ce-eepsubscriptionid`, and so
+on. Structured mode is unchanged and keeps the underscored spelling, which is
+what every deployed implementation emits. This resolves, for the binary path
+only, the naming divergence recorded in §7.
+
+**SSE.** SSE has no per-event header channel, so only the two attributes SSE
+natively frames are relocated: `id` moves to the `id:` field and `type` to the
+`event:` field, and the `data:` payload omits both rather than repeating them.
+Every other attribute stays in the JSON document.
+
+```
+id: 01HN3QK7GX-1708123456000
+event: com.example.entity.updated
+data: {"specversion":"1.0","source":"did:web:example.com:u:acme-corp","time":"2026-02-22T14:30:00Z","datacontenttype":"application/json","eep_version":"0.1","data":{…}}
+
+```
+
+**Signing is unaffected.** The signature is computed over the raw body bytes
+exactly as in §5.3. In binary mode the body is the `data` document, so a
+subscriber verifies what it received without reassembling an envelope first.
+
+**Requirements.**
+
+- A publisher that advertises binary mode MUST populate every attribute it
+  would have sent in structured mode. Binary mode relocates attributes; it
+  MUST NOT drop them.
+- Subscribers MUST reject a binary-mode delivery missing `ce-specversion`,
+  `ce-id`, `ce-source` or `ce-type`.
+- Publishers MUST default to structured mode when the subscriber did not ask
+  for binary.
+
+**What this is worth.** Measured against the §4.2 example, binary mode is
+roughly **19% smaller** per SSE frame and **13%** per webhook over HTTP/1.1 —
+useful, not transformative. The body alone shrinks ~80%, and under HTTP/2 the
+`ce-*` header names and the attributes that do not vary between deliveries are
+indexed by HPACK, so the saving grows with sustained traffic on a connection.
+The more reliable benefit is that a subscriber can route and filter on headers
+without parsing the body at all. Publishers optimising bytes should reach for
+conditional requests (§3.2.1), compression (§3.2.2) and subscription filters
+(§5.1.3) first: those remove whole responses and whole deliveries rather than
+shrinking them.
+
 ### 5.3 Webhook signature verification
 
 The `webhook-signature` header contains an HMAC-SHA256 signature over the concatenation of:
@@ -868,8 +939,11 @@ All EEP events MUST be valid CloudEvents v1.0.2 envelopes with EEP-specific exte
 > excluded. The `eep_`-prefixed names above are what every deployed
 > implementation emits, but they do not satisfy that rule. The divergence is
 > harmless in structured mode and becomes load-bearing in binary content mode,
-> where attributes are carried as `ce-`-prefixed HTTP headers. Tracked for
-> resolution before v1.0; see the editor's note in
+> where attributes are carried as `ce-`-prefixed HTTP headers. §5.2.1 resolves
+> it for the binary path by removing the underscores (`eep_version` →
+> `ce-eepversion`); structured mode keeps the underscored spelling that every
+> deployed implementation emits. Whether to rename in structured mode too is
+> still open before v1.0; see the editor's note in
 > [`draft-eep-protocol-core-00.md`](../standards/draft-eep-protocol-core-00.md).
 
 ### 7.1 Standard CloudEvents attributes (normative)

@@ -59,6 +59,46 @@ describe("WebhookDispatcher", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
   });
 
+  // SPECIFICATION.md §5.2.1 — binary content mode relocates attributes to
+  // ce-* headers so a subscriber can route without parsing the body.
+  describe("content modes (§5.2.1)", () => {
+    const deliverAs = async (format?: "cloudevents/v1.0" | "cloudevents/v1.0-binary") => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription(format ? { delivery_format: format } : {}));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+      await dispatcher.dispatch(event());
+      return calls[0]!;
+    };
+
+    it("defaults to structured mode", async () => {
+      const call = await deliverAs();
+      expect(JSON.parse(call.body)).toMatchObject({ id: "evt_1", type: "entity.updated" });
+      expect(call.headers["ce-id"]).toBeUndefined();
+    });
+
+    it("delivers binary mode with ce-* headers and a payload-only body", async () => {
+      const call = await deliverAs("cloudevents/v1.0-binary");
+      expect(call.headers["ce-id"]).toBe("evt_1");
+      expect(call.headers["ce-type"]).toBe("entity.updated");
+      expect(JSON.parse(call.body)).toEqual({ changed: true });
+    });
+
+    // The signature covers the raw body bytes, so a binary-mode subscriber
+    // verifies exactly what it received without reassembling an envelope.
+    it("signs the body it actually sends in binary mode", async () => {
+      const call = await deliverAs("cloudevents/v1.0-binary");
+      expect(
+        new EEPSigner(SECRET).verify(
+          call.headers["webhook-id"]!,
+          call.headers["webhook-timestamp"]!,
+          call.headers["webhook-signature"]!,
+          call.body
+        )
+      ).toBe(true);
+    });
+  });
+
   // SPECIFICATION.md §5.3.1 — HMAC proves only that someone holding the
   // shared secret sent the event, and the subscriber is one of them. Ed25519
   // makes deliveries attributable and verifiable by third parties.
