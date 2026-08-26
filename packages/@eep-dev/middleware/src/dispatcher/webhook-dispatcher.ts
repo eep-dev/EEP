@@ -1,4 +1,4 @@
-import { EEPSigner } from "@eep-dev/signer";
+import { EEPSigner, signEd25519 } from "@eep-dev/signer";
 import { matchesAnyPattern } from "@eep-dev/validator";
 import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
 import type { EventStore } from "../core/event-store.js";
@@ -98,6 +98,15 @@ export type WebhookDispatcherOptions = {
    * endpoint rejected it" — otherwise unanswerable from its side.
    */
   eventStore?: EventStore;
+  /**
+   * Ed25519 private key (`whsk_`-prefixed) for asymmetric delivery signatures
+   * (SPECIFICATION.md §5.3.1). When set, every delivery carries a `v1a` token
+   * alongside the HMAC one, so subscribers can migrate at their own pace and
+   * events become verifiable by third parties.
+   */
+  signingPrivateKey?: string;
+  /** Key id advertised in the JWKS, carried in the signature token. */
+  signingKeyId?: string;
 };
 
 const defaultHttpClient: WebhookHttpClient = async (url, { headers, body, signal }) => {
@@ -160,6 +169,8 @@ export class WebhookDispatcher {
   private readonly deliveryTimeoutMs: number;
   private readonly onDeliveryResult?: (result: DeliveryResult) => void;
   private readonly eventStore?: EventStore;
+  private readonly signingPrivateKey?: string;
+  private readonly signingKeyId?: string;
   private stopped = false;
 
   constructor(options: WebhookDispatcherOptions) {
@@ -174,6 +185,8 @@ export class WebhookDispatcher {
     this.deliveryTimeoutMs = options.deliveryTimeoutMs ?? DEFAULT_DELIVERY_TIMEOUT_MS;
     this.onDeliveryResult = options.onDeliveryResult;
     this.eventStore = options.eventStore;
+    this.signingPrivateKey = options.signingPrivateKey;
+    this.signingKeyId = options.signingKeyId;
   }
 
   /**
@@ -312,6 +325,19 @@ export class WebhookDispatcher {
     let signature: string;
     try {
       signature = new EEPSigner(secret).sign(webhookId, timestamp, body);
+      // Dual-sign when an Ed25519 key is configured (§5.3.1). Both tokens
+      // travel space-delimited; a verifier for either scheme ignores the
+      // other's token, which is what makes the migration path work.
+      if (this.signingPrivateKey) {
+        const asymmetric = signEd25519(
+          this.signingPrivateKey,
+          webhookId,
+          timestamp,
+          body,
+          this.signingKeyId
+        );
+        signature = `${signature} ${asymmetric}`;
+      }
     } catch {
       return { ok: false };
     }

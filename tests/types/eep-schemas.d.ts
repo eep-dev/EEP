@@ -994,6 +994,10 @@ export interface EEPManifest {
     )[]
   ];
   /**
+   * Absolute https URL of the publisher's JWKS document, carrying the public keys used for asymmetric delivery signatures (SPECIFICATION.md §5.3.1). REQUIRED when the publisher signs deliveries with Ed25519. Publishing the key set is what makes rotation something a subscriber can follow without coordination.
+   */
+  signing_jwks_url?: string;
+  /**
    * Whether this entity accepts x402 protocol payments (ref27) Absent means false: the publisher does not advertise HTTP 402 payment gating.
    */
   x402_enabled?: boolean;
