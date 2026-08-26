@@ -26,9 +26,11 @@ Stabilization, hardening, and ecosystem unblocking. Drives toward the
       SBOM, sigstore/cosign keyless signing, GitHub Action SHA pinning
       via Renovate
 - [x] DCO enforcement on every commit to `main`
-- [ ] **Offline conformance fixtures** under `tests/conformance-fixtures/`,
-      consumable by `@eep-dev/compliance-cli --fixtures` without booting a
-      live publisher
+- [x] **Offline conformance fixtures** under `tests/conformance-fixtures/`,
+      consumable by `npx @eep-dev/compliance-cli --fixtures <dir>` without
+      booting a live publisher. The vectors and the release tarball existed
+      before; the CLI flag that made them runnable by anyone outside this
+      repo did not.
 - [ ] **Python feature parity**: `eep-gates` (proof verifier, commerce,
       service listing), `eep-middleware` (Flask/FastAPI/Django adapters)
 - [ ] `py.typed` markers on every Python package; `mypy --strict` clean
@@ -42,8 +44,15 @@ Stabilization, hardening, and ecosystem unblocking. Drives toward the
 
 Quality of life and adoption surface area.
 
-- [ ] **Monorepo migration to pnpm workspaces** with shared
-      `tsconfig.base.json` and a single `pnpm -r test` entry point
+- [x] **Monorepo migration to pnpm workspaces** with shared
+      `tsconfig.base.json` and a single `pnpm -r test` entry point —
+      `pnpm-workspace.yaml`, `tsconfig.base.json` and the root
+      `packageManager: pnpm@9.15.0` all landed. What remains is narrower and
+      tracked separately below.
+- [ ] **Consolidate to a single `pnpm-lock.yaml`.** Per-package
+      `package-lock.json` files still coexist with the pnpm workspace because
+      CI invokes per-package `npm ci`; moving CI to `pnpm -r install` removes
+      N redundant dependency resolutions per run.
 - [ ] **Schema → TypeScript / Pydantic codegen** with a CI drift gate
       (no hand-maintained types diverging from `schemas/v0.1/*.json`)
 - [ ] WebCrypto shim in `@eep-dev/signer` for edge runtimes
@@ -119,6 +128,19 @@ roadmap effort, and instead defers to the named external standard:
 - **Social federation between accounts** — defers to **ActivityPub**.
 
 ---
+
+## Keeping this file honest
+
+A roadmap that drifts from the tree is worse than no roadmap: it hides
+finished work and misrepresents what is left. Two entries had drifted in
+opposite directions — the pnpm migration had shipped while listed as pending,
+and the offline fixtures read as unstarted when only a CLI flag was missing.
+
+When updating an item, check the tree rather than memory:
+
+- "Done" needs a file, a command, or a CI job that demonstrates it.
+- "Not done" needs a check that it is genuinely absent — a partially shipped
+  item should be split so the remaining work is visible on its own.
 
 ## How this roadmap is updated
 
