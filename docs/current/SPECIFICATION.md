@@ -1308,14 +1308,41 @@ This allows agents to search for specific capabilities without downloading the e
 
 ## 13. Rate limiting
 
-Publishers MUST enforce rate limits and return standard headers:
+Publishers MUST enforce rate limits and advertise them in response headers.
+
+The standards-track form is the `RateLimit` and `RateLimit-Policy` fields from
+the IETF `httpapi` working group. Publishers MUST send these:
+
+```http
+RateLimit: "sub"; r=87; t=120
+RateLimit-Policy: "sub"; q=100; w=3600
+Retry-After: 120
+```
+
+- `RateLimit` reports the **current** state of a named quota policy: `r` is the
+  remaining quota, `t` is the seconds until the quota partition resets.
+- `RateLimit-Policy` describes the policy itself: `q` is the quota, `w` is the
+  window in seconds. A publisher MAY advertise several policies.
+- `Retry-After` MUST accompany a `429`.
+
+Publishers SHOULD **also** send the widely deployed de-facto headers for
+compatibility with existing clients:
 
 ```http
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 87
 X-RateLimit-Reset: 1708168200
-Retry-After: 120
 ```
+
+When both forms are present they MUST describe the same quota; a client that
+reads either arrives at the same conclusion.
+
+> **Why both.** `X-`-prefixed header names have been discouraged since
+> **RFC 6648 (2012)**, and mandating them on their own would be a predictable
+> finding on the IETF path this project intends to take. But `X-RateLimit-*`
+> is what deployed clients read today, so removing it would break them for no
+> functional gain. EEP requires the standards-track form and keeps the
+> de-facto form as a compatibility `SHOULD`.
 
 Recommended default limits per subscriber:
 

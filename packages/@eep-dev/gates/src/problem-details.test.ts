@@ -87,6 +87,49 @@ describe('RFC 9457 problem details (§3.3.1)', () => {
         });
     });
 
+    // SPECIFICATION.md §13 — the standards-track RateLimit fields are
+    // required; X-RateLimit-* is a compatibility SHOULD. Both must describe
+    // the same quota.
+    describe('429 rate-limit headers (§13)', () => {
+        const sign = async (challenge: string) => `sig(${challenge.slice(0, 8)})`;
+
+        it('emits the standards-track RateLimit field', async () => {
+            const { headers } = await build429Response('did:key:agent', 60, sign);
+            // On a 429 the remaining quota is zero by definition.
+            expect(headers['RateLimit']).toBe('"eep"; r=0; t=60');
+        });
+
+        it('emits RateLimit-Policy when a quota is known', async () => {
+            const { headers } = await build429Response('did:key:agent', 60, sign, {
+                limitPerWindow: 100,
+            });
+            expect(headers['RateLimit-Policy']).toBe('"eep"; q=100; w=60');
+        });
+
+        it('keeps the de-facto headers consistent with the standards-track ones', async () => {
+            const { headers } = await build429Response('did:key:agent', 60, sign, {
+                limitPerWindow: 100,
+            });
+            expect(headers['X-RateLimit-Limit']).toBe('100');
+            expect(headers['X-RateLimit-Remaining']).toBe('0');
+            expect(headers['RateLimit-Policy']).toContain('q=100');
+            expect(headers['RateLimit']).toContain('r=0');
+        });
+
+        it('omits the quota headers when no quota was supplied', async () => {
+            const { headers } = await build429Response('did:key:agent', 60, sign);
+            expect(headers['RateLimit-Policy']).toBeUndefined();
+            expect(headers['X-RateLimit-Limit']).toBeUndefined();
+            // The current-state field is still reported.
+            expect(headers['RateLimit']).toBeDefined();
+        });
+
+        it('always accompanies a 429 with Retry-After', async () => {
+            const { headers } = await build429Response('did:key:agent', 90, sign);
+            expect(headers['Retry-After']).toBe('90');
+        });
+    });
+
     it('uses distinct problem type URIs per condition', () => {
         expect(PROBLEM_TYPE_PAYMENT_REQUIRED).not.toBe(PROBLEM_TYPE_RATE_LIMITED);
         for (const uri of [PROBLEM_TYPE_PAYMENT_REQUIRED, PROBLEM_TYPE_RATE_LIMITED]) {
