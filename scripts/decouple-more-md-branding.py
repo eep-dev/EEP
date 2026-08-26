@@ -1,9 +1,20 @@
+#!/usr/bin/env python3
+"""One-off de-branding pass from the more.md extraction.
+
+EEP was extracted from more.md's codebase and open-sourced; this script
+rewrote the remaining more.md identifiers to neutral examples. It has already
+run, and is kept only so the substitution list is auditable — if a stray
+more.md reference turns up, this records what the mapping was.
+
+It is not part of any build or test. Moved out of the repository root, where
+it was the first thing a new contributor saw.
+"""
 import os
 import re
 
 REPLACEMENTS = [
     (r"Copyright 2026 more\.md", "Copyright 2026 EEP Contributors"),
-    (r"hello@more\.md", "security@eep.dev"),
+    (r"hello@more\.md", "hello@eep.dev"),
     (r"MoreMDEntityCredential", "EEPEntityCredential"),
     (r"more-md SDK", "example SDK"),
     (r"did:web:api\.more\.md", "did:web:api.example.com"),
