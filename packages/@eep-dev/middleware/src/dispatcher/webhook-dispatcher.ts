@@ -3,6 +3,7 @@ import { matchesAnyPattern } from "@eep-dev/validator";
 import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
 import type { EventStore } from "../core/event-store.js";
 import { eventMatchesFilter } from "../core/event-filter.js";
+import { renderDelivery } from "./content-mode.js";
 import type {
   CloudEvent,
   DBAdapter,
@@ -314,7 +315,10 @@ export class WebhookDispatcher {
       return { ok: false };
     }
 
-    const body = JSON.stringify(event);
+    // §5.2.1 — render in the subscription's content mode. The signature is
+    // computed over whatever body this produces, so a binary-mode subscriber
+    // verifies exactly what it received without reassembling an envelope.
+    const { body, headers: contentHeaders } = renderDelivery(event, sub.delivery_format);
     // Stable across retries so subscribers can deduplicate; the event `id`
     // is the idempotency key per delivery_guarantees.md §1.
     const webhookId = `msg_${event.id}`;
@@ -347,7 +351,7 @@ export class WebhookDispatcher {
     try {
       const res = await this.httpClient(url, {
         headers: {
-          "content-type": "application/json",
+          ...contentHeaders,
           "webhook-id": webhookId,
           "webhook-timestamp": timestamp,
           "webhook-signature": signature,

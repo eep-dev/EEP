@@ -63,6 +63,9 @@ export const DEFAULT_LEASE_SECONDS = 2_592_000;
 export const MIN_LEASE_SECONDS = 300;
 export const MAX_LEASE_SECONDS = 31_536_000;
 
+/** CloudEvents content mode (SPECIFICATION.md §5.2.1). */
+export type DeliveryFormat = "cloudevents/v1.0" | "cloudevents/v1.0-binary";
+
 export type SubscriptionRecord = {
   subscription_id: string;
   source_did: string;
@@ -86,6 +89,11 @@ export type SubscriptionRecord = {
    * `event_types` selected; never widens it.
    */
   filter?: EventFilter;
+  /**
+   * CloudEvents content mode for this subscription (SPECIFICATION.md §5.2.1).
+   * Defaults to structured.
+   */
+  delivery_format?: DeliveryFormat;
   /** Requested access tier; matched against gate config on delivery. */
   tier?: string;
   created_at: string;
