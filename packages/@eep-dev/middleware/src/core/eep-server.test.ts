@@ -604,6 +604,49 @@ describe("EEPServer", () => {
     });
   });
 
+  // SPECIFICATION.md §12.3.2 — the manifest said where the endpoints are but
+  // not what the publisher emits, so an agent had to subscribe to a wildcard
+  // and discover the event types empirically.
+  describe("manifest event catalog (§12.3.2)", () => {
+    const manifest = async (eventTypes?: string[]) => {
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        ...(eventTypes ? { eventTypes } : {})
+      });
+      const res = await server.getManifestHandler()({
+        method: "GET",
+        path: "/.well-known/eep.json",
+        headers: {}
+      });
+      return res.body as { event_types?: Array<{ type: string }> };
+    };
+
+    it("declares the publisher's configured event types", async () => {
+      const body = await manifest(["com.example.entity.updated", "com.example.trust.changed"]);
+      expect(body.event_types).toEqual([
+        { type: "com.example.entity.updated" },
+        { type: "com.example.trust.changed" }
+      ]);
+    });
+
+    it("declares the default event type when none is configured", async () => {
+      const body = await manifest();
+      expect(body.event_types).toEqual([{ type: "entity.updated" }]);
+    });
+
+    // The catalog is only useful if it is valid: an event type that does not
+    // match §8's reverse-DNS form would make the whole manifest fail schema
+    // validation, which is a worse outcome than having no catalog.
+    it("emits types matching the §8 reverse-DNS pattern", async () => {
+      const pattern = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$/;
+      const body = await manifest(["com.example.entity.updated", "com.example.agent.task.completed"]);
+      for (const entry of body.event_types ?? []) {
+        expect(entry.type).toMatch(pattern);
+      }
+    });
+  });
+
   // SPECIFICATION.md §5.1.2 — webhooks had no catch-up mechanism at all,
   // which bites hardest right after §10 pauses a subscription: the endpoint
   // was down, it missed the most, and resuming produced a silent hole.
