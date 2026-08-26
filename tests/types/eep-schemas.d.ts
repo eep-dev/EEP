@@ -5495,6 +5495,14 @@ export interface EEPSubscriptionRequest {
    */
   delivery_format?: 'cloudevents/v1.0' | 'cloudevents/v1.0-binary';
   /**
+   * Maximum events the publisher may combine into one delivery (SPECIFICATION.md §5.2.2). 1, or omitted, means one event per POST. Batching amortises the TLS handshake, the signature computation and the 10-second acknowledgement round-trip across N events, which is the dominant per-delivery cost for a high-frequency entity.
+   */
+  max_batch_size?: number;
+  /**
+   * How long the publisher may hold an event waiting for the batch to fill. Bounds the latency batching adds; the publisher MUST deliver once this elapses even if the batch is not full. Ignored when `max_batch_size` is 1.
+   */
+  max_batch_wait_ms?: number;
+  /**
    * Optional. Requested subscription lifetime in seconds, starting from successful intent verification (SPECIFICATION.md §10.2). The publisher MAY clamp this to its own policy and reports the value actually granted as `expires_at` on the subscription. Omit to accept the publisher's default lease.
    */
   lease_seconds?: number;

@@ -673,6 +673,63 @@ conditional requests (§3.2.1), compression (§3.2.2) and subscription filters
 (§5.1.3) first: those remove whole responses and whole deliveries rather than
 shrinking them.
 
+### 5.2.2 Batched delivery (normative)
+
+§5.2 mandates one event per `POST`. A high-frequency entity therefore pays a
+TLS handshake, a signature computation and a 10-second acknowledgement
+round-trip **per event** — the dominant per-delivery cost, and one that does
+not shrink with a smaller payload.
+
+Publishers MAY offer batching; subscribers opt in with `max_batch_size` on the
+subscription request. The wire format is the CloudEvents batched JSON
+encoding, so this is a media type change rather than an EEP invention:
+
+```http
+POST /hooks/eep
+content-type: application/cloudevents-batch+json
+webhook-id: msg_batch_01HN3QK7GX
+webhook-timestamp: 1708123456
+webhook-signature: v1,…
+
+[ { "specversion": "1.0", "id": "evt-1", … }, { "specversion": "1.0", "id": "evt-2", … } ]
+```
+
+- The body is a JSON array of envelopes. A batch MUST NOT be empty.
+- `max_batch_size` bounds the array. `1`, or omitted, preserves today's
+  one-event-per-POST behaviour exactly.
+- A subscription that opted into batching MUST always receive
+  `application/cloudevents-batch+json`, even when only one event is ready.
+  Switching format based on how many events happened to be available would
+  give the subscriber two parsing paths and no way to predict which it gets.
+- `max_batch_wait_ms` bounds the latency batching adds: the publisher MUST
+  deliver once it elapses even if the batch is not full. Without it, a
+  low-traffic subscription could hold an event indefinitely waiting for a
+  batch that never fills.
+- Events within a batch MUST be ordered as they were emitted for a given
+  `source`.
+- All events in one batch MUST belong to one subscription. Batching is a
+  transport optimisation and MUST NOT become a way to deliver events across
+  subscription boundaries.
+
+**Signing.** The signature covers the raw body — the whole array — exactly as
+in §5.3. The `webhook-id` identifies the *batch*, not any single event.
+
+**Acknowledgement is all-or-nothing.** A `2xx` acknowledges every event in the
+batch; any other response fails the whole batch, which is retried whole. A
+subscriber that cannot process one event in a batch MUST NOT return `2xx` and
+then drop it. This is why batching is opt-in: a subscriber must be able to
+process a batch atomically, or ask for `max_batch_size: 1`.
+
+**Deduplication is per event, not per batch.** Each envelope keeps its own
+`id`, so the idempotency rule in
+[delivery_guarantees.md](./delivery_guarantees.md) §6 applies unchanged: on a
+retry a subscriber discards the events it already processed and processes the
+rest.
+
+**Failure accounting.** A failed batch counts as **one** failed delivery
+against the §10 counter, not one per event — otherwise a single failure of a
+100-event batch would pause a subscription instantly.
+
 ### 5.3 Webhook signature verification
 
 The `webhook-signature` header contains an HMAC-SHA256 signature over the concatenation of:
