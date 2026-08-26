@@ -119,6 +119,29 @@ function sleep(ms: number): Promise<void> {
  * promise so it never blocks the event bus. Deployments that need durable,
  * restart-surviving retries should back the event bus with a queue.
  */
+/**
+ * Mirror an event's trace context into HTTP headers.
+ *
+ * Only well-formed values are forwarded: a malformed `traceparent` is worse
+ * than none, because it silently roots the subscriber's spans under a trace
+ * that does not exist.
+ */
+const TRACEPARENT_PATTERN = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/;
+
+function traceHeaders(event: CloudEvent): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const candidate = (event as { traceparent?: unknown }).traceparent;
+  if (typeof candidate === "string" && TRACEPARENT_PATTERN.test(candidate)) {
+    headers.traceparent = candidate;
+    const state = (event as { tracestate?: unknown }).tracestate;
+    // `tracestate` is meaningless without a `traceparent` to accompany.
+    if (typeof state === "string" && state.length > 0 && state.length <= 512) {
+      headers.tracestate = state;
+    }
+  }
+  return headers;
+}
+
 export class WebhookDispatcher {
   private readonly db: DBAdapter;
   private readonly fallbackSecret?: string;
@@ -281,7 +304,13 @@ export class WebhookDispatcher {
           "content-type": "application/json",
           "webhook-id": webhookId,
           "webhook-timestamp": timestamp,
-          "webhook-signature": signature
+          "webhook-signature": signature,
+          // W3C Trace Context is mirrored into HTTP headers per the
+          // CloudEvents Distributed Tracing extension (SPECIFICATION.md
+          // §7.1). Without this the subscriber's spans are orphaned and a
+          // multi-hop agent workflow cannot be correlated back to the
+          // originating event.
+          ...traceHeaders(event)
         },
         body,
         signal: controller.signal

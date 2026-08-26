@@ -1,0 +1,11 @@
+{
+  "specversion": "1.0",
+  "id": "01HN3QK7GX-1708123456000",
+  "source": "did:web:test.eep.dev:u:alice",
+  "type": "com.example.entity.updated",
+  "time": "2026-05-09T12:00:00Z",
+  "datacontenttype": "application/json",
+  "eep_version": "0.1",
+  "subject": "report/q4-2026",
+  "dataref": "https://api.example.com/eep/payloads/01HN3QK7GX"
+}

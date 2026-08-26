@@ -764,6 +764,26 @@ export interface EEPEventEnvelope {
    */
   datacontenttype: 'application/json';
   /**
+   * CloudEvents v1.0.2 OPTIONAL context attribute. Identifies the subject of the event within the context of `source` — for example the specific resource that changed. Subscribers can filter on it without parsing `data`, which is why publishers SHOULD set it whenever an event concerns one addressable thing.
+   */
+  subject?: string;
+  /**
+   * CloudEvents v1.0.2 OPTIONAL context attribute. Absolute URI of a schema describing `data`. Lets a subscriber validate or typed-decode the payload before touching it, and lets an agent discover the payload contract without out-of-band documentation.
+   */
+  dataschema?: string;
+  /**
+   * CloudEvents Claim Check extension. Absolute URI at which the full payload can be retrieved. Lets a publisher send a small reference instead of a large body; when present without `data`, the subscriber MUST fetch this URI to obtain the payload. Retrieval is subject to the entity's gates.
+   */
+  dataref?: string;
+  /**
+   * CloudEvents Distributed Tracing extension, carrying a W3C Trace Context `traceparent`. Propagating it across the publisher/subscriber boundary is what keeps an agent's causal chain intact through a multi-hop workflow.
+   */
+  traceparent?: string;
+  /**
+   * CloudEvents Distributed Tracing extension, carrying a W3C Trace Context `tracestate`. Vendor-specific trace data accompanying `traceparent`.
+   */
+  tracestate?: string;
+  /**
    * The event payload. Structure varies by event type. Refer to the Event Catalog in SPECIFICATION.md §13 for the normative schema of each event type.
    */
   data?: {};
@@ -1291,6 +1311,26 @@ export interface EEPEventEnvelope {
    * MIME type of the data field. MUST be 'application/json' for EEP events.
    */
   datacontenttype: 'application/json';
+  /**
+   * CloudEvents v1.0.2 OPTIONAL context attribute. Identifies the subject of the event within the context of `source` — for example the specific resource that changed. Subscribers can filter on it without parsing `data`, which is why publishers SHOULD set it whenever an event concerns one addressable thing.
+   */
+  subject?: string;
+  /**
+   * CloudEvents v1.0.2 OPTIONAL context attribute. Absolute URI of a schema describing `data`. Lets a subscriber validate or typed-decode the payload before touching it, and lets an agent discover the payload contract without out-of-band documentation.
+   */
+  dataschema?: string;
+  /**
+   * CloudEvents Claim Check extension. Absolute URI at which the full payload can be retrieved. Lets a publisher send a small reference instead of a large body; when present without `data`, the subscriber MUST fetch this URI to obtain the payload. Retrieval is subject to the entity's gates.
+   */
+  dataref?: string;
+  /**
+   * CloudEvents Distributed Tracing extension, carrying a W3C Trace Context `traceparent`. Propagating it across the publisher/subscriber boundary is what keeps an agent's causal chain intact through a multi-hop workflow.
+   */
+  traceparent?: string;
+  /**
+   * CloudEvents Distributed Tracing extension, carrying a W3C Trace Context `tracestate`. Vendor-specific trace data accompanying `traceparent`.
+   */
+  tracestate?: string;
   /**
    * The event payload. Structure varies by event type. Refer to the Event Catalog in SPECIFICATION.md §13 for the normative schema of each event type.
    */

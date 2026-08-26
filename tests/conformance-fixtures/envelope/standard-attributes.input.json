@@ -1,0 +1,18 @@
+{
+  "specversion": "1.0",
+  "id": "01HN3QK7GX-1708123456000",
+  "source": "did:web:test.eep.dev:u:alice",
+  "type": "com.example.entity.updated",
+  "time": "2026-05-09T12:00:00Z",
+  "datacontenttype": "application/json",
+  "eep_version": "0.1",
+  "subject": "profile/bio",
+  "dataschema": "https://example.com/schemas/entity.updated/v2.json",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "tracestate": "vendor=abc123",
+  "data": {
+    "field": "bio",
+    "previous": "Old bio",
+    "current": "New bio"
+  }
+}

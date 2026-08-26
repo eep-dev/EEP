@@ -581,6 +581,54 @@ All EEP events MUST be valid CloudEvents v1.0.2 envelopes with EEP-specific exte
 | `eep_reputation_score` | integer | MAY | On-chain ERC-8004 reputation score at event time (0–100) |
 | `eep_on_chain_did` | string | MAY | On-chain DID linked to the entity (e.g. via ERC-8004 NFT token) |
 
+> **Attribute naming (open issue).** CloudEvents v1.0.2 restricts context
+> attribute names to lowercase ASCII letters and digits — the underscore is
+> excluded. The `eep_`-prefixed names above are what every deployed
+> implementation emits, but they do not satisfy that rule. The divergence is
+> harmless in structured mode and becomes load-bearing in binary content mode,
+> where attributes are carried as `ce-`-prefixed HTTP headers. Tracked for
+> resolution before v1.0; see the editor's note in
+> [`draft-eep-protocol-core-00.md`](../standards/draft-eep-protocol-core-00.md).
+
+### 7.1 Standard CloudEvents attributes (normative)
+
+EEP previously defined eight `eep_`-prefixed extensions while using none of the
+optional CloudEvents attributes that solve the same problems. Publishers SHOULD
+populate the following, and subscribers MUST tolerate their presence:
+
+| Attribute | Type | Level | Purpose |
+|-----------|------|-------|---------|
+| `subject` | string | SHOULD | Which thing inside `source` changed. Lets a subscriber filter without parsing `data`. |
+| `dataschema` | URI | SHOULD | Schema describing `data`, so a subscriber can validate or typed-decode before use. |
+| `dataref` | URI | MAY | Claim Check: retrieve the payload from this URI instead of inlining it. |
+| `traceparent` | string | SHOULD | W3C Trace Context, propagated across the delivery boundary. |
+| `tracestate` | string | MAY | Vendor trace data accompanying `traceparent`. |
+
+**`subject`.** Set it whenever an event concerns one addressable thing. It is
+the difference between a subscriber discarding an unwanted event after parsing
+its body and a publisher never sending it (see the filtering rules in §5.1).
+
+**`dataschema`.** Without it, a subscriber cannot validate a payload it has not
+seen before, and an agent must be told the payload contract out of band. With
+it, the contract travels with the event.
+
+**`dataref` (Claim Check).** When `dataref` is present and `data` is absent, the
+subscriber MUST fetch `dataref` to obtain the payload. This keeps a large
+payload off the delivery path — the publisher sends a reference, and only
+subscribers that need the body pay for it. Retrieval is an ordinary Layer 1
+request and is subject to the entity's gates (§3.4), so a claim check does not
+bypass access control. Publishers MUST NOT send both `data` and a `dataref`
+that resolve to different content.
+
+**`traceparent` / `tracestate`.** EEP is multi-hop by design: agent → publisher
+→ subscriber → downstream agent. Without propagation the causal chain breaks at
+every boundary and a misbehaving pipeline cannot be correlated back to the
+originating event. Publishers SHOULD set `traceparent` from the context that
+produced the event, and MUST NOT invent one that implies a trace they did not
+participate in. Over HTTP these MUST also appear as the corresponding
+`traceparent` / `tracestate` headers, per the CloudEvents Distributed Tracing
+extension.
+
 ---
 
 ## 8. Event type naming convention
