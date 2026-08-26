@@ -26,6 +26,31 @@ class HeaderProofAuthAdapter:
             return []
 
 
+#: Default lease granted when the subscriber does not request one: 30 days.
+DEFAULT_LEASE_SECONDS = 2_592_000
+#: Bounds a publisher clamps a requested ``lease_seconds`` into.
+MIN_LEASE_SECONDS = 300
+MAX_LEASE_SECONDS = 31_536_000
+
+
+def clamp_lease_seconds(requested: Any) -> int:
+    """Clamp a requested ``lease_seconds`` into publisher policy (§10.2).
+
+    A non-integer, out-of-range or absent value falls back to the default
+    rather than being rejected: the lease is the publisher's to grant, and a
+    subscriber asking for something unreasonable should still end up with a
+    working subscription and an honest ``expires_at``.
+    """
+    if isinstance(requested, bool) or not isinstance(requested, (int, float)):
+        return DEFAULT_LEASE_SECONDS
+    seconds = int(requested)
+    if seconds < MIN_LEASE_SECONDS:
+        return MIN_LEASE_SECONDS
+    if seconds > MAX_LEASE_SECONDS:
+        return MAX_LEASE_SECONDS
+    return seconds
+
+
 class EEPServer:
     def __init__(
         self,
@@ -121,12 +146,20 @@ class EEPServer:
             except SSRFError as err:
                 return 400, {"error": "invalid_request", "message": f"delivery_url is not allowed: {err}"}
 
+        # Subscriptions are time-bounded (§10.2). A subscriber MAY request a
+        # lease; the publisher clamps it to policy and reports what it actually
+        # granted as `expires_at`. Advertising `hub.lease_seconds` during intent
+        # verification and then never enforcing it is what made the value
+        # decorative.
+        lease_seconds = clamp_lease_seconds(payload.get("lease_seconds"))
+        created_at = time.time()
         subscription = SubscriptionRecord(
-            subscription_id=f"sub_{int(time.time() * 1000)}",
+            subscription_id=f"sub_{int(created_at * 1000)}",
             source_did=source_did,
             delivery_method=str(delivery_method),
             callback_url=delivery_url,
-            created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created_at)),
+            expires_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created_at + lease_seconds)),
         )
         await self.db_adapter.save_subscription(subscription)
         await self.event_bus_adapter.publish(
@@ -148,6 +181,7 @@ class EEPServer:
             "delivery_method": subscription.delivery_method,
             "callback_url": subscription.callback_url,
             "created_at": subscription.created_at,
+            "expires_at": subscription.expires_at,
         }
 
     async def audit_payload(self) -> dict[str, Any]:

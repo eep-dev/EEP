@@ -171,6 +171,7 @@ export class WebhookDispatcher {
     const deliverable =
       sub.delivery_method === "webhook" &&
       sub.status === "active" &&
+      !this.leaseHasElapsed(sub) &&
       typeof sub.callback_url === "string" &&
       sub.callback_url.length > 0;
     if (!deliverable) return false;
@@ -186,6 +187,20 @@ export class WebhookDispatcher {
     }
 
     return matchesAnyPattern(event.type, sub.event_types);
+  }
+
+  /**
+   * True once the subscription's lease has elapsed (SPECIFICATION.md §10.2).
+   *
+   * Checked at delivery time rather than relying on a sweeper, so an expired
+   * subscription stops receiving events even in a deployment that has no
+   * background job — an unenforced lease is the same as no lease at all.
+   */
+  private leaseHasElapsed(sub: SubscriptionRecord): boolean {
+    if (typeof sub.expires_at !== "string") return false;
+    const expiresAt = Date.parse(sub.expires_at);
+    if (Number.isNaN(expiresAt)) return false;
+    return expiresAt <= Date.now();
   }
 
   private async deliverWithRetry(event: CloudEvent, sub: SubscriptionRecord): Promise<DeliveryResult> {

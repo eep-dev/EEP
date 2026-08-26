@@ -1,126 +1,135 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/subscription.request.json",
-    "title": "EEP Subscription Request",
-    "description": "Schema for creating a new EEP event subscription. Validates the POST body sent to /eep/subscribe.",
-    "type": "object",
-    "required": [
-        "source_did",
-        "event_types",
-        "delivery_method"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "source_did": {
-            "type": "string",
-            "description": "The DID or URI of the entity to subscribe to. Must be a valid DID (e.g., 'did:web:example.com:u:acme-corp') or an entity URI.",
-            "pattern": "^(did:[a-z]+:[a-zA-Z0-9._%-]+(:[a-zA-Z0-9._%-]+)*|https?://[^\\s]+)$",
-            "examples": [
-                "did:web:example.com:u:acme-corp",
-                "https://api.example.com/entities/acme-corp"
-            ]
-        },
-        "event_types": {
-            "type": "array",
-            "description": "List of event type patterns to subscribe to. Supports wildcard suffix (e.g., 'com.example.entity.*'). An empty array is not allowed.",
-            "minItems": 1,
-            "maxItems": 50,
-            "items": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*(\\.(\\*|[a-z][a-z0-9]*))?$",
-                "examples": [
-                    "com.example.entity.updated",
-                    "com.example.trust.*",
-                    "com.example.*"
-                ]
-            }
-        },
-        "delivery_method": {
-            "type": "string",
-            "description": "How events should be delivered to the subscriber.",
-            "enum": [
-                "webhook",
-                "sse"
-            ],
-            "examples": [
-                "webhook"
-            ]
-        },
-        "delivery_url": {
-            "type": "string",
-            "description": "The HTTPS URL where webhook events will be POSTed. Required when delivery_method is 'webhook'. Must be a publicly accessible HTTPS endpoint.",
-            "format": "uri",
-            "pattern": "^https://",
-            "examples": [
-                "https://agent.example.com/hooks/eep"
-            ]
-        },
-        "delivery_format": {
-            "type": "string",
-            "description": "The event envelope format for delivery. Defaults to CloudEvents v1.0.",
-            "enum": [
-                "cloudevents/v1.0"
-            ],
-            "default": "cloudevents/v1.0"
-        },
-        "metadata": {
-            "type": "object",
-            "description": "Optional subscriber-defined metadata attached to this subscription for internal tracking.",
-            "additionalProperties": {
-                "type": "string"
-            },
-            "maxProperties": 10,
-            "examples": [
-                {
-                    "description": "Monitor Acme Corp for trust changes",
-                    "agent_id": "agent-42"
-                }
-            ]
-        },
-        "tier": {
-            "type": "string",
-            "description": "Optional. The access tier being requested. If the entity has gate configuration, this specifies which tier the subscriber wants. When omitted, the entity's default_tier is used.",
-            "pattern": "^[a-z][a-z0-9_]{0,31}$",
-            "examples": [
-                "pro",
-                "academic",
-                "verified_agents"
-            ]
-        },
-        "gate_proofs": {
-            "type": "array",
-            "description": "Optional. Array of proof objects that satisfy the tier's requirements. See gate.proof.json for the full proof schema. Only needed when subscribing to a gated tier.",
-            "items": {
-                "type": "object",
-                "required": [
-                    "type"
-                ],
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "description": "Proof type matching a requirement type."
-                    }
-                },
-                "additionalProperties": true
-            },
-            "maxItems": 10
-        }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://eep.dev/schemas/v0.1/subscription.request.json",
+  "title": "EEP Subscription Request",
+  "description": "Schema for creating a new EEP event subscription. Validates the POST body sent to /eep/subscribe.",
+  "type": "object",
+  "required": [
+    "source_did",
+    "event_types",
+    "delivery_method"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "source_did": {
+      "type": "string",
+      "description": "The DID or URI of the entity to subscribe to. Must be a valid DID (e.g., 'did:web:example.com:u:acme-corp') or an entity URI.",
+      "pattern": "^(did:[a-z]+:[a-zA-Z0-9._%-]+(:[a-zA-Z0-9._%-]+)*|https?://[^\\s]+)$",
+      "examples": [
+        "did:web:example.com:u:acme-corp",
+        "https://api.example.com/entities/acme-corp"
+      ]
     },
-    "if": {
-        "properties": {
-            "delivery_method": {
-                "const": "webhook"
-            }
-        }
+    "event_types": {
+      "type": "array",
+      "description": "List of event type patterns to subscribe to. Supports wildcard suffix (e.g., 'com.example.entity.*'). An empty array is not allowed.",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*(\\.(\\*|[a-z][a-z0-9]*))?$",
+        "examples": [
+          "com.example.entity.updated",
+          "com.example.trust.*",
+          "com.example.*"
+        ]
+      }
     },
-    "then": {
+    "delivery_method": {
+      "type": "string",
+      "description": "How events should be delivered to the subscriber.",
+      "enum": [
+        "webhook",
+        "sse"
+      ],
+      "examples": [
+        "webhook"
+      ]
+    },
+    "delivery_url": {
+      "type": "string",
+      "description": "The HTTPS URL where webhook events will be POSTed. Required when delivery_method is 'webhook'. Must be a publicly accessible HTTPS endpoint.",
+      "format": "uri",
+      "pattern": "^https://",
+      "examples": [
+        "https://agent.example.com/hooks/eep"
+      ]
+    },
+    "delivery_format": {
+      "type": "string",
+      "description": "The event envelope format for delivery. Defaults to CloudEvents v1.0.",
+      "enum": [
+        "cloudevents/v1.0"
+      ],
+      "default": "cloudevents/v1.0"
+    },
+    "lease_seconds": {
+      "type": "integer",
+      "description": "Optional. Requested subscription lifetime in seconds, starting from successful intent verification (SPECIFICATION.md \u00a710.2). The publisher MAY clamp this to its own policy and reports the value actually granted as `expires_at` on the subscription. Omit to accept the publisher's default lease.",
+      "minimum": 300,
+      "maximum": 31536000,
+      "examples": [
+        2592000
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional subscriber-defined metadata attached to this subscription for internal tracking.",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "maxProperties": 10,
+      "examples": [
+        {
+          "description": "Monitor Acme Corp for trust changes",
+          "agent_id": "agent-42"
+        }
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "description": "Optional. The access tier being requested. If the entity has gate configuration, this specifies which tier the subscriber wants. When omitted, the entity's default_tier is used.",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "examples": [
+        "pro",
+        "academic",
+        "verified_agents"
+      ]
+    },
+    "gate_proofs": {
+      "type": "array",
+      "description": "Optional. Array of proof objects that satisfy the tier's requirements. See gate.proof.json for the full proof schema. Only needed when subscribing to a gated tier.",
+      "items": {
+        "type": "object",
         "required": [
-            "delivery_url"
+          "type"
         ],
         "properties": {
-            "delivery_url": {
-                "pattern": "^https://"
-            }
-        }
+          "type": {
+            "type": "string",
+            "description": "Proof type matching a requirement type."
+          }
+        },
+        "additionalProperties": true
+      },
+      "maxItems": 10
     }
+  },
+  "if": {
+    "properties": {
+      "delivery_method": {
+        "const": "webhook"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "delivery_url"
+    ],
+    "properties": {
+      "delivery_url": {
+        "pattern": "^https://"
+      }
+    }
+  }
 }
