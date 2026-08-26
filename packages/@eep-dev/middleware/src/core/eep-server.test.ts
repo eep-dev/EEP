@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseGateConfig, type GateProof, type ProofVerifier } from "@eep-dev/gates";
 import { EEPServer } from "./eep-server.js";
+import { InMemoryEventStore } from "./event-store.js";
 import {
   TEST_DELIVERY_EVENT_TYPE,
   DEFAULT_LEASE_SECONDS,
@@ -303,7 +304,7 @@ describe("EEPServer", () => {
       did: "did:web:example.com"
     });
     const routes = server.getRouteDefinitions();
-    expect(routes.length).toBe(18);
+    expect(routes.length).toBe(21);
     const operationIds = routes.map((route) => route.operationId);
     expect(operationIds).toContain("subscribe");
     expect(operationIds).toContain("subscriptionStatus");
@@ -312,6 +313,9 @@ describe("EEPServer", () => {
     expect(operationIds).toContain("resumeSubscription");
     expect(operationIds).toContain("pauseSubscription");
     expect(operationIds).toContain("testSubscriptionDelivery");
+    expect(operationIds).toContain("eventHistory");
+    expect(operationIds).toContain("redeliver");
+    expect(operationIds).toContain("deliveryLog");
   });
 
   // SPECIFICATION.md §5.1.1: creation stays on `POST /eep/subscribe` (it is
@@ -597,6 +601,193 @@ describe("EEPServer", () => {
       });
       expect(res.status).toBe(201);
       expect(db.rows[0]?.tier).toBe("premium");
+    });
+  });
+
+  // SPECIFICATION.md §5.1.2 — webhooks had no catch-up mechanism at all,
+  // which bites hardest right after §10 pauses a subscription: the endpoint
+  // was down, it missed the most, and resuming produced a silent hole.
+  describe("event history and redelivery (§5.1.2)", () => {
+    const makeServer = () => {
+      const db = new RecordingDBAdapter();
+      const bus = new RecordingEventBusAdapter();
+      const store = new InMemoryEventStore();
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        dbAdapter: db,
+        eventBusAdapter: bus,
+        eventStore: store
+      });
+      return { db, bus, store, server };
+    };
+
+    const evt = (id: string) => ({
+      id,
+      type: "com.example.entity.updated",
+      source: "did:web:acme.example",
+      time: "2026-01-01T00:00:00.000Z",
+      data: {}
+    });
+
+    const createSubscription = async (server: EEPServer): Promise<string> => {
+      const res = await server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: {
+          source_did: "did:web:agent.example",
+          delivery_method: "webhook",
+          delivery_url: "https://hook.example/notify",
+          event_types: ["com.example.entity.updated"]
+        }
+      });
+      return (res.body as { subscription_id: string }).subscription_id;
+    };
+
+    it("returns history for a subscriber catching up", async () => {
+      const { server } = makeServer();
+      for (const id of ["e1", "e2", "e3"]) await server.recordEvent(evt(id));
+
+      const res = await server.getEventHistoryHandler()({
+        method: "GET",
+        path: "/eep/events",
+        headers: {},
+        query: { since: "e1" }
+      });
+      expect(res.status).toBe(200);
+      const body = res.body as { events: Array<{ id: string }>; next_cursor?: string };
+      expect(body.events.map((e) => e.id)).toEqual(["e2", "e3"]);
+      expect(body.next_cursor).toBeUndefined();
+    });
+
+    // 410, not an empty 200: an empty page is indistinguishable from "you are
+    // up to date", which would let a subscriber believe it caught up.
+    it("returns 410 with the oldest retained id for an unsatisfiable cursor", async () => {
+      const { server } = makeServer();
+      await server.recordEvent(evt("e1"));
+      const res = await server.getEventHistoryHandler()({
+        method: "GET",
+        path: "/eep/events",
+        headers: {},
+        query: { since: "evicted" }
+      });
+      expect(res.status).toBe(410);
+      expect(res.body).toMatchObject({
+        error: "retention_window_exceeded",
+        oldest_retained_event_id: "e1"
+      });
+    });
+
+    it("pages with next_cursor", async () => {
+      const { server } = makeServer();
+      for (const id of ["e1", "e2", "e3"]) await server.recordEvent(evt(id));
+      const res = await server.getEventHistoryHandler()({
+        method: "GET",
+        path: "/eep/events",
+        headers: {},
+        query: { limit: "2" }
+      });
+      const body = res.body as { events: Array<{ id: string }>; next_cursor?: string };
+      expect(body.events).toHaveLength(2);
+      expect(body.next_cursor).toBe("e2");
+    });
+
+    it("re-publishes requested events and names the ones it cannot", async () => {
+      const { server, bus } = makeServer();
+      await server.recordEvent(evt("e1"));
+      const id = await createSubscription(server);
+      bus.published.length = 0;
+
+      const res = await server.getRedeliverHandler()({
+        method: "POST",
+        path: `/eep/subscriptions/${id}/redeliver`,
+        headers: {},
+        params: { subscriptionId: id },
+        body: { event_ids: ["e1", "gone"] }
+      });
+
+      expect(res.status).toBe(202);
+      expect(res.body).toMatchObject({ redelivered: ["e1"], unavailable: ["gone"] });
+      // Redelivered events keep their original id so an already-processed
+      // event is discarded by the ordinary idempotency rule.
+      expect(bus.events.at(-1)).toMatchObject({ type: "com.example.entity.updated" });
+    });
+
+    it("rejects a redeliver request with no event ids", async () => {
+      const { server } = makeServer();
+      const id = await createSubscription(server);
+      const res = await server.getRedeliverHandler()({
+        method: "POST",
+        path: `/eep/subscriptions/${id}/redeliver`,
+        headers: {},
+        params: { subscriptionId: id },
+        body: { event_ids: [] }
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("rejects a redeliver request above the per-request cap", async () => {
+      const { server } = makeServer();
+      const id = await createSubscription(server);
+      const res = await server.getRedeliverHandler()({
+        method: "POST",
+        path: `/eep/subscriptions/${id}/redeliver`,
+        headers: {},
+        params: { subscriptionId: id },
+        body: { event_ids: Array.from({ length: 101 }, (_, i) => `e${i}`) }
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 when redelivering for an unknown subscription", async () => {
+      const { server } = makeServer();
+      const res = await server.getRedeliverHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/nope/redeliver",
+        headers: {},
+        params: { subscriptionId: "nope" },
+        body: { event_ids: ["e1"] }
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it("exposes the delivery log for a subscription", async () => {
+      const { server, store } = makeServer();
+      const id = await createSubscription(server);
+      await store.recordDelivery({
+        subscription_id: id,
+        event_id: "e1",
+        attempt: 1,
+        timestamp: new Date().toISOString(),
+        status_code: 500,
+        response_time_ms: 42,
+        final_status: "failed"
+      });
+
+      const res = await server.getDeliveryLogHandler()({
+        method: "GET",
+        path: `/eep/subscriptions/${id}/delivery-log`,
+        headers: {},
+        params: { subscriptionId: id }
+      });
+      expect(res.status).toBe(200);
+      const body = res.body as { attempts: Array<{ final_status: string }> };
+      expect(body.attempts).toHaveLength(1);
+      // This is what lets a subscriber tell "never sent" from "my endpoint
+      // rejected it".
+      expect(body.attempts[0]?.final_status).toBe("failed");
+    });
+
+    it("returns 404 for the delivery log of an unknown subscription", async () => {
+      const { server } = makeServer();
+      const res = await server.getDeliveryLogHandler()({
+        method: "GET",
+        path: "/eep/subscriptions/nope/delivery-log",
+        headers: {},
+        params: { subscriptionId: "nope" }
+      });
+      expect(res.status).toBe(404);
     });
   });
 
