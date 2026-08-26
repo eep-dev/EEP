@@ -209,6 +209,43 @@ Entities MUST declare their EEP capabilities in the JSON response:
 
 The `gated`, `gates_url`, `commerce`, and `services_url` fields are OPTIONAL. They MUST be present if the entity uses gated access or offers services.
 
+### 3.3.1 Error responses (normative)
+
+EEP error responses are **RFC 9457 problem details**. Publishers MUST serve
+them with `Content-Type: application/problem+json` and MUST include the
+`type`, `title` and `status` members; `detail` and `instance` are RECOMMENDED.
+
+| Member | Level | Meaning |
+|---|---|---|
+| `type` | MUST | URI identifying the problem type. Clients match on this, not on the HTTP status. |
+| `title` | MUST | Short summary of the type. MUST NOT vary between occurrences. |
+| `status` | MUST | The HTTP status, repeated so the document survives being logged or forwarded. |
+| `detail` | SHOULD | Explanation specific to this occurrence, for a developer reading a log. |
+| `instance` | MAY | URI reference identifying this occurrence. |
+
+Registered EEP problem types:
+
+| Status | `type` |
+|---|---|
+| 402 | `https://eep.dev/problems/payment-required` |
+| 403 | `https://eep.dev/problems/access-restricted` |
+| 429 | `https://eep.dev/problems/rate-limited` |
+| 451 | `https://eep.dev/problems/legally-restricted` |
+
+Everything EEP already defined on these responses — `unmet_requirements`,
+`required_tier`, `retry_after_seconds`, `signed_challenge` and the rest —
+remains, as RFC 9457 **extension members**. This is additive: a client reading
+the existing fields keeps working, and a client that understands problem
+details gains a shape it already knows.
+
+Publishers MUST NOT vary `type` to encode per-occurrence information; that is
+what `detail` is for. Clients MUST tolerate unknown extension members and MUST
+NOT treat an unrecognised `type` as a different HTTP status than `status` says.
+
+Bespoke error envelopes were a needless dialect: `application/problem+json` is
+understood by generic HTTP clients, API gateways and agent frameworks without
+EEP-specific parsing, and it is what a standards reviewer will expect.
+
 ### 3.4 Gated access
 
 Entities MAY define **gates** to restrict access to resources. A gate configuration has entity-defined **tiers**, each with a list of **requirements** and a set of **access patterns** that tier opens up.

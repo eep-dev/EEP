@@ -1,0 +1,19 @@
+{
+  "type": "https://eep.dev/problems/payment-required",
+  "title": "Payment Required",
+  "status": 402,
+  "detail": "Access to 'content.papers.full_text' requires the 'premium' tier.",
+  "instance": "/eep/content/content.papers.full_text",
+  "error": "access_restricted",
+  "resource": "content.papers.full_text",
+  "current_tier": "public",
+  "required_tier": "premium",
+  "unmet_requirements": [
+    {
+      "type": "payment",
+      "amount": 1,
+      "currency": "usd",
+      "per": "request"
+    }
+  ]
+}

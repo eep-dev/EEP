@@ -297,7 +297,38 @@ export interface AccessResult {
 
 // ── HTTP 402 Response ─────────────────────────────────────────────────────────
 
-export interface AccessRestrictionResponse {
+/**
+ * RFC 9457 problem-details members, common to every EEP error response
+ * (SPECIFICATION.md §3.3.1).
+ *
+ * Everything EEP already defined on these responses stays, as RFC 9457
+ * *extension members* — so a client reading the existing fields keeps
+ * working, and a client that speaks problem details gains a shape it
+ * already knows.
+ */
+export interface ProblemDetails {
+    /** URI identifying the problem type. Clients match on this, not the status. */
+    type: string;
+    /** Short summary of the type. Does not vary between occurrences. */
+    title: string;
+    /** The HTTP status, repeated so the document survives being logged. */
+    status: number;
+    /** Explanation specific to this occurrence, for a developer reading a log. */
+    detail?: string;
+    /** URI reference identifying this occurrence. */
+    instance?: string;
+}
+
+/** Registered EEP problem type URIs (SPECIFICATION.md §3.3.1). */
+export const PROBLEM_TYPE_PAYMENT_REQUIRED = 'https://eep.dev/problems/payment-required';
+export const PROBLEM_TYPE_ACCESS_RESTRICTED = 'https://eep.dev/problems/access-restricted';
+export const PROBLEM_TYPE_RATE_LIMITED = 'https://eep.dev/problems/rate-limited';
+export const PROBLEM_TYPE_LEGALLY_RESTRICTED = 'https://eep.dev/problems/legally-restricted';
+
+/** Media type for every EEP error response (RFC 9457). */
+export const PROBLEM_JSON_CONTENT_TYPE = 'application/problem+json';
+
+export interface AccessRestrictionResponse extends ProblemDetails {
     error: 'access_restricted';
     resource: string;
     current_tier: string;
@@ -311,7 +342,7 @@ export interface AccessRestrictionResponse {
 // ── 403 Forbidden Response ───────────────────────────────────────────────────
 
 /** HTTP 403 response for credential/agreement/identity gate failure (G6) */
-export interface ForbiddenResponse {
+export interface ForbiddenResponse extends ProblemDetails {
     error: 'access_forbidden';
     resource: string;
     current_tier: string;
@@ -740,7 +771,7 @@ export interface RFPClosedEvent {
 // ── G30: Rate-Limit 429 Response ─────────────────────────────────────────────
 
 /** HTTP 429 Too Many Requests response body per Whitepaper §10.5 / SPECIFICATION.md §3.4.6 */
-export interface RateLimitResponse {
+export interface RateLimitResponse extends ProblemDetails {
     error: 'rate_limited';
     did_rate_limit_key: string;
     retry_after_seconds: number;

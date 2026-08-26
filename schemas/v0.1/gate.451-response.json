@@ -1,51 +1,86 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/gate.451-response.json",
-    "title": "EEP Gate 451 Legally Restricted Response",
-    "description": "Returned when a resource is unavailable for legal reasons (EU AI Act, DORA, judicial orders, etc.)",
-    "type": "object",
-    "required": [
-        "error",
-        "resource",
-        "reason"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "error": {
-            "type": "string",
-            "const": "legally_restricted",
-            "description": "Fixed error code for HTTP 451 legal restriction"
-        },
-        "resource": {
-            "type": "string",
-            "description": "The resource path that is legally restricted"
-        },
-        "reason": {
-            "type": "string",
-            "description": "Human-readable description of the legal restriction"
-        },
-        "legal_basis": {
-            "type": "string",
-            "description": "Legal instrument imposing the restriction",
-            "examples": [
-                "EU AI Act Art. 6 Annex III",
-                "DORA Art. 28",
-                "GDPR Art. 17"
-            ]
-        },
-        "jurisdiction": {
-            "type": "string",
-            "description": "Geographic or legal jurisdiction",
-            "examples": [
-                "EU",
-                "US",
-                "UK",
-                "DE"
-            ]
-        },
-        "contact": {
-            "type": "string",
-            "description": "Contact address (email or URL) for legal queries"
-        }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://eep.dev/schemas/v0.1/gate.451-response.json",
+  "title": "EEP Gate 451 Legally Restricted Response",
+  "description": "Returned when a resource is unavailable for legal reasons (EU AI Act, DORA, judicial orders, etc.) Served as `application/problem+json` per RFC 9457; the EEP-specific members below are problem extension members.",
+  "type": "object",
+  "required": [
+    "error",
+    "resource",
+    "reason"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "RFC 9457 problem type URI identifying what went wrong. Dereferencing it SHOULD yield human-readable documentation. Clients match on this rather than on the HTTP status, which is why it is the stable identifier.",
+      "format": "uri",
+      "default": "https://eep.dev/problems/legally-restricted",
+      "examples": [
+        "https://eep.dev/problems/legally-restricted"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "description": "RFC 9457 short, human-readable summary of the problem type. MUST NOT change from occurrence to occurrence \u2014 vary `detail`, not `title`.",
+      "examples": [
+        "Unavailable For Legal Reasons"
+      ]
+    },
+    "status": {
+      "type": "integer",
+      "description": "RFC 9457 HTTP status code, repeated in the body so the problem document survives being logged or forwarded away from its response.",
+      "enum": [
+        451
+      ],
+      "examples": [
+        451
+      ]
+    },
+    "detail": {
+      "type": "string",
+      "description": "RFC 9457 human-readable explanation specific to this occurrence. Intended for a developer reading a log, not for an end user."
+    },
+    "instance": {
+      "type": "string",
+      "description": "RFC 9457 URI reference identifying this specific occurrence.",
+      "format": "uri-reference"
+    },
+    "error": {
+      "type": "string",
+      "const": "legally_restricted",
+      "description": "Fixed error code for HTTP 451 legal restriction"
+    },
+    "resource": {
+      "type": "string",
+      "description": "The resource path that is legally restricted"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable description of the legal restriction"
+    },
+    "legal_basis": {
+      "type": "string",
+      "description": "Legal instrument imposing the restriction",
+      "examples": [
+        "EU AI Act Art. 6 Annex III",
+        "DORA Art. 28",
+        "GDPR Art. 17"
+      ]
+    },
+    "jurisdiction": {
+      "type": "string",
+      "description": "Geographic or legal jurisdiction",
+      "examples": [
+        "EU",
+        "US",
+        "UK",
+        "DE"
+      ]
+    },
+    "contact": {
+      "type": "string",
+      "description": "Contact address (email or URL) for legal queries"
     }
+  }
 }
