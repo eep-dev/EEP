@@ -1,540 +1,540 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/gate.proof.json",
-    "title": "EEP Gate Proof",
-    "description": "Schema for gate proofs submitted by agents to satisfy tier requirements. Each proof corresponds to a requirement type. Structural validation happens at the protocol level; semantic validation (e.g., verifying a payment token is actually valid) is the responsibility of the implementing platform via the ProofVerifier interface.",
-    "type": "object",
-    "required": [
-        "gate_proofs"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "gate_proofs": {
-            "type": "array",
-            "description": "Array of proof objects. Each proof satisfies one requirement. Multiple proofs can be provided to satisfy multi-requirement tiers.",
-            "minItems": 1,
-            "maxItems": 10,
-            "items": {
-                "$ref": "#/definitions/proof"
-            }
-        }
-    },
-    "definitions": {
-        "proof": {
-            "type": "object",
-            "required": [
-                "type"
-            ],
-            "description": "A single proof. Structure varies by type. The 'type' field must match a requirement type from the gate configuration.",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Proof type, must match the requirement type it satisfies.",
-                    "pattern": "^(payment|trust|identity|connection|credential|capability|allowlist|reciprocal|proof_of_intent|data_request|agreement|x-[a-z][a-z0-9_-]*)$"
-                },
-                "issued_at": {
-                    "type": "string",
-                    "description": "When this proof was issued (ISO 8601). Used for freshness validation.",
-                    "format": "date-time"
-                },
-                "expires_at": {
-                    "type": "string",
-                    "description": "When this proof expires (ISO 8601). Null or absent means the proof does not expire.",
-                    "format": "date-time"
-                },
-                "nonce": {
-                    "type": "string",
-                    "description": "Optional nonce to prevent replay attacks.",
-                    "maxLength": 128
-                }
-            },
-            "allOf": [
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "payment"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "token": {
-                                "type": "string",
-                                "description": "Payment proof token from the payment provider. Opaque to the protocol.",
-                                "minLength": 1,
-                                "maxLength": 4096
-                            },
-                            "provider": {
-                                "type": "string",
-                                "description": "URL or identifier of the payment provider that issued this token.",
-                                "examples": [
-                                    "https://pay.example.com",
-                                    "https://checkout.stripe.com"
-                                ]
-                            },
-                            "tier": {
-                                "type": "string",
-                                "description": "The tier this payment was made for."
-                            },
-                            "chain": {
-                                "type": "string",
-                                "description": "Blockchain network name used for on-chain payment. MUST match one of the publisher's declared payment_networks[].chain values. Required when tx_hash is present. (G27)",
-                                "examples": [
-                                    "solana",
-                                    "base",
-                                    "ethereum",
-                                    "polygon"
-                                ]
-                            },
-                            "tx_hash": {
-                                "type": "string",
-                                "description": "On-chain transaction hash of the payment. The publisher MUST verify on-chain finality (min_confirmations) before granting access. (G27)",
-                                "pattern": "^(0x[0-9a-fA-F]{64}|[1-9A-HJ-NP-Za-km-z]{87,88})$",
-                                "examples": [
-                                    "0xabc123...def456",
-                                    "5KtmkVXLoWizHrUmLP1NkiGrmKa2Q2g3X5hk3pXHKGe3iY7tR1aSdfJk2bN"
-                                ]
-                            },
-                            "confirmations": {
-                                "type": "integer",
-                                "description": "Number of block confirmations at proof submission time. Publisher MUST verify this meets min_confirmations for the declared chain. (G27)",
-                                "minimum": 0
-                            },
-                            "x402_payload": {
-                                "type": "object",
-                                "description": "x402 protocol EIP-712 payment payload. Mutually exclusive with token — use either token (traditional) or x402_payload (on-chain).",
-                                "additionalProperties": false,
-                                "required": [
-                                    "payload",
-                                    "signature",
-                                    "network"
-                                ],
-                                "properties": {
-                                    "payload": {
-                                        "type": "string",
-                                        "description": "EIP-712 PaymentPayload JSON string",
-                                        "minLength": 1
-                                    },
-                                    "signature": {
-                                        "type": "string",
-                                        "description": "Hex-encoded secp256k1 signature (0x-prefixed, 130+ hex chars)",
-                                        "pattern": "^0x[0-9a-fA-F]{128,}$"
-                                    },
-                                    "network": {
-                                        "type": "string",
-                                        "description": "Blockchain network name",
-                                        "examples": [
-                                            "base",
-                                            "ethereum",
-                                            "polygon"
-                                        ]
-                                    },
-                                    "settlement_tx": {
-                                        "type": "string",
-                                        "description": "On-chain transaction hash after settlement"
-                                    }
-                                }
-                            }
-                        },
-                        "required": [
-                            "type"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "trust"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "self_attested": {
-                                "type": "boolean",
-                                "description": "If true, the subscriber claims their trust score meets the requirement. The publisher MUST verify this independently.",
-                                "const": true
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "self_attested"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "identity"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "method": {
-                                "type": "string",
-                                "description": "The verification method used.",
-                                "enum": [
-                                    "did_verified",
-                                    "email_verified",
-                                    "domain_verified",
-                                    "kyc",
-                                    "any"
-                                ]
-                            },
-                            "evidence": {
-                                "type": "string",
-                                "description": "Verification evidence (e.g., a signed DID assertion, email verification token). Opaque to the protocol.",
-                                "maxLength": 8192
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "method"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "connection"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "subscriber_did": {
-                                "type": "string",
-                                "description": "The DID of the subscriber claiming the connection."
-                            },
-                            "relation": {
-                                "type": "string",
-                                "description": "The claimed connection type.",
-                                "enum": [
-                                    "follower",
-                                    "following",
-                                    "mutual",
-                                    "any"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "subscriber_did"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "credential"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "credential": {
-                                "type": "string",
-                                "description": "The Verifiable Credential (encoded per the format field).",
-                                "maxLength": 65536
-                            },
-                            "format": {
-                                "type": "string",
-                                "description": "Credential encoding format.",
-                                "enum": [
-                                    "jwt_vc",
-                                    "ldp_vc",
-                                    "sd_jwt_vc"
-                                ],
-                                "default": "jwt_vc"
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "credential",
-                            "format"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "capability"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "declared_capabilities": {
-                                "type": "array",
-                                "description": "Capabilities the agent declares it has.",
-                                "items": {
-                                    "type": "string"
-                                },
-                                "minItems": 1
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "declared_capabilities"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "allowlist"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "did": {
-                                "type": "string",
-                                "description": "The DID claiming to be on the allowlist."
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "did"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "reciprocal"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "entity_did": {
-                                "type": "string",
-                                "description": "The DID of the entity offering reciprocal access."
-                            },
-                            "granted_access": {
-                                "type": "string",
-                                "description": "The access level being granted back.",
-                                "examples": [
-                                    "profile.*",
-                                    "*"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "entity_did",
-                            "granted_access"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "proof_of_intent"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "issued_at": true,
-                            "expires_at": true,
-                            "nonce": true,
-                            "intent_document": {
-                                "type": "object",
-                                "description": "Signed intent document from the human principal authorising the agent's action.",
-                                "additionalProperties": true,
-                                "required": [
-                                    "intent_id",
-                                    "agent_did",
-                                    "principal_did",
-                                    "action",
-                                    "scope",
-                                    "principal_signature",
-                                    "created_at"
-                                ],
-                                "properties": {
-                                    "intent_id": {
-                                        "type": "string"
-                                    },
-                                    "agent_did": {
-                                        "type": "string"
-                                    },
-                                    "principal_did": {
-                                        "type": "string"
-                                    },
-                                    "action": {
-                                        "type": "string"
-                                    },
-                                    "scope": {
-                                        "type": "object",
-                                        "required": [
-                                            "expires_at"
-                                        ],
-                                        "properties": {
-                                            "max_amount": {
-                                                "type": "number"
-                                            },
-                                            "currency": {
-                                                "type": "string"
-                                            },
-                                            "allowed_resources": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "expires_at": {
-                                                "type": "string",
-                                                "format": "date-time"
-                                            }
-                                        }
-                                    },
-                                    "principal_signature": {
-                                        "type": "string",
-                                        "minLength": 10
-                                    },
-                                    "created_at": {
-                                        "type": "string",
-                                        "format": "date-time"
-                                    }
-                                }
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "intent_document"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "data_request"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "verifiable_presentation": {
-                                "type": "string",
-                                "description": "W3C Verifiable Presentation (JWT or JSON-LD) containing the requested claims signed by the agent's DID key.",
-                                "minLength": 10
-                            },
-                            "claimed_fields": {
-                                "type": "array",
-                                "description": "List of claim keys included in the VP (must match requested_claims).",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "verifiable_presentation"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "agreement"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "document_hash": {
-                                "type": "string",
-                                "description": "SHA-256 hash of the signed agreement document. Must match the hash in the gate requirement.",
-                                "pattern": "^sha256:[a-f0-9]{64}$"
-                            },
-                            "signature": {
-                                "type": "string",
-                                "description": "EdDSA or ES256K signature over the document_hash using the agent's DID private key (base64url or hex).",
-                                "minLength": 10
-                            },
-                            "signer_did": {
-                                "type": "string",
-                                "description": "DID of the signing agent.",
-                                "pattern": "^did:[a-z0-9]+:.+$"
-                            },
-                            "signature_algo": {
-                                "type": "string",
-                                "enum": [
-                                    "EdDSA",
-                                    "ES256K"
-                                ],
-                                "default": "EdDSA"
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "document_hash",
-                            "signature",
-                            "signer_did"
-                        ],
-                        "additionalProperties": false
-                    }
-                }
-            ]
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/gate.proof.json",
+  "title": "EEP Gate Proof",
+  "description": "Schema for gate proofs submitted by agents to satisfy tier requirements. Each proof corresponds to a requirement type. Structural validation happens at the protocol level; semantic validation (e.g., verifying a payment token is actually valid) is the responsibility of the implementing platform via the ProofVerifier interface.",
+  "type": "object",
+  "required": [
+    "gate_proofs"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "gate_proofs": {
+      "type": "array",
+      "description": "Array of proof objects. Each proof satisfies one requirement. Multiple proofs can be provided to satisfy multi-requirement tiers.",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "$ref": "#/$defs/proof"
+      }
     }
+  },
+  "$defs": {
+    "proof": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "description": "A single proof. Structure varies by type. The 'type' field must match a requirement type from the gate configuration.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Proof type, must match the requirement type it satisfies.",
+          "pattern": "^(payment|trust|identity|connection|credential|capability|allowlist|reciprocal|proof_of_intent|data_request|agreement|x-[a-z][a-z0-9_-]*)$"
+        },
+        "issued_at": {
+          "type": "string",
+          "description": "When this proof was issued (ISO 8601). Used for freshness validation.",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "description": "When this proof expires (ISO 8601). Null or absent means the proof does not expire.",
+          "format": "date-time"
+        },
+        "nonce": {
+          "type": "string",
+          "description": "Optional nonce to prevent replay attacks.",
+          "maxLength": 128
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "payment"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "token": {
+                "type": "string",
+                "description": "Payment proof token from the payment provider. Opaque to the protocol.",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "provider": {
+                "type": "string",
+                "description": "URL or identifier of the payment provider that issued this token.",
+                "examples": [
+                  "https://pay.example.com",
+                  "https://checkout.stripe.com"
+                ]
+              },
+              "tier": {
+                "type": "string",
+                "description": "The tier this payment was made for."
+              },
+              "chain": {
+                "type": "string",
+                "description": "Blockchain network name used for on-chain payment. MUST match one of the publisher's declared payment_networks[].chain values. Required when tx_hash is present. (G27)",
+                "examples": [
+                  "solana",
+                  "base",
+                  "ethereum",
+                  "polygon"
+                ]
+              },
+              "tx_hash": {
+                "type": "string",
+                "description": "On-chain transaction hash of the payment. The publisher MUST verify on-chain finality (min_confirmations) before granting access. (G27)",
+                "pattern": "^(0x[0-9a-fA-F]{64}|[1-9A-HJ-NP-Za-km-z]{87,88})$",
+                "examples": [
+                  "0xabc123...def456",
+                  "5KtmkVXLoWizHrUmLP1NkiGrmKa2Q2g3X5hk3pXHKGe3iY7tR1aSdfJk2bN"
+                ]
+              },
+              "confirmations": {
+                "type": "integer",
+                "description": "Number of block confirmations at proof submission time. Publisher MUST verify this meets min_confirmations for the declared chain. (G27)",
+                "minimum": 0
+              },
+              "x402_payload": {
+                "type": "object",
+                "description": "x402 protocol EIP-712 payment payload. Mutually exclusive with token \u2014 use either token (traditional) or x402_payload (on-chain).",
+                "additionalProperties": false,
+                "required": [
+                  "payload",
+                  "signature",
+                  "network"
+                ],
+                "properties": {
+                  "payload": {
+                    "type": "string",
+                    "description": "EIP-712 PaymentPayload JSON string",
+                    "minLength": 1
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Hex-encoded secp256k1 signature (0x-prefixed, 130+ hex chars)",
+                    "pattern": "^0x[0-9a-fA-F]{128,}$"
+                  },
+                  "network": {
+                    "type": "string",
+                    "description": "Blockchain network name",
+                    "examples": [
+                      "base",
+                      "ethereum",
+                      "polygon"
+                    ]
+                  },
+                  "settlement_tx": {
+                    "type": "string",
+                    "description": "On-chain transaction hash after settlement"
+                  }
+                }
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "trust"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "self_attested": {
+                "type": "boolean",
+                "description": "If true, the subscriber claims their trust score meets the requirement. The publisher MUST verify this independently.",
+                "const": true
+              }
+            },
+            "required": [
+              "type",
+              "self_attested"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "identity"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "method": {
+                "type": "string",
+                "description": "The verification method used.",
+                "enum": [
+                  "did_verified",
+                  "email_verified",
+                  "domain_verified",
+                  "kyc",
+                  "any"
+                ]
+              },
+              "evidence": {
+                "type": "string",
+                "description": "Verification evidence (e.g., a signed DID assertion, email verification token). Opaque to the protocol.",
+                "maxLength": 8192
+              }
+            },
+            "required": [
+              "type",
+              "method"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "connection"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "subscriber_did": {
+                "type": "string",
+                "description": "The DID of the subscriber claiming the connection."
+              },
+              "relation": {
+                "type": "string",
+                "description": "The claimed connection type.",
+                "enum": [
+                  "follower",
+                  "following",
+                  "mutual",
+                  "any"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "subscriber_did"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "credential"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "credential": {
+                "type": "string",
+                "description": "The Verifiable Credential (encoded per the format field).",
+                "maxLength": 65536
+              },
+              "format": {
+                "type": "string",
+                "description": "Credential encoding format.",
+                "enum": [
+                  "jwt_vc",
+                  "ldp_vc",
+                  "sd_jwt_vc"
+                ],
+                "default": "jwt_vc"
+              }
+            },
+            "required": [
+              "type",
+              "credential",
+              "format"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "capability"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "declared_capabilities": {
+                "type": "array",
+                "description": "Capabilities the agent declares it has.",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "type",
+              "declared_capabilities"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "allowlist"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "did": {
+                "type": "string",
+                "description": "The DID claiming to be on the allowlist."
+              }
+            },
+            "required": [
+              "type",
+              "did"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reciprocal"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "entity_did": {
+                "type": "string",
+                "description": "The DID of the entity offering reciprocal access."
+              },
+              "granted_access": {
+                "type": "string",
+                "description": "The access level being granted back.",
+                "examples": [
+                  "profile.*",
+                  "*"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "entity_did",
+              "granted_access"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "proof_of_intent"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "issued_at": true,
+              "expires_at": true,
+              "nonce": true,
+              "intent_document": {
+                "type": "object",
+                "description": "Signed intent document from the human principal authorising the agent's action.",
+                "additionalProperties": true,
+                "required": [
+                  "intent_id",
+                  "agent_did",
+                  "principal_did",
+                  "action",
+                  "scope",
+                  "principal_signature",
+                  "created_at"
+                ],
+                "properties": {
+                  "intent_id": {
+                    "type": "string"
+                  },
+                  "agent_did": {
+                    "type": "string"
+                  },
+                  "principal_did": {
+                    "type": "string"
+                  },
+                  "action": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "object",
+                    "required": [
+                      "expires_at"
+                    ],
+                    "properties": {
+                      "max_amount": {
+                        "type": "number"
+                      },
+                      "currency": {
+                        "type": "string"
+                      },
+                      "allowed_resources": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  "principal_signature": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "required": [
+              "type",
+              "intent_document"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "data_request"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "verifiable_presentation": {
+                "type": "string",
+                "description": "W3C Verifiable Presentation (JWT or JSON-LD) containing the requested claims signed by the agent's DID key.",
+                "minLength": 10
+              },
+              "claimed_fields": {
+                "type": "array",
+                "description": "List of claim keys included in the VP (must match requested_claims).",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "verifiable_presentation"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "agreement"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "document_hash": {
+                "type": "string",
+                "description": "SHA-256 hash of the signed agreement document. Must match the hash in the gate requirement.",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "signature": {
+                "type": "string",
+                "description": "EdDSA or ES256K signature over the document_hash using the agent's DID private key (base64url or hex).",
+                "minLength": 10
+              },
+              "signer_did": {
+                "type": "string",
+                "description": "DID of the signing agent.",
+                "pattern": "^did:[a-z0-9]+:.+$"
+              },
+              "signature_algo": {
+                "type": "string",
+                "enum": [
+                  "EdDSA",
+                  "ES256K"
+                ],
+                "default": "EdDSA"
+              }
+            },
+            "required": [
+              "type",
+              "document_hash",
+              "signature",
+              "signer_did"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  }
 }

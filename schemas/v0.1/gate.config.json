@@ -1,620 +1,620 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/gate.config.json",
-    "title": "EEP Gate Configuration",
-    "description": "Schema for an entity's gate configuration. Gates define access tiers with customizable requirements. Tier names, requirement combinations, and access patterns are fully entity-defined. The protocol defines requirement TYPES, not VALUES.",
-    "type": "object",
-    "required": [
-        "default_tier",
-        "tiers"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "default_tier": {
-            "type": "string",
-            "description": "The tier applied when no gate proofs are provided. This tier MUST exist in the tiers map and MUST have an empty requirements array (publicly accessible).",
-            "pattern": "^[a-z][a-z0-9_]{0,31}$",
-            "examples": [
-                "public",
-                "free",
-                "open"
-            ]
-        },
-        "tiers": {
-            "type": "object",
-            "description": "Entity-defined tiers. Keys are tier identifiers (lowercase alphanumeric + underscores, max 32 chars). An entity can define any tier names it wants.",
-            "minProperties": 1,
-            "maxProperties": 20,
-            "patternProperties": {
-                "^[a-z][a-z0-9_]{0,31}$": {
-                    "$ref": "#/definitions/tier"
-                }
-            },
-            "additionalProperties": false
-        },
-        "fallback_behavior": {
-            "type": "string",
-            "description": "What happens when a request doesn't match any tier. 'restrict' returns 402; 'default' falls back to default_tier silently.",
-            "enum": [
-                "restrict",
-                "default"
-            ],
-            "default": "restrict"
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/gate.config.json",
+  "title": "EEP Gate Configuration",
+  "description": "Schema for an entity's gate configuration. Gates define access tiers with customizable requirements. Tier names, requirement combinations, and access patterns are fully entity-defined. The protocol defines requirement TYPES, not VALUES.",
+  "type": "object",
+  "required": [
+    "default_tier",
+    "tiers"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "default_tier": {
+      "type": "string",
+      "description": "The tier applied when no gate proofs are provided. This tier MUST exist in the tiers map and MUST have an empty requirements array (publicly accessible).",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "examples": [
+        "public",
+        "free",
+        "open"
+      ]
     },
-    "definitions": {
-        "tier": {
-            "type": "object",
-            "required": [
-                "requirements",
-                "access"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "label": {
-                    "type": "string",
-                    "description": "Human-readable tier name for display (entity-defined).",
-                    "maxLength": 128,
-                    "examples": [
-                        "Academic Access",
-                        "Pro Plan",
-                        "VIP Members"
-                    ]
-                },
-                "description": {
-                    "type": "string",
-                    "description": "Optional description of what this tier provides.",
-                    "maxLength": 512
-                },
-                "requirements": {
-                    "type": "array",
-                    "description": "List of requirements that MUST ALL be satisfied (AND logic) to access this tier. Empty array means no requirements (public access).",
-                    "maxItems": 10,
-                    "items": {
-                        "$ref": "#/definitions/requirement"
-                    }
-                },
-                "access": {
-                    "type": "array",
-                    "description": "Resource patterns this tier grants access to. Supports wildcard suffix: 'profile.*' matches all profile fields. '*' matches everything.",
-                    "minItems": 1,
-                    "maxItems": 100,
-                    "items": {
-                        "type": "string",
-                        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.(\\*|[a-z][a-z0-9_]*))?$|^\\*$",
-                        "examples": [
-                            "profile.summary",
-                            "profile.*",
-                            "events.public",
-                            "content.pages.*",
-                            "*"
-                        ]
-                    }
-                },
-                "rate_limit": {
-                    "$ref": "#/definitions/rate_limit"
-                },
-                "metadata": {
-                    "type": "object",
-                    "description": "Optional entity-defined metadata for this tier.",
-                    "additionalProperties": true,
-                    "maxProperties": 20
-                }
-            }
+    "tiers": {
+      "type": "object",
+      "description": "Entity-defined tiers. Keys are tier identifiers (lowercase alphanumeric + underscores, max 32 chars). An entity can define any tier names it wants.",
+      "minProperties": 1,
+      "maxProperties": 20,
+      "patternProperties": {
+        "^[a-z][a-z0-9_]{0,31}$": {
+          "$ref": "#/$defs/tier"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fallback_behavior": {
+      "type": "string",
+      "description": "What happens when a request doesn't match any tier. 'restrict' returns 402; 'default' falls back to default_tier silently.",
+      "enum": [
+        "restrict",
+        "default"
+      ],
+      "default": "restrict"
+    }
+  },
+  "$defs": {
+    "tier": {
+      "type": "object",
+      "required": [
+        "requirements",
+        "access"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Human-readable tier name for display (entity-defined).",
+          "maxLength": 128,
+          "examples": [
+            "Academic Access",
+            "Pro Plan",
+            "VIP Members"
+          ]
         },
-        "requirement": {
-            "type": "object",
-            "required": [
-                "type"
-            ],
-            "description": "A single requirement. The 'type' field determines which additional fields are expected. Standard types are defined below; custom types use the 'x-' prefix.",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Requirement type identifier. Standard types: payment, trust, identity, connection, credential, capability, allowlist, reciprocal, data_request, agreement, combined. Custom types: x-{name}.",
-                    "pattern": "^(payment|trust|identity|connection|credential|capability|allowlist|reciprocal|data_request|agreement|combined|x-[a-z][a-z0-9_-]*)$"
-                }
-            },
-            "allOf": [
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "payment"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "amount": {
-                                "type": "number",
-                                "description": "Payment amount. Must be positive.",
-                                "exclusiveMinimum": 0
-                            },
-                            "currency": {
-                                "type": "string",
-                                "description": "ISO 4217 currency code (lowercase).",
-                                "pattern": "^[a-z]{3}$",
-                                "examples": [
-                                    "usd",
-                                    "eur",
-                                    "gbp"
-                                ]
-                            },
-                            "per": {
-                                "type": "string",
-                                "description": "Billing period.",
-                                "enum": [
-                                    "request",
-                                    "hour",
-                                    "day",
-                                    "week",
-                                    "month",
-                                    "year",
-                                    "once"
-                                ]
-                            },
-                            "payment_methods": {
-                                "type": "array",
-                                "description": "URLs or identifiers for accepted payment methods. Protocol-agnostic: can be Stripe checkout URLs, crypto addresses, or any other endpoint.",
-                                "items": {
-                                    "type": "string"
-                                },
-                                "maxItems": 10
-                            },
-                            "x402": {
-                                "type": "object",
-                                "description": "Native x402 protocol payment rail configuration (ref27 — https://x402.org).",
-                                "additionalProperties": false,
-                                "properties": {
-                                    "enabled": {
-                                        "type": "boolean"
-                                    },
-                                    "facilitator_url": {
-                                        "type": "string",
-                                        "format": "uri"
-                                    },
-                                    "payment_rails": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        },
-                                        "examples": [
-                                            [
-                                                "x402/usdc",
-                                                "x402/eth"
-                                            ]
-                                        ]
-                                    },
-                                    "network": {
-                                        "type": "string",
-                                        "examples": [
-                                            "base",
-                                            "ethereum",
-                                            "polygon"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "enabled"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "amount",
-                            "currency",
-                            "per"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "trust"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "min_score": {
-                                "type": "integer",
-                                "description": "Minimum trust score required (0-100).",
-                                "minimum": 0,
-                                "maximum": 100
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "min_score"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "identity"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "method": {
-                                "type": "string",
-                                "description": "Required identity verification method.",
-                                "enum": [
-                                    "did_verified",
-                                    "email_verified",
-                                    "domain_verified",
-                                    "kyc",
-                                    "any"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "method"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "connection"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "relation": {
-                                "type": "string",
-                                "description": "Required social connection type.",
-                                "enum": [
-                                    "follower",
-                                    "following",
-                                    "mutual",
-                                    "any"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "relation"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "credential"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "credential_type": {
-                                "type": "string",
-                                "description": "Required W3C Verifiable Credential type.",
-                                "examples": [
-                                    "AcademicAffiliation",
-                                    "ProfessionalLicense",
-                                    "GovernmentID"
-                                ]
-                            },
-                            "issuer": {
-                                "type": "string",
-                                "description": "Optional: required credential issuer DID or domain.",
-                                "examples": [
-                                    "did:web:university.edu"
-                                ]
-                            },
-                            "accepted_formats": {
-                                "type": "array",
-                                "description": "Accepted credential formats.",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "jwt_vc",
-                                        "ldp_vc",
-                                        "sd_jwt_vc"
-                                    ]
-                                },
-                                "default": [
-                                    "jwt_vc"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "credential_type"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "capability"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "required_capabilities": {
-                                "type": "array",
-                                "description": "Agent must declare these capabilities.",
-                                "items": {
-                                    "type": "string"
-                                },
-                                "minItems": 1
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "required_capabilities"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "allowlist"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "dids": {
-                                "type": "array",
-                                "description": "Explicit list of allowed DIDs.",
-                                "items": {
-                                    "type": "string"
-                                },
-                                "minItems": 1,
-                                "maxItems": 1000
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "dids"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "reciprocal"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "access_level": {
-                                "type": "string",
-                                "description": "The minimum access level the requesting entity must grant back to this entity.",
-                                "examples": [
-                                    "profile.*",
-                                    "*"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "access_level"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "data_request"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "requested_claims": {
-                                "type": "array",
-                                "description": "List of specific claim types requested. Broad identity bundles are a protocol violation; each entry must name exactly one claim.",
-                                "minItems": 1,
-                                "maxItems": 20,
-                                "items": {
-                                    "type": "object",
-                                    "required": [
-                                        "claim",
-                                        "purpose",
-                                        "retention_days"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "claim": {
-                                            "type": "string",
-                                            "description": "Specific claim identifier (e.g. org_type, use_case_category).",
-                                            "examples": [
-                                                "org_type",
-                                                "use_case_category",
-                                                "owner_email"
-                                            ]
-                                        },
-                                        "purpose": {
-                                            "type": "string",
-                                            "description": "W3C Data Privacy Vocabulary (DPV) URI declaring processing purpose.",
-                                            "pattern": "^dpv:[A-Z][a-zA-Z]+$",
-                                            "examples": [
-                                                "dpv:ResearchAndDevelopment",
-                                                "dpv:ServiceProvision",
-                                                "dpv:LegalObligation"
-                                            ]
-                                        },
-                                        "retention_days": {
-                                            "type": "integer",
-                                            "description": "Days publisher will retain this claim. Binding commitment; must be honored.",
-                                            "minimum": 0,
-                                            "maximum": 3650
-                                        },
-                                        "shareable": {
-                                            "type": "boolean",
-                                            "description": "Whether publisher may share this claim with third parties.",
-                                            "default": false
-                                        }
-                                    }
-                                }
-                            },
-                            "policy_url": {
-                                "type": "string",
-                                "format": "uri",
-                                "description": "URL to the publisher's full privacy policy document."
-                            },
-                            "policy_hash": {
-                                "type": "string",
-                                "description": "SHA-256 hash of the policy document at policy_url (sha256:hex).",
-                                "pattern": "^sha256:[a-f0-9]{64}$"
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "requested_claims"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "agreement"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "document_hash": {
-                                "type": "string",
-                                "description": "SHA-256 hash of the license/agreement document (sha256:hex). The agent must sign this hash.",
-                                "pattern": "^sha256:[a-f0-9]{64}$"
-                            },
-                            "document_url": {
-                                "type": "string",
-                                "format": "uri",
-                                "description": "URL where the agent can fetch the agreement document."
-                            },
-                            "document_title": {
-                                "type": "string",
-                                "description": "Human-readable title of the agreement (e.g. 'Creative Commons NC 4.0')."
-                            },
-                            "signature_algo": {
-                                "type": "string",
-                                "description": "Required signing algorithm.",
-                                "enum": [
-                                    "EdDSA",
-                                    "ES256K"
-                                ],
-                                "default": "EdDSA"
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "document_hash",
-                            "document_url"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "type": {
-                                "const": "combined"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "type": true,
-                            "combine_mode": {
-                                "type": "string",
-                                "description": "all = AND (every nested requirement); any = OR (at least one nested requirement).",
-                                "enum": [
-                                    "all",
-                                    "any"
-                                ]
-                            },
-                            "requirements": {
-                                "type": "array",
-                                "description": "Nested gate requirements verified atomically as one bundle.",
-                                "minItems": 2,
-                                "maxItems": 10,
-                                "items": {
-                                    "$ref": "#/definitions/requirement"
-                                }
-                            },
-                            "recommended_collection_order": {
-                                "type": "array",
-                                "description": "Optional hint listing requirement types in the order operators should collect proofs (e.g. agreement before payment).",
-                                "items": {
-                                    "type": "string"
-                                },
-                                "maxItems": 10
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "combine_mode",
-                            "requirements"
-                        ],
-                        "additionalProperties": false
-                    }
-                }
+        "description": {
+          "type": "string",
+          "description": "Optional description of what this tier provides.",
+          "maxLength": 512
+        },
+        "requirements": {
+          "type": "array",
+          "description": "List of requirements that MUST ALL be satisfied (AND logic) to access this tier. Empty array means no requirements (public access).",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/requirement"
+          }
+        },
+        "access": {
+          "type": "array",
+          "description": "Resource patterns this tier grants access to. Supports wildcard suffix: 'profile.*' matches all profile fields. '*' matches everything.",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.(\\*|[a-z][a-z0-9_]*))?$|^\\*$",
+            "examples": [
+              "profile.summary",
+              "profile.*",
+              "events.public",
+              "content.pages.*",
+              "*"
             ]
+          }
         },
         "rate_limit": {
-            "type": "object",
-            "description": "Optional per-tier rate limits. Overrides platform defaults for this tier.",
-            "additionalProperties": false,
-            "properties": {
-                "requests_per_minute": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "requests_per_hour": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "requests_per_day": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "concurrent_connections": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 100
-                }
-            }
+          "$ref": "#/$defs/rate_limit"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional entity-defined metadata for this tier.",
+          "additionalProperties": true,
+          "maxProperties": 20
         }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "description": "A single requirement. The 'type' field determines which additional fields are expected. Standard types are defined below; custom types use the 'x-' prefix.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Requirement type identifier. Standard types: payment, trust, identity, connection, credential, capability, allowlist, reciprocal, data_request, agreement, combined. Custom types: x-{name}.",
+          "pattern": "^(payment|trust|identity|connection|credential|capability|allowlist|reciprocal|data_request|agreement|combined|x-[a-z][a-z0-9_-]*)$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "payment"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "amount": {
+                "type": "number",
+                "description": "Payment amount. Must be positive.",
+                "exclusiveMinimum": 0
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code (lowercase).",
+                "pattern": "^[a-z]{3}$",
+                "examples": [
+                  "usd",
+                  "eur",
+                  "gbp"
+                ]
+              },
+              "per": {
+                "type": "string",
+                "description": "Billing period.",
+                "enum": [
+                  "request",
+                  "hour",
+                  "day",
+                  "week",
+                  "month",
+                  "year",
+                  "once"
+                ]
+              },
+              "payment_methods": {
+                "type": "array",
+                "description": "URLs or identifiers for accepted payment methods. Protocol-agnostic: can be Stripe checkout URLs, crypto addresses, or any other endpoint.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10
+              },
+              "x402": {
+                "type": "object",
+                "description": "Native x402 protocol payment rail configuration (ref27 \u2014 https://x402.org).",
+                "additionalProperties": false,
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "facilitator_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "payment_rails": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "examples": [
+                      [
+                        "x402/usdc",
+                        "x402/eth"
+                      ]
+                    ]
+                  },
+                  "network": {
+                    "type": "string",
+                    "examples": [
+                      "base",
+                      "ethereum",
+                      "polygon"
+                    ]
+                  }
+                },
+                "required": [
+                  "enabled"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "amount",
+              "currency",
+              "per"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "trust"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "min_score": {
+                "type": "integer",
+                "description": "Minimum trust score required (0-100).",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "type",
+              "min_score"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "identity"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "method": {
+                "type": "string",
+                "description": "Required identity verification method.",
+                "enum": [
+                  "did_verified",
+                  "email_verified",
+                  "domain_verified",
+                  "kyc",
+                  "any"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "method"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "connection"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "relation": {
+                "type": "string",
+                "description": "Required social connection type.",
+                "enum": [
+                  "follower",
+                  "following",
+                  "mutual",
+                  "any"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "relation"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "credential"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "credential_type": {
+                "type": "string",
+                "description": "Required W3C Verifiable Credential type.",
+                "examples": [
+                  "AcademicAffiliation",
+                  "ProfessionalLicense",
+                  "GovernmentID"
+                ]
+              },
+              "issuer": {
+                "type": "string",
+                "description": "Optional: required credential issuer DID or domain.",
+                "examples": [
+                  "did:web:university.edu"
+                ]
+              },
+              "accepted_formats": {
+                "type": "array",
+                "description": "Accepted credential formats.",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "jwt_vc",
+                    "ldp_vc",
+                    "sd_jwt_vc"
+                  ]
+                },
+                "default": [
+                  "jwt_vc"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "credential_type"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "capability"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "required_capabilities": {
+                "type": "array",
+                "description": "Agent must declare these capabilities.",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "type",
+              "required_capabilities"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "allowlist"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "dids": {
+                "type": "array",
+                "description": "Explicit list of allowed DIDs.",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "maxItems": 1000
+              }
+            },
+            "required": [
+              "type",
+              "dids"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reciprocal"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "access_level": {
+                "type": "string",
+                "description": "The minimum access level the requesting entity must grant back to this entity.",
+                "examples": [
+                  "profile.*",
+                  "*"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "access_level"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "data_request"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "requested_claims": {
+                "type": "array",
+                "description": "List of specific claim types requested. Broad identity bundles are a protocol violation; each entry must name exactly one claim.",
+                "minItems": 1,
+                "maxItems": 20,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "claim",
+                    "purpose",
+                    "retention_days"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "claim": {
+                      "type": "string",
+                      "description": "Specific claim identifier (e.g. org_type, use_case_category).",
+                      "examples": [
+                        "org_type",
+                        "use_case_category",
+                        "owner_email"
+                      ]
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "description": "W3C Data Privacy Vocabulary (DPV) URI declaring processing purpose.",
+                      "pattern": "^dpv:[A-Z][a-zA-Z]+$",
+                      "examples": [
+                        "dpv:ResearchAndDevelopment",
+                        "dpv:ServiceProvision",
+                        "dpv:LegalObligation"
+                      ]
+                    },
+                    "retention_days": {
+                      "type": "integer",
+                      "description": "Days publisher will retain this claim. Binding commitment; must be honored.",
+                      "minimum": 0,
+                      "maximum": 3650
+                    },
+                    "shareable": {
+                      "type": "boolean",
+                      "description": "Whether publisher may share this claim with third parties.",
+                      "default": false
+                    }
+                  }
+                }
+              },
+              "policy_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to the publisher's full privacy policy document."
+              },
+              "policy_hash": {
+                "type": "string",
+                "description": "SHA-256 hash of the policy document at policy_url (sha256:hex).",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "type",
+              "requested_claims"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "agreement"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "document_hash": {
+                "type": "string",
+                "description": "SHA-256 hash of the license/agreement document (sha256:hex). The agent must sign this hash.",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "document_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL where the agent can fetch the agreement document."
+              },
+              "document_title": {
+                "type": "string",
+                "description": "Human-readable title of the agreement (e.g. 'Creative Commons NC 4.0')."
+              },
+              "signature_algo": {
+                "type": "string",
+                "description": "Required signing algorithm.",
+                "enum": [
+                  "EdDSA",
+                  "ES256K"
+                ],
+                "default": "EdDSA"
+              }
+            },
+            "required": [
+              "type",
+              "document_hash",
+              "document_url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "combined"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "type": true,
+              "combine_mode": {
+                "type": "string",
+                "description": "all = AND (every nested requirement); any = OR (at least one nested requirement).",
+                "enum": [
+                  "all",
+                  "any"
+                ]
+              },
+              "requirements": {
+                "type": "array",
+                "description": "Nested gate requirements verified atomically as one bundle.",
+                "minItems": 2,
+                "maxItems": 10,
+                "items": {
+                  "$ref": "#/$defs/requirement"
+                }
+              },
+              "recommended_collection_order": {
+                "type": "array",
+                "description": "Optional hint listing requirement types in the order operators should collect proofs (e.g. agreement before payment).",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10
+              }
+            },
+            "required": [
+              "type",
+              "combine_mode",
+              "requirements"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "rate_limit": {
+      "type": "object",
+      "description": "Optional per-tier rate limits. Overrides platform defaults for this tier.",
+      "additionalProperties": false,
+      "properties": {
+        "requests_per_minute": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "requests_per_hour": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "requests_per_day": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "concurrent_connections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
     }
+  }
 }

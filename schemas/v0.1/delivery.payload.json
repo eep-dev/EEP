@@ -1,94 +1,94 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/delivery.payload.json",
-    "title": "EEP Webhook Delivery Payload",
-    "description": "Schema for the full HTTP POST body delivered to a webhook subscriber. Extends event.envelope.json with delivery-specific metadata: unique delivery ID, publisher DID, HMAC-SHA256 delivery signature (sent in X-EEP-Signature header), retry state, and Standard Webhooks (standardwebhooks.com) compatibility headers. Publishers MUST include eep_subscription_id, eep_delivery_id, and eep_delivery_timestamp on every delivery. Agents MUST verify X-EEP-Signature before processing the payload. (A7, Whitepaper §5.2, security.md §2).",
-    "allOf": [
-        {
-            "$ref": "./event.envelope.json"
-        }
-    ],
-    "required": [
-        "specversion",
-        "id",
-        "source",
-        "type",
-        "time",
-        "datacontenttype",
-        "eep_subscription_id",
-        "eep_delivery_id",
-        "eep_delivery_timestamp"
-    ],
-    "properties": {
-        "eep_subscription_id": {
-            "type": "string",
-            "description": "REQUIRED. Identifies which active subscription triggered this delivery. Matches the `subscription_id` returned at subscription creation time.",
-            "minLength": 1
-        },
-        "eep_delivery_id": {
-            "type": "string",
-            "description": "REQUIRED. Globally unique, immutable identifier for this specific delivery attempt. Subscribers MUST use this as an idempotency key to deduplicate retried deliveries. UUID v4 format.",
-            "format": "uuid"
-        },
-        "eep_delivery_timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "description": "REQUIRED. ISO8601 UTC timestamp of when this delivery was dispatched from the publisher. Used by subscribers to detect staleness and by the audit log to record delivery timing."
-        },
-        "eep_delivery_attempt": {
-            "type": "integer",
-            "description": "The delivery attempt number (1 = first attempt, 2 = first retry, etc.). Useful for debugging. Publishers SHOULD include this on all deliveries.",
-            "minimum": 1,
-            "default": 1
-        },
-        "eep_publisher_did": {
-            "type": "string",
-            "description": "DID of the publisher sending this delivery. Allows subscribers to verify the X-EEP-Signature using the publisher's DID key (for Ed25519-signed deliveries) or the shared HMAC secret. Enables zero-trust webhook verification without prior registration of the publisher.",
-            "pattern": "^did:"
-        },
-        "eep_next_retry_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "ISO8601 UTC timestamp after which the publisher will attempt the next retry if this delivery fails. Uses exponential backoff: attempt N is retried after min(2^N * 30s, 86400s). Absent on the last attempt."
-        },
-        "eep_max_attempts": {
-            "type": "integer",
-            "description": "Total number of delivery attempts the publisher will make before abandoning this event for this subscription (default: 5). Subscribers can use this to predict when delivery will be abandoned and trigger manual recovery.",
-            "minimum": 1,
-            "default": 5
-        },
-        "eep_signature_algorithm": {
-            "type": "string",
-            "description": "Algorithm used to compute the X-EEP-Signature header value. 'hmac-sha256': HMAC-SHA256 keyed against the subscription secret (subscriber-verifiable without DID lookup). 'eddsa': EdDSA signature over the raw body, signed by eep_publisher_did's key (verifiable via DID Document). Hybrid mode sends both.",
-            "enum": [
-                "hmac-sha256",
-                "eddsa",
-                "hybrid-hmac-eddsa"
-            ],
-            "default": "hmac-sha256"
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/delivery.payload.json",
+  "title": "EEP Webhook Delivery Payload",
+  "description": "Schema for the full HTTP POST body delivered to a webhook subscriber. Extends event.envelope.json with delivery-specific metadata: unique delivery ID, publisher DID, HMAC-SHA256 delivery signature (sent in X-EEP-Signature header), retry state, and Standard Webhooks (standardwebhooks.com) compatibility headers. Publishers MUST include eep_subscription_id, eep_delivery_id, and eep_delivery_timestamp on every delivery. Agents MUST verify X-EEP-Signature before processing the payload. (A7, Whitepaper \u00a75.2, security.md \u00a72).",
+  "allOf": [
+    {
+      "$ref": "./event.envelope.json"
+    }
+  ],
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "eep_subscription_id",
+    "eep_delivery_id",
+    "eep_delivery_timestamp"
+  ],
+  "properties": {
+    "eep_subscription_id": {
+      "type": "string",
+      "description": "REQUIRED. Identifies which active subscription triggered this delivery. Matches the `subscription_id` returned at subscription creation time.",
+      "minLength": 1
     },
-    "definitions": {},
-    "examples": [
-        {
-            "specversion": "1.0",
-            "id": "evt_01HXYZ",
-            "source": "did:web:api.example.com",
-            "type": "com.example.entity.updated",
-            "time": "2026-03-05T10:00:00Z",
-            "datacontenttype": "application/json",
-            "data": {
-                "entity_id": "alice",
-                "field": "bio",
-                "value": "Updated bio"
-            },
-            "eep_subscription_id": "sub_01ABC",
-            "eep_delivery_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-            "eep_delivery_timestamp": "2026-03-05T10:00:01Z",
-            "eep_delivery_attempt": 1,
-            "eep_publisher_did": "did:web:api.example.com",
-            "eep_max_attempts": 5,
-            "eep_signature_algorithm": "hmac-sha256"
-        }
-    ]
+    "eep_delivery_id": {
+      "type": "string",
+      "description": "REQUIRED. Globally unique, immutable identifier for this specific delivery attempt. Subscribers MUST use this as an idempotency key to deduplicate retried deliveries. UUID v4 format.",
+      "format": "uuid"
+    },
+    "eep_delivery_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "REQUIRED. ISO8601 UTC timestamp of when this delivery was dispatched from the publisher. Used by subscribers to detect staleness and by the audit log to record delivery timing."
+    },
+    "eep_delivery_attempt": {
+      "type": "integer",
+      "description": "The delivery attempt number (1 = first attempt, 2 = first retry, etc.). Useful for debugging. Publishers SHOULD include this on all deliveries.",
+      "minimum": 1,
+      "default": 1
+    },
+    "eep_publisher_did": {
+      "type": "string",
+      "description": "DID of the publisher sending this delivery. Allows subscribers to verify the X-EEP-Signature using the publisher's DID key (for Ed25519-signed deliveries) or the shared HMAC secret. Enables zero-trust webhook verification without prior registration of the publisher.",
+      "pattern": "^did:"
+    },
+    "eep_next_retry_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 UTC timestamp after which the publisher will attempt the next retry if this delivery fails. Uses exponential backoff: attempt N is retried after min(2^N * 30s, 86400s). Absent on the last attempt."
+    },
+    "eep_max_attempts": {
+      "type": "integer",
+      "description": "Total number of delivery attempts the publisher will make before abandoning this event for this subscription (default: 5). Subscribers can use this to predict when delivery will be abandoned and trigger manual recovery.",
+      "minimum": 1,
+      "default": 5
+    },
+    "eep_signature_algorithm": {
+      "type": "string",
+      "description": "Algorithm used to compute the X-EEP-Signature header value. 'hmac-sha256': HMAC-SHA256 keyed against the subscription secret (subscriber-verifiable without DID lookup). 'eddsa': EdDSA signature over the raw body, signed by eep_publisher_did's key (verifiable via DID Document). Hybrid mode sends both.",
+      "enum": [
+        "hmac-sha256",
+        "eddsa",
+        "hybrid-hmac-eddsa"
+      ],
+      "default": "hmac-sha256"
+    }
+  },
+  "$defs": {},
+  "examples": [
+    {
+      "specversion": "1.0",
+      "id": "evt_01HXYZ",
+      "source": "did:web:api.example.com",
+      "type": "com.example.entity.updated",
+      "time": "2026-03-05T10:00:00Z",
+      "datacontenttype": "application/json",
+      "data": {
+        "entity_id": "alice",
+        "field": "bio",
+        "value": "Updated bio"
+      },
+      "eep_subscription_id": "sub_01ABC",
+      "eep_delivery_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "eep_delivery_timestamp": "2026-03-05T10:00:01Z",
+      "eep_delivery_attempt": 1,
+      "eep_publisher_did": "did:web:api.example.com",
+      "eep_max_attempts": 5,
+      "eep_signature_algorithm": "hmac-sha256"
+    }
+  ]
 }
