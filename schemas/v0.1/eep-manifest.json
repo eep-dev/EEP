@@ -84,6 +84,56 @@
         ]
       }
     },
+    "event_types": {
+      "type": "array",
+      "description": "Event types this publisher emits, with the payload contract for each. Without this an agent can discover THAT a publisher speaks EEP and WHERE its endpoints are, but not WHAT it will send \u2014 it must read human documentation or subscribe to a wildcard and find out empirically. Publishers with large or frequently-changing catalogs SHOULD use `event_catalog_url` instead.",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The event type, in the reverse-DNS form of SPECIFICATION.md \u00a78.",
+            "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)+$",
+            "examples": [
+              "com.example.entity.updated"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable summary of when this event is emitted.",
+            "maxLength": 512
+          },
+          "dataschema": {
+            "type": "string",
+            "description": "Absolute URI of a schema describing this event type's `data`. Publishers SHOULD set the matching `dataschema` attribute on the events themselves (\u00a77.1) so the contract also travels with each event.",
+            "format": "uri"
+          },
+          "since": {
+            "type": "string",
+            "description": "EEP or publisher version in which this event type first appeared.",
+            "maxLength": 32
+          },
+          "deprecated": {
+            "type": "boolean",
+            "description": "Whether this event type is deprecated. Publishers SHOULD keep emitting a deprecated type for a documented period rather than removing it silently.",
+            "default": false
+          }
+        }
+      }
+    },
+    "event_catalog_url": {
+      "type": "string",
+      "description": "Absolute https URL of a paginated event catalog, for publishers whose event list is too large or too volatile to inline. Follows the same pagination shape as `capabilities_query_url` (\u00a712.4). When both are present, `event_types` is a subset and the URL is authoritative.",
+      "format": "uri",
+      "examples": [
+        "https://api.example.com/eep/event-types"
+      ]
+    },
     "gates_url": {
       "type": "string",
       "format": "uri",
