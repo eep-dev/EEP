@@ -436,6 +436,54 @@ This table makes normative the API that [How to subscribe](../guides/how-to-subs
 
 > **Compatibility note (v0.1).** Reference middleware released before this section served the member operations under `/eep/subscribe/{subscription_id}`. Implementations SHOULD continue to accept those paths as deprecated aliases through the `0.1.x` line and SHOULD advertise only the `/eep/subscriptions` forms.
 
+#### 5.1.3 Subscription filters (normative)
+
+`event_types` selects by type, with a wildcard permitted only in the final
+segment. That is the whole of the filtering EEP offered, so a subscriber
+interested in one field of one object still received every event of that type
+and discarded the rest — after paying full delivery cost. For an agent that
+cost is tokens, which is the "context bloat" this protocol exists to remove.
+
+Publishers SHOULD accept an optional `filter` on the subscription request and
+MUST evaluate it **before** delivering:
+
+```json
+{
+  "event_types": ["com.example.entity.updated"],
+  "filter": {
+    "match": "all",
+    "conditions": [
+      { "path": "subject", "op": "prefix", "value": "listing/" },
+      { "path": "data.status", "op": "in", "value": ["published", "archived"] }
+    ]
+  }
+}
+```
+
+- `path` is a dotted path into the **envelope**, so it can address `subject`
+  (§7.1), any `eep_*` attribute, or into `data`.
+- `match` is `all` or `any`. Operators: `eq`, `ne`, `in`, `nin`, `prefix`,
+  `exists`, `gt`, `lt`.
+- A filter **narrows** what `event_types` already selected; it never widens.
+  An event that fails the filter is not delivered and does not count toward
+  the subscription's failure counter.
+
+**The language is deliberately not Turing-complete, and has no regex
+operator.** A filter is evaluated by the publisher, on the delivery hot path,
+against every candidate event — so a richer language would let a subscriber
+hand the publisher an expensive expression to run at the publisher's expense.
+Publishers MUST bound conditions (20) and path depth (8), and MUST reject a
+filter that exceeds them.
+
+Publishers MUST reject a malformed filter at subscription time with `400`
+rather than accepting it and ignoring it. A subscriber that believes it is
+filtering, but is not, receives traffic it thought it had asked to be spared,
+and cannot detect the difference from its side.
+
+Filters are a delivery optimisation, not an access control. A filter MUST NOT
+be able to widen what the subscriber's tier already grants (§3.4), and
+publishers MUST apply gates before filters.
+
 #### 5.1.2 Event history and redelivery (normative)
 
 SSE subscribers recover missed events with `Last-Event-ID` (§4.3, minimum 24h

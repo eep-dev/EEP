@@ -48,6 +48,18 @@ export { RedisEventBusAdapter, type RedisClientLike } from "./event-bus/redis.js
 export { KafkaEventBusAdapter, type KafkaProducerLike, type KafkaConsumerLike } from "./event-bus/kafka.js";
 
 export {
+  validateFilter,
+  eventMatchesFilter,
+  readPath,
+  FilterValidationError,
+  MAX_FILTER_CONDITIONS,
+  MAX_FILTER_PATH_DEPTH,
+  type EventFilter,
+  type FilterCondition,
+  type FilterOperator
+} from "./core/event-filter.js";
+
+export {
   InMemoryEventStore,
   RetentionWindowExceededError,
   MIN_EVENT_RETENTION_MS,

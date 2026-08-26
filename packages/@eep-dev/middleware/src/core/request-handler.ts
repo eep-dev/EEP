@@ -1,3 +1,4 @@
+import type { EventFilter } from "./event-filter.js";
 import type { GateProof } from "@eep-dev/gates";
 
 export type HTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -80,6 +81,11 @@ export type SubscriptionRecord = {
   delivery_secret?: string;
   /** Subscriber-defined metadata (passed through, not interpreted). */
   metadata?: Record<string, string>;
+  /**
+   * Publisher-side content filter (SPECIFICATION.md §5.1.3). Narrows what
+   * `event_types` selected; never widens it.
+   */
+  filter?: EventFilter;
   /** Requested access tier; matched against gate config on delivery. */
   tier?: string;
   created_at: string;
