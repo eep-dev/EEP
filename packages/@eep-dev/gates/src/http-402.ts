@@ -148,6 +148,19 @@ export async function build429Response(
         'X-EEP-Rate-Reset': windowResetAt,
     };
 
+    // SPECIFICATION.md §13: the standards-track RateLimit fields are required.
+    // On a 429 the remaining quota is zero by definition, and `t` is the
+    // seconds until the partition resets.
+    headers['RateLimit'] = `"eep"; r=0; t=${retryAfterSeconds}`;
+    if (limitPerWindow !== undefined) {
+        headers['RateLimit-Policy'] = `"eep"; q=${limitPerWindow}; w=${retryAfterSeconds}`;
+        // De-facto form, kept for clients that read it. Both describe the
+        // same quota, as §13 requires.
+        headers['X-RateLimit-Limit'] = String(limitPerWindow);
+        headers['X-RateLimit-Remaining'] = '0';
+        headers['X-RateLimit-Reset'] = String(Math.floor(Date.parse(windowResetAt) / 1000));
+    }
+
     return { body, headers };
 }
 
