@@ -642,6 +642,60 @@ function verifyWebhook(
 > and its Python sibling `eep-signer`. Prefer importing it over
 > re-implementing the comparison by hand.
 
+### 5.3.1 Asymmetric signatures (normative)
+
+HMAC gives integrity but not attribution. Publisher and subscriber share one
+`delivery_secret`, so an HMAC signature proves only that *someone holding that
+secret* sent the event — and the subscriber is one of them. Four consequences
+follow, and they matter more the further EEP goes:
+
+1. **Events are not non-repudiable.** A subscriber can forge an event and
+   attribute it to the publisher. §15's commerce state machine and §16's
+   signed audit trail both ride on this signature.
+2. **No third party can verify.** A regulator or counterparty cannot check an
+   audit entry without being handed the subscriber's secret — which would let
+   them forge entries too.
+3. **Rotation has no surface.** There is no key id and no published key set,
+   so rotation is manual per-subscription secret juggling.
+4. **PQC readiness stops at the gate.** §11.7 defines algorithm negotiation,
+   including PQ-hybrid signatures — but only for agent→publisher *gate
+   proofs*. The path that carries every event has no asymmetric option at all.
+
+Publishers SHOULD therefore support Ed25519 delivery signatures in addition to
+HMAC, and MUST support them to advertise `signing_algorithms` containing
+`EdDSA` for delivery.
+
+**Wire format.** The signed content is unchanged —
+`{webhook-id}.{webhook-timestamp}.{raw-body}` — so §5.3's replay rules apply
+identically. The `webhook-signature` header carries a `v1a` token:
+
+```http
+webhook-signature: v1a,key-2026-08:BASE64_ED25519_SIGNATURE
+```
+
+The `kid` before the colon is OPTIONAL and lets a receiver select a key from
+the published set instead of trial-verifying against every key.
+
+**Coexistence.** A publisher MAY sign one delivery with both schemes and send
+both tokens space-delimited. A verifier for one scheme MUST ignore tokens
+belonging to the other rather than treating them as failures — otherwise
+dual-signing, which is the whole migration path, breaks both verifiers.
+
+**Key publication.** Publishers that sign asymmetrically MUST publish their
+public keys as a JWKS document and MUST advertise its location as
+`signing_jwks_url` in the manifest. Keys use `kty: OKP`, `crv: Ed25519`,
+`alg: EdDSA`, `use: sig`.
+
+**Rotation.** Publishers MUST add the incoming key to the JWKS *before*
+signing with it, and MUST keep the outgoing key published for at least the
+maximum retry span in §5.4 (~6 hours), so a delivery signed before the
+rotation can still be verified when its last retry lands. During the overlap
+they SHOULD sign with both.
+
+Publishers MUST NOT reuse a `delivery_secret` as an Ed25519 key, and MUST NOT
+derive one from the other: the security properties differ precisely because
+the subscriber may hold the symmetric key and must never hold the private one.
+
 ### 5.4 Retry policy (exponential backoff)
 
 If a webhook delivery fails (non-2xx response or timeout), the publisher MUST retry with exponential backoff:
