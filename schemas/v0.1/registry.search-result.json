@@ -1,264 +1,264 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/registry.search-result.json",
-    "title": "EEP Registry Search Result",
-    "description": "Response schema for the eep.dev Registry Discovery API: GET /registry and GET /discover. Agents query the registry to find EEP publishers by category, gate type, conformance tier, or capability. The registry resolves queries across its own index and any federated peer registries. Implements Whitepaper §4.2 (eep.dev: The Protocol Registry and Bootstrapping Hub).",
-    "type": "object",
-    "required": [
-        "results",
-        "total",
-        "page",
-        "per_page"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "results": {
-            "type": "array",
-            "description": "List of matching EEP publisher entries.",
-            "items": {
-                "$ref": "#/definitions/RegistryEntry"
-            }
-        },
-        "total": {
-            "type": "integer",
-            "description": "Total number of entities matching the query.",
-            "minimum": 0
-        },
-        "page": {
-            "type": "integer",
-            "description": "Current page number (1-indexed).",
-            "minimum": 1
-        },
-        "per_page": {
-            "type": "integer",
-            "description": "Number of results per page.",
-            "minimum": 1,
-            "maximum": 100,
-            "default": 20
-        },
-        "next_cursor": {
-            "type": "string",
-            "description": "Opaque cursor for fetching the next page. Absent when on the last page."
-        },
-        "query_id": {
-            "type": "string",
-            "description": "Unique identifier for this paginated query session. Pass as ?query_id=... to retrieve subsequent pages."
-        },
-        "resolved_from": {
-            "type": "array",
-            "description": "List of registry DIDs that contributed results (eep.dev + any federated registries consulted).",
-            "items": {
-                "type": "string",
-                "pattern": "^did:[a-z0-9]+:.+$"
-            },
-            "examples": [
-                [
-                    "did:web:eep.dev",
-                    "did:web:eep.eu"
-                ]
-            ]
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/registry.search-result.json",
+  "title": "EEP Registry Search Result",
+  "description": "Response schema for the eep.dev Registry Discovery API: GET /registry and GET /discover. Agents query the registry to find EEP publishers by category, gate type, conformance tier, or capability. The registry resolves queries across its own index and any federated peer registries. Implements Whitepaper \u00a74.2 (eep.dev: The Protocol Registry and Bootstrapping Hub).",
+  "type": "object",
+  "required": [
+    "results",
+    "total",
+    "page",
+    "per_page"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "results": {
+      "type": "array",
+      "description": "List of matching EEP publisher entries.",
+      "items": {
+        "$ref": "#/$defs/RegistryEntry"
+      }
     },
-    "definitions": {
-        "RegistryEntry": {
-            "$id": "#RegistryEntry",
-            "title": "Registry Entry",
-            "description": "A single EEP publisher entry returned from the registry search.",
-            "type": "object",
-            "required": [
-                "did",
-                "manifest_url",
-                "conformance_tier",
-                "trust_score",
-                "registered_at"
+    "total": {
+      "type": "integer",
+      "description": "Total number of entities matching the query.",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "description": "Current page number (1-indexed).",
+      "minimum": 1
+    },
+    "per_page": {
+      "type": "integer",
+      "description": "Number of results per page.",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 20
+    },
+    "next_cursor": {
+      "type": "string",
+      "description": "Opaque cursor for fetching the next page. Absent when on the last page."
+    },
+    "query_id": {
+      "type": "string",
+      "description": "Unique identifier for this paginated query session. Pass as ?query_id=... to retrieve subsequent pages."
+    },
+    "resolved_from": {
+      "type": "array",
+      "description": "List of registry DIDs that contributed results (eep.dev + any federated registries consulted).",
+      "items": {
+        "type": "string",
+        "pattern": "^did:[a-z0-9]+:.+$"
+      },
+      "examples": [
+        [
+          "did:web:eep.dev",
+          "did:web:eep.eu"
+        ]
+      ]
+    }
+  },
+  "$defs": {
+    "RegistryEntry": {
+      "$id": "#RegistryEntry",
+      "title": "Registry Entry",
+      "description": "A single EEP publisher entry returned from the registry search.",
+      "type": "object",
+      "required": [
+        "did",
+        "manifest_url",
+        "conformance_tier",
+        "trust_score",
+        "registered_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "did": {
+          "type": "string",
+          "description": "W3C DID of the EEP publisher.",
+          "pattern": "^did:[a-z0-9]+:.+$",
+          "examples": [
+            "did:web:api.example.com"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name of the entity.",
+          "maxLength": 256
+        },
+        "manifest_url": {
+          "type": "string",
+          "description": "URL of the entity's /.well-known/eep.json manifest.",
+          "format": "uri",
+          "examples": [
+            "https://api.example.com/.well-known/eep.json"
+          ]
+        },
+        "conformance_tier": {
+          "type": "string",
+          "description": "The EEP conformance tier the publisher holds (per their EEPConformanceCredential). Agents can filter by this field.",
+          "enum": [
+            "Core",
+            "Standard",
+            "Full",
+            "unverified"
+          ],
+          "examples": [
+            "Full"
+          ]
+        },
+        "trust_score": {
+          "type": "number",
+          "description": "Registry-assigned trust score from 0.0 to 1.0. Computed from conformance credential freshness, DID document age, signed exchange history, and reputation signals. Agents can filter discovery queries by minimum trust score threshold.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "examples": [
+            0.92,
+            0.75
+          ]
+        },
+        "categories": {
+          "type": "array",
+          "description": "Semantic category tags declared by the publisher. Used for filtered discovery queries (e.g., ?category=supply-chain).",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "financial-feeds",
+              "market-data"
             ],
-            "additionalProperties": false,
-            "properties": {
-                "did": {
-                    "type": "string",
-                    "description": "W3C DID of the EEP publisher.",
-                    "pattern": "^did:[a-z0-9]+:.+$",
-                    "examples": [
-                        "did:web:api.example.com"
-                    ]
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Human-readable display name of the entity.",
-                    "maxLength": 256
-                },
-                "manifest_url": {
-                    "type": "string",
-                    "description": "URL of the entity's /.well-known/eep.json manifest.",
-                    "format": "uri",
-                    "examples": [
-                        "https://api.example.com/.well-known/eep.json"
-                    ]
-                },
-                "conformance_tier": {
-                    "type": "string",
-                    "description": "The EEP conformance tier the publisher holds (per their EEPConformanceCredential). Agents can filter by this field.",
-                    "enum": [
-                        "Core",
-                        "Standard",
-                        "Full",
-                        "unverified"
-                    ],
-                    "examples": [
-                        "Full"
-                    ]
-                },
-                "trust_score": {
-                    "type": "number",
-                    "description": "Registry-assigned trust score from 0.0 to 1.0. Computed from conformance credential freshness, DID document age, signed exchange history, and reputation signals. Agents can filter discovery queries by minimum trust score threshold.",
-                    "minimum": 0.0,
-                    "maximum": 1.0,
-                    "examples": [
-                        0.92,
-                        0.75
-                    ]
-                },
-                "categories": {
-                    "type": "array",
-                    "description": "Semantic category tags declared by the publisher. Used for filtered discovery queries (e.g., ?category=supply-chain).",
-                    "items": {
-                        "type": "string"
-                    },
-                    "examples": [
-                        [
-                            "financial-feeds",
-                            "market-data"
-                        ],
-                        [
-                            "supply-chain",
-                            "logistics"
-                        ]
-                    ]
-                },
-                "gate_types": {
-                    "type": "array",
-                    "description": "Gate requirement types supported by this publisher. Agents filter by gate type when selecting interaction partners (e.g., ?gate=payment).",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "credential",
-                            "identity",
-                            "agreement",
-                            "data_request",
-                            "payment",
-                            "combined",
-                            "proof_of_intent",
-                            "public"
-                        ]
-                    }
-                },
-                "layers": {
-                    "type": "array",
-                    "description": "Protocol layers supported. Agents filter by layer capability (e.g., ?supports=sse).",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "layer1",
-                            "sse",
-                            "webhook",
-                            "websocket"
-                        ]
-                    },
-                    "examples": [
-                        [
-                            "layer1",
-                            "sse",
-                            "webhook",
-                            "websocket"
-                        ]
-                    ]
-                },
-                "content_types": {
-                    "type": "array",
-                    "description": "MIME types the publisher can return.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "examples": [
-                        [
-                            "application/json",
-                            "text/markdown",
-                            "text/toon"
-                        ]
-                    ]
-                },
-                "registered_at": {
-                    "type": "string",
-                    "description": "ISO 8601 UTC timestamp when the entity registered with this registry.",
-                    "format": "date-time"
-                },
-                "conformance_credential_expires_at": {
-                    "type": "string",
-                    "description": "ISO 8601 UTC timestamp when the publisher's EEP Conformance Credential expires. Absent if unverified.",
-                    "format": "date-time"
-                },
-                "sector_extensions": {
-                    "type": "array",
-                    "description": "Sector-specific conformance extensions the publisher has passed (e.g., EEP-FinServ-1.0).",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^EEP-[A-Za-z]+(-[A-Za-z]+)?-\\d+\\.\\d+$"
-                    }
-                },
-                "data_residency": {
-                    "type": "string",
-                    "description": "Data residency constraint declared by the publisher (e.g., EU-only, US, Worldwide). Agents in regulated environments can filter by this field.",
-                    "examples": [
-                        "EU-only",
-                        "Worldwide"
-                    ]
-                },
-                "registry_source": {
-                    "type": "string",
-                    "description": "DID of the registry that indexed this entry. For federated results, this may differ from eep.dev.",
-                    "pattern": "^did:[a-z0-9]+:.+$"
-                }
-            }
+            [
+              "supply-chain",
+              "logistics"
+            ]
+          ]
+        },
+        "gate_types": {
+          "type": "array",
+          "description": "Gate requirement types supported by this publisher. Agents filter by gate type when selecting interaction partners (e.g., ?gate=payment).",
+          "items": {
+            "type": "string",
+            "enum": [
+              "credential",
+              "identity",
+              "agreement",
+              "data_request",
+              "payment",
+              "combined",
+              "proof_of_intent",
+              "public"
+            ]
+          }
+        },
+        "layers": {
+          "type": "array",
+          "description": "Protocol layers supported. Agents filter by layer capability (e.g., ?supports=sse).",
+          "items": {
+            "type": "string",
+            "enum": [
+              "layer1",
+              "sse",
+              "webhook",
+              "websocket"
+            ]
+          },
+          "examples": [
+            [
+              "layer1",
+              "sse",
+              "webhook",
+              "websocket"
+            ]
+          ]
+        },
+        "content_types": {
+          "type": "array",
+          "description": "MIME types the publisher can return.",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "application/json",
+              "text/markdown",
+              "text/toon"
+            ]
+          ]
+        },
+        "registered_at": {
+          "type": "string",
+          "description": "ISO 8601 UTC timestamp when the entity registered with this registry.",
+          "format": "date-time"
+        },
+        "conformance_credential_expires_at": {
+          "type": "string",
+          "description": "ISO 8601 UTC timestamp when the publisher's EEP Conformance Credential expires. Absent if unverified.",
+          "format": "date-time"
+        },
+        "sector_extensions": {
+          "type": "array",
+          "description": "Sector-specific conformance extensions the publisher has passed (e.g., EEP-FinServ-1.0).",
+          "items": {
+            "type": "string",
+            "pattern": "^EEP-[A-Za-z]+(-[A-Za-z]+)?-\\d+\\.\\d+$"
+          }
+        },
+        "data_residency": {
+          "type": "string",
+          "description": "Data residency constraint declared by the publisher (e.g., EU-only, US, Worldwide). Agents in regulated environments can filter by this field.",
+          "examples": [
+            "EU-only",
+            "Worldwide"
+          ]
+        },
+        "registry_source": {
+          "type": "string",
+          "description": "DID of the registry that indexed this entry. For federated results, this may differ from eep.dev.",
+          "pattern": "^did:[a-z0-9]+:.+$"
         }
-    },
-    "examples": [
+      }
+    }
+  },
+  "examples": [
+    {
+      "results": [
         {
-            "results": [
-                {
-                    "did": "did:web:api.findata.example",
-                    "name": "FinData Market Intelligence",
-                    "manifest_url": "https://api.findata.example/.well-known/eep.json",
-                    "conformance_tier": "Full",
-                    "trust_score": 0.97,
-                    "categories": [
-                        "financial-feeds",
-                        "market-data"
-                    ],
-                    "gate_types": [
-                        "credential",
-                        "payment"
-                    ],
-                    "layers": [
-                        "layer1",
-                        "sse",
-                        "webhook"
-                    ],
-                    "content_types": [
-                        "application/json",
-                        "text/markdown"
-                    ],
-                    "registered_at": "2026-01-10T09:00:00Z",
-                    "conformance_credential_expires_at": "2027-01-10T09:00:00Z",
-                    "data_residency": "EU-only",
-                    "registry_source": "did:web:eep.dev"
-                }
-            ],
-            "total": 1,
-            "page": 1,
-            "per_page": 20,
-            "resolved_from": [
-                "did:web:eep.dev"
-            ]
+          "did": "did:web:api.findata.example",
+          "name": "FinData Market Intelligence",
+          "manifest_url": "https://api.findata.example/.well-known/eep.json",
+          "conformance_tier": "Full",
+          "trust_score": 0.97,
+          "categories": [
+            "financial-feeds",
+            "market-data"
+          ],
+          "gate_types": [
+            "credential",
+            "payment"
+          ],
+          "layers": [
+            "layer1",
+            "sse",
+            "webhook"
+          ],
+          "content_types": [
+            "application/json",
+            "text/markdown"
+          ],
+          "registered_at": "2026-01-10T09:00:00Z",
+          "conformance_credential_expires_at": "2027-01-10T09:00:00Z",
+          "data_residency": "EU-only",
+          "registry_source": "did:web:eep.dev"
         }
-    ]
+      ],
+      "total": 1,
+      "page": 1,
+      "per_page": 20,
+      "resolved_from": [
+        "did:web:eep.dev"
+      ]
+    }
+  ]
 }

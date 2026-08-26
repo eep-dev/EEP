@@ -1,81 +1,81 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/session.token.json",
-    "title": "EEP Session Token",
-    "description": "Signed session token issued by a publisher after successful gate requirement satisfaction. Presented via Authorization: EEP-Session <token> header on subsequent requests. (§6, Whitepaper).",
-    "type": "object",
-    "required": [
-        "agent_did",
-        "issuer_did",
-        "tiers",
-        "iat",
-        "exp",
-        "signature"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "agent_did": {
-            "type": "string",
-            "description": "DID of the agent this session token is bound to. Must match the presenting agent's DID key.",
-            "pattern": "^did:[a-z0-9]+:.+$",
-            "examples": [
-                "did:web:agent.acme.ai",
-                "did:key:z6Mk..."
-            ]
-        },
-        "issuer_did": {
-            "type": "string",
-            "description": "DID of the publisher that issued this session token. Used for signature verification.",
-            "pattern": "^did:[a-z0-9]+:.+$"
-        },
-        "tiers": {
-            "type": "array",
-            "description": "Gate tiers the agent has been granted access to.",
-            "minItems": 1,
-            "items": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]{0,31}$"
-            },
-            "examples": [
-                [
-                    "pro",
-                    "api_v2"
-                ]
-            ]
-        },
-        "iat": {
-            "type": "integer",
-            "description": "Issued-at time as UNIX timestamp (seconds).",
-            "minimum": 0
-        },
-        "exp": {
-            "type": "integer",
-            "description": "Expiry time as UNIX timestamp (seconds). Must be greater than iat.",
-            "minimum": 0
-        },
-        "refresh_threshold": {
-            "type": "integer",
-            "description": "UNIX timestamp before which the agent should proactively request renewal. Typically exp minus 10% of the session duration.",
-            "minimum": 0
-        },
-        "context_id": {
-            "type": "string",
-            "description": "Opaque identifier the agent can use to resume interrupted operations, such as replaying missed events from a specific SSE position.",
-            "maxLength": 256,
-            "examples": [
-                "ctx_a1b2c3d4",
-                "stream:offset:12345"
-            ]
-        },
-        "gate_version": {
-            "type": "string",
-            "description": "Version of the gate configuration at the time this token was issued. Allows the publisher to detect config changes on renewal.",
-            "maxLength": 64
-        },
-        "signature": {
-            "type": "string",
-            "description": "EdDSA signature (base64url) over a canonical JSON serialization of all fields except 'signature', keyed to issuer_did's verification key.",
-            "minLength": 16
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/session.token.json",
+  "title": "EEP Session Token",
+  "description": "Signed session token issued by a publisher after successful gate requirement satisfaction. Presented via Authorization: EEP-Session <token> header on subsequent requests. (\u00a76, Whitepaper).",
+  "type": "object",
+  "required": [
+    "agent_did",
+    "issuer_did",
+    "tiers",
+    "iat",
+    "exp",
+    "signature"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "agent_did": {
+      "type": "string",
+      "description": "DID of the agent this session token is bound to. Must match the presenting agent's DID key.",
+      "pattern": "^did:[a-z0-9]+:.+$",
+      "examples": [
+        "did:web:agent.acme.ai",
+        "did:key:z6Mk..."
+      ]
+    },
+    "issuer_did": {
+      "type": "string",
+      "description": "DID of the publisher that issued this session token. Used for signature verification.",
+      "pattern": "^did:[a-z0-9]+:.+$"
+    },
+    "tiers": {
+      "type": "array",
+      "description": "Gate tiers the agent has been granted access to.",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "examples": [
+        [
+          "pro",
+          "api_v2"
+        ]
+      ]
+    },
+    "iat": {
+      "type": "integer",
+      "description": "Issued-at time as UNIX timestamp (seconds).",
+      "minimum": 0
+    },
+    "exp": {
+      "type": "integer",
+      "description": "Expiry time as UNIX timestamp (seconds). Must be greater than iat.",
+      "minimum": 0
+    },
+    "refresh_threshold": {
+      "type": "integer",
+      "description": "UNIX timestamp before which the agent should proactively request renewal. Typically exp minus 10% of the session duration.",
+      "minimum": 0
+    },
+    "context_id": {
+      "type": "string",
+      "description": "Opaque identifier the agent can use to resume interrupted operations, such as replaying missed events from a specific SSE position.",
+      "maxLength": 256,
+      "examples": [
+        "ctx_a1b2c3d4",
+        "stream:offset:12345"
+      ]
+    },
+    "gate_version": {
+      "type": "string",
+      "description": "Version of the gate configuration at the time this token was issued. Allows the publisher to detect config changes on renewal.",
+      "maxLength": 64
+    },
+    "signature": {
+      "type": "string",
+      "description": "EdDSA signature (base64url) over a canonical JSON serialization of all fields except 'signature', keyed to issuer_did's verification key.",
+      "minLength": 16
     }
+  }
 }

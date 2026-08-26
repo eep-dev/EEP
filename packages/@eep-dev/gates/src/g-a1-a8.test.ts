@@ -206,23 +206,23 @@ describe('A4 — audit-log.json: delivery audit log schema and SPECIFICATION §1
         }
     });
 
-    it('defines AuditEntry in definitions', () => {
-        expect(schema.definitions).toHaveProperty('AuditEntry');
+    it('defines AuditEntry in $defs', () => {
+        expect(schema.$defs).toHaveProperty('AuditEntry');
     });
 
     it('AuditEntry has all required fields including signature', () => {
-        const required = schema.definitions.AuditEntry.required as string[];
+        const required = schema.$defs.AuditEntry.required as string[];
         for (const f of ['entry_id', 'event_type', 'actor_did', 'publisher_did', 'timestamp', 'outcome', 'signature']) {
             expect(required).toContain(f);
         }
     });
 
     it('entry_id is UUID format', () => {
-        expect(schema.definitions.AuditEntry.properties.entry_id.format).toBe('uuid');
+        expect(schema.$defs.AuditEntry.properties.entry_id.format).toBe('uuid');
     });
 
     it('event_type covers 5 major categories', () => {
-        const types = schema.definitions.AuditEntry.properties.event_type.enum as string[];
+        const types = schema.$defs.AuditEntry.properties.event_type.enum as string[];
         expect(types.some(t => t.startsWith('gate.'))).toBe(true);
         expect(types.some(t => t.startsWith('session.'))).toBe(true);
         expect(types.some(t => t.startsWith('webhook.'))).toBe(true);
@@ -231,26 +231,26 @@ describe('A4 — audit-log.json: delivery audit log schema and SPECIFICATION §1
     });
 
     it('event_type includes gate.proof.accepted and gate.proof.rejected', () => {
-        const types = schema.definitions.AuditEntry.properties.event_type.enum as string[];
+        const types = schema.$defs.AuditEntry.properties.event_type.enum as string[];
         expect(types).toContain('gate.proof.accepted');
         expect(types).toContain('gate.proof.rejected');
     });
 
     it('event_type includes PoI validation events', () => {
-        const types = schema.definitions.AuditEntry.properties.event_type.enum as string[];
+        const types = schema.$defs.AuditEntry.properties.event_type.enum as string[];
         expect(types).toContain('poi.validated');
         expect(types).toContain('poi.rejected');
     });
 
     it('actor_did and publisher_did have DID pattern validation', () => {
-        const actorPattern = schema.definitions.AuditEntry.properties.actor_did.pattern;
-        const publisherPattern = schema.definitions.AuditEntry.properties.publisher_did.pattern;
+        const actorPattern = schema.$defs.AuditEntry.properties.actor_did.pattern;
+        const publisherPattern = schema.$defs.AuditEntry.properties.publisher_did.pattern;
         expect(actorPattern).toContain('did:');
         expect(publisherPattern).toContain('did:');
     });
 
     it('outcome is constrained enum', () => {
-        const outcomes = schema.definitions.AuditEntry.properties.outcome.enum as string[];
+        const outcomes = schema.$defs.AuditEntry.properties.outcome.enum as string[];
         expect(outcomes).toContain('success');
         expect(outcomes).toContain('failure');
     });
@@ -265,7 +265,7 @@ describe('A4 — audit-log.json: delivery audit log schema and SPECIFICATION §1
             expect(example).toHaveProperty(f);
         }
         const entry = example.entries[0];
-        for (const f of schema.definitions.AuditEntry.required) {
+        for (const f of schema.$defs.AuditEntry.required) {
             expect(entry).toHaveProperty(f);
         }
     });

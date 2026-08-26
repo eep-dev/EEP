@@ -166,7 +166,7 @@ describe('G39 — EEPConformanceCredential JSON Schema', () => {
         });
 
         it('has correct $schema and $id', () => {
-            expect(conformanceCredentialSchema.$schema).toBe('http://json-schema.org/draft-07/schema#');
+            expect(conformanceCredentialSchema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
             expect(conformanceCredentialSchema.$id).toMatch(/conformance\.credential\.json/);
         });
 

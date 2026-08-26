@@ -26,7 +26,7 @@ class TestManifestDiscovery:
         """Schema must be valid JSON."""
         with open(SCHEMA_PATH) as f:
             schema = json.load(f)
-        assert schema["$schema"] == "http://json-schema.org/draft-07/schema#"
+        assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
         assert "did" in schema.get("required", [])
 
     def test_schema_required_fields(self):

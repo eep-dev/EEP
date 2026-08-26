@@ -1,225 +1,225 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/eep-pulse-message-schema.json",
-    "title": "EEP Network Pulse Message Schema",
-    "description": "JSON Schema for WebSocket messages in the EEP Network Pulse (Layer 3). All messages use a { v, type, action, seq?, data? } envelope.",
-    "oneOf": [
-        {
-            "$ref": "#/$defs/SystemMessage"
-        },
-        {
-            "$ref": "#/$defs/EntityMessage"
-        },
-        {
-            "$ref": "#/$defs/A2AMessage"
-        },
-        {
-            "$ref": "#/$defs/ChatMessage"
-        },
-        {
-            "$ref": "#/$defs/CommerceMessage"
-        }
-    ],
-    "$defs": {
-        "BaseEnvelope": {
-            "type": "object",
-            "required": [
-                "v",
-                "type",
-                "action"
-            ],
-            "properties": {
-                "v": {
-                    "type": "integer",
-                    "const": 1,
-                    "description": "Protocol version. Clients MUST disconnect on version mismatch."
-                },
-                "seq": {
-                    "type": "integer",
-                    "description": "Monotonic sequence number per channel. Used for gap detection and replay."
-                },
-                "data": {
-                    "type": "object",
-                    "description": "Action-specific payload."
-                }
-            }
-        },
-        "SystemMessage": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseEnvelope"
-                }
-            ],
-            "properties": {
-                "type": {
-                    "const": "system"
-                },
-                "action": {
-                    "type": "string",
-                    "enum": [
-                        "connected",
-                        "ping",
-                        "pong",
-                        "subscribe",
-                        "subscribed",
-                        "unsubscribe",
-                        "unsubscribed",
-                        "replay",
-                        "replay_complete",
-                        "gap_detected",
-                        "auth_expiring",
-                        "auth_refresh",
-                        "auth_refreshed",
-                        "auth_expired",
-                        "error"
-                    ]
-                }
-            },
-            "required": [
-                "type",
-                "action"
-            ]
-        },
-        "EntityMessage": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseEnvelope"
-                }
-            ],
-            "properties": {
-                "type": {
-                    "const": "entity"
-                },
-                "action": {
-                    "type": "string",
-                    "enum": [
-                        "update",
-                        "publish",
-                        "delete"
-                    ]
-                },
-                "data": {
-                    "type": "object",
-                    "required": [
-                        "source_did"
-                    ],
-                    "properties": {
-                        "source_did": {
-                            "type": "string",
-                            "pattern": "^did:",
-                            "description": "DID of the entity originating this event."
-                        }
-                    }
-                }
-            },
-            "required": [
-                "type",
-                "action"
-            ]
-        },
-        "A2AMessage": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseEnvelope"
-                }
-            ],
-            "properties": {
-                "type": {
-                    "const": "a2a"
-                },
-                "action": {
-                    "type": "string",
-                    "enum": [
-                        "task_request",
-                        "task_accepted",
-                        "task_received",
-                        "task_progress",
-                        "task_progress_ack",
-                        "task_complete",
-                        "task_complete_ack",
-                        "task_failed",
-                        "task_failed_ack",
-                        "task_cancel",
-                        "task_cancel_ack",
-                        "task_cancelled"
-                    ]
-                }
-            },
-            "required": [
-                "type",
-                "action"
-            ]
-        },
-        "ChatMessage": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseEnvelope"
-                }
-            ],
-            "properties": {
-                "type": {
-                    "const": "chat"
-                },
-                "action": {
-                    "type": "string",
-                    "enum": [
-                        "send",
-                        "sent",
-                        "received",
-                        "history",
-                        "read",
-                        "read_ack"
-                    ]
-                }
-            },
-            "required": [
-                "type",
-                "action"
-            ]
-        },
-        "CommerceMessage": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseEnvelope"
-                }
-            ],
-            "properties": {
-                "type": {
-                    "const": "commerce"
-                },
-                "action": {
-                    "type": "string",
-                    "description": "Commerce negotiation actions. See commerce.negotiation.json for data payload schema.",
-                    "enum": [
-                        "offer",
-                        "counter",
-                        "accept",
-                        "reject",
-                        "expire",
-                        "invoice",
-                        "receipt",
-                        "complete",
-                        "dispute"
-                    ]
-                },
-                "data": {
-                    "type": "object",
-                    "required": [
-                        "negotiation_id"
-                    ],
-                    "properties": {
-                        "negotiation_id": {
-                            "type": "string",
-                            "pattern": "^neg_[a-zA-Z0-9]{8,32}$",
-                            "description": "Unique negotiation session identifier."
-                        }
-                    }
-                }
-            },
-            "required": [
-                "type",
-                "action"
-            ]
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/eep-pulse-message-schema.json",
+  "title": "EEP Network Pulse Message Schema",
+  "description": "JSON Schema for WebSocket messages in the EEP Network Pulse (Layer 3). All messages use a { v, type, action, seq?, data? } envelope.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SystemMessage"
+    },
+    {
+      "$ref": "#/$defs/EntityMessage"
+    },
+    {
+      "$ref": "#/$defs/A2AMessage"
+    },
+    {
+      "$ref": "#/$defs/ChatMessage"
+    },
+    {
+      "$ref": "#/$defs/CommerceMessage"
     }
+  ],
+  "$defs": {
+    "BaseEnvelope": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "action"
+      ],
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 1,
+          "description": "Protocol version. Clients MUST disconnect on version mismatch."
+        },
+        "seq": {
+          "type": "integer",
+          "description": "Monotonic sequence number per channel. Used for gap detection and replay."
+        },
+        "data": {
+          "type": "object",
+          "description": "Action-specific payload."
+        }
+      }
+    },
+    "SystemMessage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseEnvelope"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "system"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "connected",
+            "ping",
+            "pong",
+            "subscribe",
+            "subscribed",
+            "unsubscribe",
+            "unsubscribed",
+            "replay",
+            "replay_complete",
+            "gap_detected",
+            "auth_expiring",
+            "auth_refresh",
+            "auth_refreshed",
+            "auth_expired",
+            "error"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "action"
+      ]
+    },
+    "EntityMessage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseEnvelope"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "entity"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "update",
+            "publish",
+            "delete"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "required": [
+            "source_did"
+          ],
+          "properties": {
+            "source_did": {
+              "type": "string",
+              "pattern": "^did:",
+              "description": "DID of the entity originating this event."
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "action"
+      ]
+    },
+    "A2AMessage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseEnvelope"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "a2a"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "task_request",
+            "task_accepted",
+            "task_received",
+            "task_progress",
+            "task_progress_ack",
+            "task_complete",
+            "task_complete_ack",
+            "task_failed",
+            "task_failed_ack",
+            "task_cancel",
+            "task_cancel_ack",
+            "task_cancelled"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "action"
+      ]
+    },
+    "ChatMessage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseEnvelope"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "chat"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "send",
+            "sent",
+            "received",
+            "history",
+            "read",
+            "read_ack"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "action"
+      ]
+    },
+    "CommerceMessage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseEnvelope"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "commerce"
+        },
+        "action": {
+          "type": "string",
+          "description": "Commerce negotiation actions. See commerce.negotiation.json for data payload schema.",
+          "enum": [
+            "offer",
+            "counter",
+            "accept",
+            "reject",
+            "expire",
+            "invoice",
+            "receipt",
+            "complete",
+            "dispute"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "required": [
+            "negotiation_id"
+          ],
+          "properties": {
+            "negotiation_id": {
+              "type": "string",
+              "pattern": "^neg_[a-zA-Z0-9]{8,32}$",
+              "description": "Unique negotiation session identifier."
+            }
+          }
+        }
+      },
+      "required": [
+        "type",
+        "action"
+      ]
+    }
+  }
 }

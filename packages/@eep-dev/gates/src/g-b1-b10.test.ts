@@ -190,7 +190,7 @@ describe('B4 — data.withdrawal.json: REST endpoint schema for GDPR erasure', (
 
     it('WithdrawalRequest definition has all required fields', () => {
         const schema = loadSchema('data.withdrawal.json') as any;
-        const required: string[] = schema.definitions.WithdrawalRequest.required;
+        const required: string[] = schema.$defs.WithdrawalRequest.required;
         expect(required).toContain('claim_id');
         expect(required).toContain('agent_did');
         expect(required).toContain('reason');
@@ -201,7 +201,7 @@ describe('B4 — data.withdrawal.json: REST endpoint schema for GDPR erasure', (
 
     it('WithdrawalRequest reason enum includes GDPR and CCPA bases', () => {
         const schema = loadSchema('data.withdrawal.json') as any;
-        const reasons: string[] = schema.definitions.WithdrawalRequest.properties.reason.enum;
+        const reasons: string[] = schema.$defs.WithdrawalRequest.properties.reason.enum;
         expect(reasons).toContain('gdpr_erasure');
         expect(reasons).toContain('ccpa_deletion');
         expect(reasons).toContain('revoke_consent');
@@ -210,7 +210,7 @@ describe('B4 — data.withdrawal.json: REST endpoint schema for GDPR erasure', (
 
     it('WithdrawalAcknowledgement response covers 202 Accepted scenario', () => {
         const schema = loadSchema('data.withdrawal.json') as any;
-        const ack = schema.definitions.WithdrawalAcknowledgement;
+        const ack = schema.$defs.WithdrawalAcknowledgement;
         expect(ack).toBeDefined();
         const required: string[] = ack.required;
         expect(required).toContain('withdrawal_id');
@@ -221,7 +221,7 @@ describe('B4 — data.withdrawal.json: REST endpoint schema for GDPR erasure', (
 
     it('WithdrawalAcknowledgement status enum includes all lifecycle states', () => {
         const schema = loadSchema('data.withdrawal.json') as any;
-        const statuses: string[] = schema.definitions.WithdrawalAcknowledgement.properties.status.enum;
+        const statuses: string[] = schema.$defs.WithdrawalAcknowledgement.properties.status.enum;
         expect(statuses).toContain('pending');
         expect(statuses).toContain('processing');
         expect(statuses).toContain('completed');
@@ -230,7 +230,7 @@ describe('B4 — data.withdrawal.json: REST endpoint schema for GDPR erasure', (
 
     it('data.withdrawal.json describes 24-hour publisher commitment (Whitepaper §7.3)', () => {
         const schema = loadSchema('data.withdrawal.json') as any;
-        const desc: string = schema.definitions.WithdrawalAcknowledgement.properties.expected_completion_at.description;
+        const desc: string = schema.$defs.WithdrawalAcknowledgement.properties.expected_completion_at.description;
         expect(desc).toContain('24 hours');
         expect(desc.toLowerCase()).toContain('whitepaper');
     });
@@ -279,7 +279,7 @@ describe('B6 — eep.dev Registry API: registry.search-result.json schema', () =
 
     it('RegistryEntry has trust_score field (0.0–1.0) as per Whitepaper §4.2', () => {
         const schema = loadSchema('registry.search-result.json') as any;
-        const entry = schema.definitions.RegistryEntry;
+        const entry = schema.$defs.RegistryEntry;
         expect(entry).toBeDefined();
         expect(entry.properties.trust_score).toBeDefined();
         expect(entry.properties.trust_score.minimum).toBe(0.0);
@@ -288,7 +288,7 @@ describe('B6 — eep.dev Registry API: registry.search-result.json schema', () =
 
     it('RegistryEntry.conformance_tier only allows Core/Standard/Full/unverified', () => {
         const schema = loadSchema('registry.search-result.json') as any;
-        const tiers: string[] = schema.definitions.RegistryEntry.properties.conformance_tier.enum;
+        const tiers: string[] = schema.$defs.RegistryEntry.properties.conformance_tier.enum;
         expect(tiers).toContain('Core');
         expect(tiers).toContain('Standard');
         expect(tiers).toContain('Full');
@@ -298,7 +298,7 @@ describe('B6 — eep.dev Registry API: registry.search-result.json schema', () =
 
     it('RegistryEntry supports filtering by gate_types and layers', () => {
         const schema = loadSchema('registry.search-result.json') as any;
-        const entry = schema.definitions.RegistryEntry;
+        const entry = schema.$defs.RegistryEntry;
         expect(entry.properties.gate_types).toBeDefined();
         expect(entry.properties.layers).toBeDefined();
         expect(entry.properties.categories).toBeDefined();
@@ -307,7 +307,7 @@ describe('B6 — eep.dev Registry API: registry.search-result.json schema', () =
     it('RegistryEntry supports federation (registry_source + resolved_from)', () => {
         const schema = loadSchema('registry.search-result.json') as any;
         expect(schema.properties.resolved_from).toBeDefined();
-        const entry = schema.definitions.RegistryEntry;
+        const entry = schema.$defs.RegistryEntry;
         expect(entry.properties.registry_source).toBeDefined();
     });
 });
@@ -447,7 +447,7 @@ describe('Cross-cutting: schema count and consistency', () => {
         const newSchemas = ['data.withdrawal.json', 'registry.search-result.json'];
         for (const schemaName of newSchemas) {
             const schema = loadSchema(schemaName) as any;
-            expect(schema.$schema).toBe('http://json-schema.org/draft-07/schema#');
+            expect(schema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
             expect(schema.$id).toContain('https://eep.dev/schemas/v0.1/');
         }
     });

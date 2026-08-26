@@ -1,221 +1,221 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/audit-log.json",
-    "title": "EEP Delivery Audit Log Response",
-    "description": "Schema for responses from GET /eep/audit-log. Returns a paginated list of signed delivery records covering all agent-publisher interactions: gate proofs, session events, commerce state transitions, and webhook deliveries. Satisfies EU AI Act Art. 12 (logging), DORA Art. 8 (ICT records), and GDPR Art. 5 Data Accountability. Per Whitepaper §10.2 and §14.3 (mandated auditability). (A4).",
-    "type": "object",
-    "required": [
-        "entries",
-        "total",
-        "page",
-        "per_page"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "entries": {
-            "type": "array",
-            "description": "Ordered list of audit log entries (newest first by default, reversible via sort=asc).",
-            "items": {
-                "$ref": "#/definitions/AuditEntry"
-            }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/audit-log.json",
+  "title": "EEP Delivery Audit Log Response",
+  "description": "Schema for responses from GET /eep/audit-log. Returns a paginated list of signed delivery records covering all agent-publisher interactions: gate proofs, session events, commerce state transitions, and webhook deliveries. Satisfies EU AI Act Art. 12 (logging), DORA Art. 8 (ICT records), and GDPR Art. 5 Data Accountability. Per Whitepaper \u00a710.2 and \u00a714.3 (mandated auditability). (A4).",
+  "type": "object",
+  "required": [
+    "entries",
+    "total",
+    "page",
+    "per_page"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "type": "array",
+      "description": "Ordered list of audit log entries (newest first by default, reversible via sort=asc).",
+      "items": {
+        "$ref": "#/$defs/AuditEntry"
+      }
+    },
+    "total": {
+      "type": "integer",
+      "description": "Total number of audit entries matching the query.",
+      "minimum": 0
+    },
+    "page": {
+      "type": "integer",
+      "description": "Current page number (1-indexed).",
+      "minimum": 1
+    },
+    "per_page": {
+      "type": "integer",
+      "description": "Entries returned per page.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "next_cursor": {
+      "type": "string",
+      "description": "Opaque cursor for fetching the next page. Absent when no further pages exist."
+    },
+    "publisher_did": {
+      "type": "string",
+      "description": "DID of the publisher whose audit log is returned.",
+      "pattern": "^did:"
+    }
+  },
+  "$defs": {
+    "AuditEntry": {
+      "type": "object",
+      "required": [
+        "entry_id",
+        "event_type",
+        "actor_did",
+        "publisher_did",
+        "timestamp",
+        "outcome",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "entry_id": {
+          "type": "string",
+          "description": "Unique, immutable identifier for this audit entry (UUID v4).",
+          "format": "uuid"
         },
-        "total": {
-            "type": "integer",
-            "description": "Total number of audit entries matching the query.",
-            "minimum": 0
+        "event_type": {
+          "type": "string",
+          "description": "The type of audited event. Uses the EEP event type namespace (com.example.*) or audit-specific prefixes.",
+          "enum": [
+            "gate.proof.submitted",
+            "gate.proof.accepted",
+            "gate.proof.rejected",
+            "gate.payment.verified",
+            "gate.payment.rejected",
+            "session.created",
+            "session.renewed",
+            "session.revoked",
+            "session.expired",
+            "webhook.delivery.attempted",
+            "webhook.delivery.succeeded",
+            "webhook.delivery.failed",
+            "webhook.delivery.abandoned",
+            "commerce.offer",
+            "commerce.counter",
+            "commerce.accepted",
+            "commerce.invoice",
+            "commerce.paid",
+            "commerce.cancelled",
+            "data.withdrawal.requested",
+            "data.withdrawal.acknowledged",
+            "data.withdrawal.completed",
+            "poi.validated",
+            "poi.rejected",
+            "rate_limit.triggered",
+            "did.revocation.checked"
+          ]
         },
-        "page": {
-            "type": "integer",
-            "description": "Current page number (1-indexed).",
-            "minimum": 1
-        },
-        "per_page": {
-            "type": "integer",
-            "description": "Entries returned per page.",
-            "minimum": 1,
-            "maximum": 1000
-        },
-        "next_cursor": {
-            "type": "string",
-            "description": "Opaque cursor for fetching the next page. Absent when no further pages exist."
+        "actor_did": {
+          "type": "string",
+          "description": "DID of the agent or entity that initiated this event.",
+          "pattern": "^did:"
         },
         "publisher_did": {
-            "type": "string",
-            "description": "DID of the publisher whose audit log is returned.",
-            "pattern": "^did:"
+          "type": "string",
+          "description": "DID of the EEP publisher recording this event.",
+          "pattern": "^did:"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 UTC timestamp of when the event occurred."
+        },
+        "outcome": {
+          "type": "string",
+          "description": "Result of the audited action.",
+          "enum": [
+            "success",
+            "failure",
+            "partial",
+            "pending"
+          ]
+        },
+        "resource": {
+          "type": "string",
+          "description": "The resource tier or identifier the event relates to (e.g., 'premium', '/api/data/v1')."
+        },
+        "gate_type": {
+          "type": "string",
+          "description": "For gate events: the type of gate requirement (credential, payment, agreement, data_request, identity, combined).",
+          "enum": [
+            "credential",
+            "payment",
+            "agreement",
+            "data_request",
+            "identity",
+            "allowlist",
+            "reciprocal",
+            "combined"
+          ]
+        },
+        "failure_reason": {
+          "type": "string",
+          "description": "Short machine-readable reason code for failures. Not surfaced to requesting agents (logged internally only per EEP \u00a710.8).",
+          "examples": [
+            "nonce_already_consumed",
+            "timestamp_outside_window",
+            "signature_invalid",
+            "did_revoked",
+            "insufficient_confirmations",
+            "double_spend"
+          ]
+        },
+        "session_token_id": {
+          "type": "string",
+          "description": "If the event is tied to a session, the opaque session token identifier (not the full token)."
+        },
+        "commerce_id": {
+          "type": "string",
+          "description": "If the event is part of a commerce negotiation, the negotiation identifier."
+        },
+        "delivery_attempt": {
+          "type": "integer",
+          "description": "For webhook delivery events: the attempt number (1 = first attempt).",
+          "minimum": 1
+        },
+        "http_status": {
+          "type": "integer",
+          "description": "For webhook delivery events: the HTTP status code received from the subscriber endpoint.",
+          "examples": [
+            200,
+            404,
+            500,
+            503
+          ]
+        },
+        "nonce": {
+          "type": "string",
+          "description": "The nonce used in the gate proof (for gate events). Stored to enforce single-use."
+        },
+        "signature": {
+          "type": "string",
+          "description": "EdDSA (or hybrid ML-DSA) signature over (entry_id + event_type + actor_did + publisher_did + timestamp + outcome), signed by the publisher's DID key. Allows agents and auditors to verify the integrity of audit log entries. The audit log cannot be tampered with without invalidating these per-entry signatures."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Event-specific additional metadata (e.g., transaction hash for payment events, subscription_id for webhook events, tier for session events). Not schema-validated further to allow future extensibility.",
+          "additionalProperties": true
         }
-    },
-    "definitions": {
-        "AuditEntry": {
-            "type": "object",
-            "required": [
-                "entry_id",
-                "event_type",
-                "actor_did",
-                "publisher_did",
-                "timestamp",
-                "outcome",
-                "signature"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "entry_id": {
-                    "type": "string",
-                    "description": "Unique, immutable identifier for this audit entry (UUID v4).",
-                    "format": "uuid"
-                },
-                "event_type": {
-                    "type": "string",
-                    "description": "The type of audited event. Uses the EEP event type namespace (com.example.*) or audit-specific prefixes.",
-                    "enum": [
-                        "gate.proof.submitted",
-                        "gate.proof.accepted",
-                        "gate.proof.rejected",
-                        "gate.payment.verified",
-                        "gate.payment.rejected",
-                        "session.created",
-                        "session.renewed",
-                        "session.revoked",
-                        "session.expired",
-                        "webhook.delivery.attempted",
-                        "webhook.delivery.succeeded",
-                        "webhook.delivery.failed",
-                        "webhook.delivery.abandoned",
-                        "commerce.offer",
-                        "commerce.counter",
-                        "commerce.accepted",
-                        "commerce.invoice",
-                        "commerce.paid",
-                        "commerce.cancelled",
-                        "data.withdrawal.requested",
-                        "data.withdrawal.acknowledged",
-                        "data.withdrawal.completed",
-                        "poi.validated",
-                        "poi.rejected",
-                        "rate_limit.triggered",
-                        "did.revocation.checked"
-                    ]
-                },
-                "actor_did": {
-                    "type": "string",
-                    "description": "DID of the agent or entity that initiated this event.",
-                    "pattern": "^did:"
-                },
-                "publisher_did": {
-                    "type": "string",
-                    "description": "DID of the EEP publisher recording this event.",
-                    "pattern": "^did:"
-                },
-                "timestamp": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "ISO8601 UTC timestamp of when the event occurred."
-                },
-                "outcome": {
-                    "type": "string",
-                    "description": "Result of the audited action.",
-                    "enum": [
-                        "success",
-                        "failure",
-                        "partial",
-                        "pending"
-                    ]
-                },
-                "resource": {
-                    "type": "string",
-                    "description": "The resource tier or identifier the event relates to (e.g., 'premium', '/api/data/v1')."
-                },
-                "gate_type": {
-                    "type": "string",
-                    "description": "For gate events: the type of gate requirement (credential, payment, agreement, data_request, identity, combined).",
-                    "enum": [
-                        "credential",
-                        "payment",
-                        "agreement",
-                        "data_request",
-                        "identity",
-                        "allowlist",
-                        "reciprocal",
-                        "combined"
-                    ]
-                },
-                "failure_reason": {
-                    "type": "string",
-                    "description": "Short machine-readable reason code for failures. Not surfaced to requesting agents (logged internally only per EEP §10.8).",
-                    "examples": [
-                        "nonce_already_consumed",
-                        "timestamp_outside_window",
-                        "signature_invalid",
-                        "did_revoked",
-                        "insufficient_confirmations",
-                        "double_spend"
-                    ]
-                },
-                "session_token_id": {
-                    "type": "string",
-                    "description": "If the event is tied to a session, the opaque session token identifier (not the full token)."
-                },
-                "commerce_id": {
-                    "type": "string",
-                    "description": "If the event is part of a commerce negotiation, the negotiation identifier."
-                },
-                "delivery_attempt": {
-                    "type": "integer",
-                    "description": "For webhook delivery events: the attempt number (1 = first attempt).",
-                    "minimum": 1
-                },
-                "http_status": {
-                    "type": "integer",
-                    "description": "For webhook delivery events: the HTTP status code received from the subscriber endpoint.",
-                    "examples": [
-                        200,
-                        404,
-                        500,
-                        503
-                    ]
-                },
-                "nonce": {
-                    "type": "string",
-                    "description": "The nonce used in the gate proof (for gate events). Stored to enforce single-use."
-                },
-                "signature": {
-                    "type": "string",
-                    "description": "EdDSA (or hybrid ML-DSA) signature over (entry_id + event_type + actor_did + publisher_did + timestamp + outcome), signed by the publisher's DID key. Allows agents and auditors to verify the integrity of audit log entries. The audit log cannot be tampered with without invalidating these per-entry signatures."
-                },
-                "metadata": {
-                    "type": "object",
-                    "description": "Event-specific additional metadata (e.g., transaction hash for payment events, subscription_id for webhook events, tier for session events). Not schema-validated further to allow future extensibility.",
-                    "additionalProperties": true
-                }
-            }
-        }
-    },
-    "examples": [
+      }
+    }
+  },
+  "examples": [
+    {
+      "entries": [
         {
-            "entries": [
-                {
-                    "entry_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                    "event_type": "gate.proof.accepted",
-                    "actor_did": "did:web:agent.example.com",
-                    "publisher_did": "did:web:api.example.com",
-                    "timestamp": "2026-03-05T10:00:00Z",
-                    "outcome": "success",
-                    "resource": "premium",
-                    "gate_type": "payment",
-                    "session_token_id": "sess_01J9Z",
-                    "nonce": "nonce_abc123",
-                    "signature": "z3K2nRgW9F...",
-                    "metadata": {
-                        "tx_hash": "0xdeadbeef...",
-                        "chain": "base",
-                        "amount_usd": "0.001"
-                    }
-                }
-            ],
-            "total": 142,
-            "page": 1,
-            "per_page": 20,
-            "publisher_did": "did:web:api.example.com"
+          "entry_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+          "event_type": "gate.proof.accepted",
+          "actor_did": "did:web:agent.example.com",
+          "publisher_did": "did:web:api.example.com",
+          "timestamp": "2026-03-05T10:00:00Z",
+          "outcome": "success",
+          "resource": "premium",
+          "gate_type": "payment",
+          "session_token_id": "sess_01J9Z",
+          "nonce": "nonce_abc123",
+          "signature": "z3K2nRgW9F...",
+          "metadata": {
+            "tx_hash": "0xdeadbeef...",
+            "chain": "base",
+            "amount_usd": "0.001"
+          }
         }
-    ]
+      ],
+      "total": 142,
+      "page": 1,
+      "per_page": 20,
+      "publisher_did": "did:web:api.example.com"
+    }
+  ]
 }

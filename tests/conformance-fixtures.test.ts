@@ -19,7 +19,9 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { createHmac } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import Ajv from 'ajv';
+// Schemas are JSON Schema 2020-12; Ajv's default export only
+// understands draft-07, so the 2020-12 build is required.
+import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,7 +46,7 @@ const manifest = JSON.parse(
     readFileSync(join(FIXTURES_DIR, 'manifest.json'), 'utf8')
 ) as { fixtures: ManifestEntry[]; spec_version: string };
 
-const ajv = new Ajv({ strict: false, allErrors: true });
+const ajv = new Ajv2020({ strict: false, allErrors: true });
 addFormats(ajv);
 
 // Pre-load every schema referenced in the manifest. We add them to Ajv by
