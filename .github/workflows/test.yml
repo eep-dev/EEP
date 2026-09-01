@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    # Every pull request is tested, not only those targeting `main`.
+    # Stacked PRs (where one change is based on the branch of another so the
+    # diffs stay reviewable) previously got no checks at all, which is
+    # precisely when a reviewer most wants them.
+    branches: ['**']
 
 jobs:
   dependency-policy:

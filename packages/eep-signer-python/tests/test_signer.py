@@ -99,3 +99,39 @@ class TestVerifyEEPWebhook:
             "webhook-signature": "v1,fake",
         }
         assert verify_eep_webhook(BODY, headers, "short") is False
+
+
+class TestTruncatedSignature:
+    """SPECIFICATION.md §5.3 requirement 2: a length-mismatched signature
+    MUST produce a verification failure, never an exception.
+
+    A truncated prefix of the *correct* signature is the attacker-controlled
+    input that makes an unguarded constant-time comparison raise instead of
+    returning False — turning an authentication failure (401) into a server
+    error (500). Mirrors the conformance fixture
+    ``tests/conformance-fixtures/signature/truncated-signature``.
+    """
+
+    def test_truncated_signature_returns_false(self):
+        signer = EEPSigner(SECRET)
+        ts = str(int(time.time()))
+        real = signer.sign(WEBHOOK_ID, ts, BODY)
+        for cut in (4, 10, 20, len(real) - 1):
+            assert signer.verify(WEBHOOK_ID, ts, real[:cut], BODY) is False
+
+    def test_overlong_signature_returns_false(self):
+        signer = EEPSigner(SECRET)
+        ts = str(int(time.time()))
+        padded = signer.sign(WEBHOOK_ID, ts, BODY) + "AAAA"
+        assert signer.verify(WEBHOOK_ID, ts, padded, BODY) is False
+
+    def test_truncated_signature_via_convenience_helper(self):
+        signer = EEPSigner(SECRET)
+        ts = str(int(time.time()))
+        real = signer.sign(WEBHOOK_ID, ts, BODY)
+        headers = {
+            "webhook-id": WEBHOOK_ID,
+            "webhook-timestamp": ts,
+            "webhook-signature": real[:20],
+        }
+        assert verify_eep_webhook(BODY, headers, SECRET) is False

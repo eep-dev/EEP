@@ -167,6 +167,14 @@ describe.each(signedBundles)('signed-bundle fixture: $id', (entry) => {
             // Recorded sig was produced with a different secret. The
             // recomputation with the verifier's secret MUST NOT match.
             expect(expectedSig).not.toBe(recomputed);
+        } else if (entry.id === 'signature-truncated-signature') {
+            // The recorded token is a strict prefix of the real signature.
+            // It MUST be shorter, because the whole point of the fixture is
+            // to exercise the length guard that keeps timingSafeEqual from
+            // throwing RangeError on attacker-controlled input.
+            expect(expectedSig).not.toBe(recomputed);
+            expect(expectedSig.length).toBeLessThan(recomputed.length);
+            expect(recomputed.startsWith(expectedSig)).toBe(true);
         } else if (entry.id === 'signature-multi-header') {
             // The header is "FAKE REAL". The real one MUST match recompute.
             const tokens = expectedSig.split(' ');

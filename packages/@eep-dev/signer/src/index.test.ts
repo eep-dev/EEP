@@ -221,5 +221,31 @@ describe('@eep-dev/signer', () => {
             const shortSig = 'v1,YQ==';
             expect(signer.verify(WEBHOOK_ID, now, shortSig, BODY)).toBe(false);
         });
+
+        // Regression guard for SPECIFICATION.md §5.3 requirement 2: a
+        // truncated prefix of the *correct* signature is the input that
+        // makes an unguarded `timingSafeEqual` raise RangeError. Verifying
+        // it MUST return false, never throw — otherwise attacker-controlled
+        // bytes turn a 401 into a 500. Mirrors the conformance fixture
+        // `tests/conformance-fixtures/signature/truncated-signature`.
+        it('should return false, not throw, for a truncated valid signature', () => {
+            const signer = new EEPSigner(SECRET);
+            const now = Math.floor(Date.now() / 1000).toString();
+            const real = signer.sign(WEBHOOK_ID, now, BODY);
+            for (const cut of [4, 10, 20, real.length - 1]) {
+                const truncated = real.slice(0, cut);
+                expect(() => signer.verify(WEBHOOK_ID, now, truncated, BODY)).not.toThrow();
+                expect(signer.verify(WEBHOOK_ID, now, truncated, BODY)).toBe(false);
+            }
+        });
+
+        // Same guarantee for a signature that is LONGER than expected.
+        it('should return false, not throw, for an over-long signature', () => {
+            const signer = new EEPSigner(SECRET);
+            const now = Math.floor(Date.now() / 1000).toString();
+            const padded = signer.sign(WEBHOOK_ID, now, BODY) + 'AAAA';
+            expect(() => signer.verify(WEBHOOK_ID, now, padded, BODY)).not.toThrow();
+            expect(signer.verify(WEBHOOK_ID, now, padded, BODY)).toBe(false);
+        });
     });
 });

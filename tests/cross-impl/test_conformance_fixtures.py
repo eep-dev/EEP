@@ -89,6 +89,14 @@ def test_signed_bundle_round_trips(entry: dict) -> None:
 
     if entry["id"] == "signature-wrong-secret":
         assert recorded_sig != recomputed
+    elif entry["id"] == "signature-truncated-signature":
+        # The recorded token is a strict prefix of the real signature. It
+        # MUST be shorter — the fixture exists to exercise the length guard
+        # that keeps a constant-time comparison from raising on
+        # attacker-controlled input.
+        assert recorded_sig != recomputed
+        assert len(recorded_sig) < len(recomputed)
+        assert recomputed.startswith(recorded_sig)
     elif entry["id"] == "signature-multi-header":
         tokens = recorded_sig.split(" ")
         assert len(tokens) >= 2
