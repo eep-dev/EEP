@@ -26,6 +26,14 @@ export type RouteDefinition = {
   operationId: string;
 };
 
+/**
+ * Event type emitted by `POST /eep/subscriptions/:id/test` (SPECIFICATION.md
+ * §5.1.1). `WebhookDispatcher` routes it to the single subscription named in
+ * `data.subscription_id` instead of fanning it out by `event_types`, so a
+ * conformance probe can exercise the signed delivery path on demand.
+ */
+export const TEST_DELIVERY_EVENT_TYPE = "com.eep.subscription.test";
+
 export type SubscriptionRecord = {
   subscription_id: string;
   source_did: string;

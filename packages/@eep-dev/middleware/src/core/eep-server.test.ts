@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseGateConfig, type GateProof, type ProofVerifier } from "@eep-dev/gates";
 import { EEPServer } from "./eep-server.js";
+import { TEST_DELIVERY_EVENT_TYPE } from "./request-handler.js";
 import type { EventBusAdapter, DBAdapter, SubscriptionRecord, SubscriptionUpdate } from "./request-handler.js";
 
 // Prevent real DNS resolution during subscribe validation tests.
@@ -44,8 +45,11 @@ class RecordingDBAdapter implements DBAdapter {
 
 class RecordingEventBusAdapter implements EventBusAdapter {
   public readonly published: string[] = [];
-  async publish(event: { type: string }): Promise<void> {
+  /** Full envelopes, for assertions that need more than the event type. */
+  public readonly events: Array<{ type: string; data?: unknown }> = [];
+  async publish(event: { type: string; data?: unknown }): Promise<void> {
     this.published.push(event.type);
+    this.events.push(event);
   }
   async subscribe(): Promise<void> {
     return;
@@ -294,11 +298,72 @@ describe("EEPServer", () => {
       did: "did:web:example.com"
     });
     const routes = server.getRouteDefinitions();
-    expect(routes.length).toBe(12);
+    expect(routes.length).toBe(18);
     const operationIds = routes.map((route) => route.operationId);
     expect(operationIds).toContain("subscribe");
     expect(operationIds).toContain("subscriptionStatus");
     expect(operationIds).toContain("unsubscribe");
+    expect(operationIds).toContain("listSubscriptions");
+    expect(operationIds).toContain("resumeSubscription");
+    expect(operationIds).toContain("pauseSubscription");
+    expect(operationIds).toContain("testSubscriptionDelivery");
+  });
+
+  // SPECIFICATION.md §5.1.1: creation stays on `POST /eep/subscribe` (it is
+  // what the manifest and the rel="subscribe" Link header advertise); every
+  // member operation is addressed under the `/eep/subscriptions` collection.
+  it("addresses subscription member operations under /eep/subscriptions", () => {
+    const server = new EEPServer({
+      baseUrl: "https://api.example.com",
+      did: "did:web:example.com"
+    });
+    const routes = server.getRouteDefinitions();
+    const find = (operationId: string) => routes.find((r) => r.operationId === operationId);
+
+    expect(find("subscribe")).toMatchObject({ method: "POST", path: "/eep/subscribe" });
+    expect(find("listSubscriptions")).toMatchObject({ method: "GET", path: "/eep/subscriptions" });
+    expect(find("subscriptionStatus")).toMatchObject({
+      method: "GET",
+      path: "/eep/subscriptions/:subscriptionId"
+    });
+    expect(find("unsubscribe")).toMatchObject({
+      method: "DELETE",
+      path: "/eep/subscriptions/:subscriptionId"
+    });
+    expect(find("pauseSubscription")).toMatchObject({
+      method: "POST",
+      path: "/eep/subscriptions/:subscriptionId/pause"
+    });
+    expect(find("resumeSubscription")).toMatchObject({
+      method: "POST",
+      path: "/eep/subscriptions/:subscriptionId/resume"
+    });
+    expect(find("testSubscriptionDelivery")).toMatchObject({
+      method: "POST",
+      path: "/eep/subscriptions/:subscriptionId/test"
+    });
+  });
+
+  it("keeps the pre-§5.1.1 /eep/subscribe/:id member paths as deprecated aliases", () => {
+    const server = new EEPServer({
+      baseUrl: "https://api.example.com",
+      did: "did:web:example.com"
+    });
+    const routes = server.getRouteDefinitions();
+    expect(routes).toContainEqual(
+      expect.objectContaining({
+        method: "GET",
+        path: "/eep/subscribe/:subscriptionId",
+        operationId: "subscriptionStatusDeprecated"
+      })
+    );
+    expect(routes).toContainEqual(
+      expect.objectContaining({
+        method: "DELETE",
+        path: "/eep/subscribe/:subscriptionId",
+        operationId: "unsubscribeDeprecated"
+      })
+    );
   });
 
   describe("subscribe body validation", () => {
@@ -527,6 +592,158 @@ describe("EEPServer", () => {
       });
       expect(res.status).toBe(201);
       expect(db.rows[0]?.tier).toBe("premium");
+    });
+  });
+
+  // SPECIFICATION.md §5.1.1 — list / resume / test-delivery member operations.
+  describe("subscription collection operations (§5.1.1)", () => {
+    const makeServer = () => {
+      const db = new RecordingDBAdapter();
+      const bus = new RecordingEventBusAdapter();
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        dbAdapter: db,
+        eventBusAdapter: bus
+      });
+      return { db, bus, server };
+    };
+
+    const seed = async (db: RecordingDBAdapter, overrides: Partial<SubscriptionRecord> = {}) => {
+      const record: SubscriptionRecord = {
+        subscription_id: "sub_test_1",
+        source_did: "did:web:agent.example",
+        delivery_method: "webhook",
+        callback_url: "https://hook.example/notify",
+        event_types: ["com.example.entity.updated"],
+        status: "active",
+        failure_count: 0,
+        delivery_secret: "whsec_super_secret_value_1234",
+        created_at: new Date().toISOString(),
+        ...overrides
+      };
+      await db.saveSubscription(record);
+      return record;
+    };
+
+    it("lists subscriptions without ever re-exposing delivery_secret", async () => {
+      const { db, server } = makeServer();
+      await seed(db);
+      const res = await server.getSubscriptionListHandler()({
+        method: "GET",
+        path: "/eep/subscriptions",
+        headers: {}
+      });
+      expect(res.status).toBe(200);
+      const body = res.body as { count: number; subscriptions: Array<Record<string, unknown>> };
+      expect(body.count).toBe(1);
+      expect(body.subscriptions[0]).not.toHaveProperty("delivery_secret");
+      expect(body.subscriptions[0]?.subscription_id).toBe("sub_test_1");
+    });
+
+    it("resumes a paused subscription and clears its failure counter", async () => {
+      const { db, server } = makeServer();
+      await seed(db, { status: "paused", failure_count: 5 });
+      const res = await server.getSubscriptionResumeHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/sub_test_1/resume",
+        headers: {},
+        params: { subscriptionId: "sub_test_1" }
+      });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ status: "active", failure_count: 0 });
+      expect(res.body).not.toHaveProperty("delivery_secret");
+      expect(db.rows[0]?.status).toBe("active");
+      expect(db.rows[0]?.failure_count).toBe(0);
+    });
+
+    it("pauses an active subscription", async () => {
+      const { db, server } = makeServer();
+      await seed(db, { status: "active" });
+      const res = await server.getSubscriptionPauseHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/sub_test_1/pause",
+        headers: {},
+        params: { subscriptionId: "sub_test_1" }
+      });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ status: "paused" });
+      expect(res.body).not.toHaveProperty("delivery_secret");
+      expect(db.rows[0]?.status).toBe("paused");
+    });
+
+    it("rejects pausing an already-paused subscription with 409", async () => {
+      const { db, server } = makeServer();
+      await seed(db, { status: "paused" });
+      const res = await server.getSubscriptionPauseHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/sub_test_1/pause",
+        headers: {},
+        params: { subscriptionId: "sub_test_1" }
+      });
+      expect(res.status).toBe(409);
+    });
+
+    it("rejects resuming an already-active subscription with 409", async () => {
+      const { db, server } = makeServer();
+      await seed(db, { status: "active" });
+      const res = await server.getSubscriptionResumeHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/sub_test_1/resume",
+        headers: {},
+        params: { subscriptionId: "sub_test_1" }
+      });
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 404 when resuming an unknown subscription", async () => {
+      const { server } = makeServer();
+      const res = await server.getSubscriptionResumeHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/nope/resume",
+        headers: {},
+        params: { subscriptionId: "nope" }
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it("enqueues a test delivery addressed to exactly one subscription", async () => {
+      const { db, bus, server } = makeServer();
+      await seed(db);
+      const res = await server.getSubscriptionTestHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/sub_test_1/test",
+        headers: {},
+        params: { subscriptionId: "sub_test_1" }
+      });
+      expect(res.status).toBe(202);
+      expect(bus.published).toEqual([TEST_DELIVERY_EVENT_TYPE]);
+      expect(bus.events[0]?.data).toMatchObject({ subscription_id: "sub_test_1" });
+    });
+
+    it("refuses a test delivery for a paused subscription with 409", async () => {
+      const { db, bus, server } = makeServer();
+      await seed(db, { status: "paused" });
+      const res = await server.getSubscriptionTestHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/sub_test_1/test",
+        headers: {},
+        params: { subscriptionId: "sub_test_1" }
+      });
+      expect(res.status).toBe(409);
+      expect(bus.published).toEqual([]);
+    });
+
+    it("returns 404 for a test delivery on an unknown subscription", async () => {
+      const { bus, server } = makeServer();
+      const res = await server.getSubscriptionTestHandler()({
+        method: "POST",
+        path: "/eep/subscriptions/nope/test",
+        headers: {},
+        params: { subscriptionId: "nope" }
+      });
+      expect(res.status).toBe(404);
+      expect(bus.published).toEqual([]);
     });
   });
 

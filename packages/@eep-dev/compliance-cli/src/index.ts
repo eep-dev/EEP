@@ -111,6 +111,7 @@ const RECOMMENDATIONS: Record<string, string> = {
     'EEP discovery via Link header': 'Return a proper Link header with rel="subscribe" for entity/discovery endpoints.',
     'Subscription creation': 'Implement POST /eep/subscribe with valid schema, auth, and returned subscription_id + delivery_secret.',
     'WebSub Intent Verification': 'Perform challenge callback and echo hub.challenge exactly from subscriber endpoint.',
+    'Test delivery trigger (§5.1.1)': 'Implement POST /eep/subscriptions/{subscription_id}/test returning 202 and enqueueing a signed com.eep.subscription.test delivery to the registered delivery_url.',
     'Webhook delivery received': 'Implement deterministic test event trigger and retry-safe outbound delivery.',
     'Standard Webhooks headers present': 'Include webhook-id, webhook-timestamp, and webhook-signature on every webhook delivery.',
     'HMAC-SHA256 signature is valid': 'Sign webhook payloads using Standard Webhooks v1 content format and timing-safe verification.',
@@ -391,20 +392,45 @@ async function runTests() {
         receivedHeaders = null;
         receivedRawBody = null;
 
+        // Trigger a synthetic delivery via SPECIFICATION.md §5.1.1.
+        //
+        // This MUST report its own outcome. `fetch` only rejects on a
+        // transport error, so a 404 (publisher does not implement the
+        // endpoint) used to resolve normally — the runner then waited 5s,
+        // received nothing, and blamed the *delivery* rather than the
+        // missing trigger. Implementers saw "Webhook delivery received:
+        // FAIL" and went hunting in their own dispatcher.
+        let triggered = false;
         try {
-            await fetch(`${TARGET}/eep/subscriptions/${subscriptionId}/test`, {
+            const triggerRes = await fetch(`${TARGET}/eep/subscriptions/${subscriptionId}/test`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${API_KEY}` },
                 signal: AbortSignal.timeout(5000),
             });
-        } catch {
-            fail('Test event delivery', 'failed to trigger test event');
+            if (triggerRes.status === 202 || triggerRes.ok) {
+                triggered = true;
+                logPass('Test delivery trigger (§5.1.1)', `HTTP ${triggerRes.status}`);
+            } else if (triggerRes.status === 404) {
+                logFail(
+                    'Test delivery trigger (§5.1.1)',
+                    `HTTP 404 — POST /eep/subscriptions/{id}/test is not implemented. ` +
+                    `Standard Webhooks header and HMAC probes cannot run without it.`
+                );
+            } else {
+                logFail('Test delivery trigger (§5.1.1)', `HTTP ${triggerRes.status}`);
+            }
+        } catch (e) {
+            logFail('Test delivery trigger (§5.1.1)', `request failed: ${String(e)}`);
         }
 
-        // Wait up to 5s for delivery
-        await new Promise(r => setTimeout(r, 5000));
+        // Only wait for a delivery we actually managed to trigger, and skip
+        // (rather than fail) the downstream signature probes otherwise — the
+        // publisher's signing is untested, not proven broken.
+        if (triggered) {
+            await new Promise(r => setTimeout(r, 5000));
+        }
 
-        if (receivedWebhook && receivedHeaders) {
+        if (triggered && receivedWebhook && receivedHeaders) {
             pass('Webhook delivery received', `event type: ${(receivedWebhook as any).type}`);
 
             // Verify Standard Webhooks headers
@@ -452,8 +478,19 @@ async function runTests() {
             if (event.eep_version) pass('EEP extension attributes present', `eep_version: ${event.eep_version}`);
             else fail('EEP extension attributes present', 'eep_version missing');
 
+        } else if (!triggered) {
+            // The trigger itself already failed and said so. Skip — rather
+            // than fail — everything downstream: the publisher's signing and
+            // envelope are untested here, not proven broken.
+            const reason = 'test delivery could not be triggered (see §5.1.1)';
+            skip('Webhook delivery received', reason);
+            skip('Standard Webhooks headers present', reason);
+            skip('HMAC-SHA256 signature is valid', reason);
+            skip('CloudEvents specversion is 1.0', reason);
+            skip('Event id field present', reason);
+            skip('Event source field present', reason);
         } else {
-            fail('Webhook delivery received', 'no webhook received within 5s');
+            fail('Webhook delivery received', 'trigger accepted but no webhook arrived within 5s');
             skip('Standard Webhooks headers present', 'no delivery');
             skip('HMAC-SHA256 signature is valid', 'no delivery');
             skip('CloudEvents specversion is 1.0', 'no delivery');

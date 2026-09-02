@@ -1,4 +1,5 @@
 export { EEPServer, type EEPServerOptions } from "./core/eep-server.js";
+export { TEST_DELIVERY_EVENT_TYPE } from "./core/request-handler.js";
 export type {
   AuthAdapter,
   CloudEvent,
