@@ -7,7 +7,7 @@
     },
     "dependencies": {
         "@eep-dev/gates": "file:../../packages/@eep-dev/gates",
-        "hono": "^4.13.3",
+        "hono": "^4.13.5",
         "@hono/node-server": "^1.19.17",
         "ws": "^8.21.3"
     },
