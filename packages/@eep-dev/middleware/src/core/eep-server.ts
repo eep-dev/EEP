@@ -10,6 +10,7 @@ import {
   type ProofVerifier
 } from "@eep-dev/gates";
 import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
+import { TEST_DELIVERY_EVENT_TYPE } from "./request-handler.js";
 import type {
   AuthAdapter,
   CloudEvent,
@@ -386,6 +387,149 @@ export class EEPServer {
     };
   }
 
+  /**
+   * `GET /eep/subscriptions` — list the caller's subscriptions (§5.1.1).
+   *
+   * `delivery_secret` is stripped: it is disclosed exactly once, in the
+   * creation response.
+   */
+  getSubscriptionListHandler(): RequestHandler {
+    return async () => {
+      const subscriptions = await this.dbAdapter.listSubscriptions();
+      const safe = subscriptions.map(({ delivery_secret: _secret, ...rest }) => rest);
+      return { status: 200, body: { subscriptions: safe, count: safe.length } };
+    };
+  }
+
+  /**
+   * `POST /eep/subscriptions/:subscriptionId/pause` — stop delivering to an
+   * `active` subscription without cancelling it (§5.1.1, §10).
+   */
+  getSubscriptionPauseHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return {
+          status: 400,
+          body: { error: "invalid_request", message: "subscription_id is required" }
+        };
+      }
+      const subscription = await this.dbAdapter.getSubscription(subscriptionId);
+      if (!subscription) {
+        return {
+          status: 404,
+          body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` }
+        };
+      }
+      if (subscription.status === "paused") {
+        return {
+          status: 409,
+          body: { error: "conflict", message: `subscription ${subscriptionId} is already paused` }
+        };
+      }
+      await this.dbAdapter.updateSubscription(subscriptionId, { status: "paused" });
+      const updated = await this.dbAdapter.getSubscription(subscriptionId);
+      const { delivery_secret: _secret, ...safe } = updated ?? subscription;
+      return { status: 200, body: { ...safe, status: "paused" } };
+    };
+  }
+
+  /**
+   * `POST /eep/subscriptions/:subscriptionId/resume` — move a `paused`
+   * subscription back to `active` and clear its failure counter (§5.1.1, §10).
+   */
+  getSubscriptionResumeHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return {
+          status: 400,
+          body: { error: "invalid_request", message: "subscription_id is required" }
+        };
+      }
+      const subscription = await this.dbAdapter.getSubscription(subscriptionId);
+      if (!subscription) {
+        return {
+          status: 404,
+          body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` }
+        };
+      }
+      if (subscription.status === "active") {
+        return {
+          status: 409,
+          body: {
+            error: "conflict",
+            message: `subscription ${subscriptionId} is already active`
+          }
+        };
+      }
+      await this.dbAdapter.updateSubscription(subscriptionId, {
+        status: "active",
+        failure_count: 0
+      });
+      const updated = await this.dbAdapter.getSubscription(subscriptionId);
+      const { delivery_secret: _secret, ...safe } = updated ?? subscription;
+      return { status: 200, body: { ...safe, status: "active", failure_count: 0 } };
+    };
+  }
+
+  /**
+   * `POST /eep/subscriptions/:subscriptionId/test` — enqueue a synthetic,
+   * fully signed delivery to the subscription's registered `delivery_url`
+   * (§5.1.1).
+   *
+   * This is what makes a publisher's delivery path independently checkable:
+   * `@eep-dev/compliance-cli` calls it to verify Standard Webhooks headers
+   * and HMAC correctness without waiting for organic traffic. The event is
+   * published on the normal event bus; `WebhookDispatcher` routes
+   * `com.eep.subscription.test` to the single subscription named in
+   * `data.subscription_id` rather than fanning it out by `event_types`.
+   */
+  getSubscriptionTestHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return {
+          status: 400,
+          body: { error: "invalid_request", message: "subscription_id is required" }
+        };
+      }
+      const subscription = await this.dbAdapter.getSubscription(subscriptionId);
+      if (!subscription) {
+        return {
+          status: 404,
+          body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` }
+        };
+      }
+      if (subscription.status !== "active") {
+        return {
+          status: 409,
+          body: {
+            error: "conflict",
+            message: `subscription ${subscriptionId} is ${subscription.status}; test deliveries require an active subscription`
+          }
+        };
+      }
+
+      const event: CloudEvent = {
+        id: `evt_test_${randomBytes(8).toString("hex")}`,
+        type: TEST_DELIVERY_EVENT_TYPE,
+        source: this.did,
+        time: new Date().toISOString(),
+        data: {
+          subscription_id: subscriptionId,
+          message: "EEP synthetic test delivery — no state changed."
+        }
+      };
+      await this.eventBusAdapter.publish(event);
+
+      return {
+        status: 202,
+        body: { status: "accepted", subscription_id: subscriptionId, event_id: event.id }
+      };
+    };
+  }
+
   getUnsubscribeHandler(): RequestHandler {
     return async (request) => {
       const subscriptionId = request.params?.subscriptionId;
@@ -454,9 +598,22 @@ export class EEPServer {
       { method: "GET", path: "/healthz", operationId: "health", handler: this.getHealthHandler() },
       { method: "GET", path: "/eep/stream", operationId: "stream", handler: this.getSSEHandler() },
       { method: "GET", path: "/eep/content/:resourcePath", operationId: "gatedContent", handler: this.getGatedResourceHandler() },
+      // Subscription resource per SPECIFICATION.md §5.1.1. Creation stays on
+      // `POST /eep/subscribe` because that URL is what the manifest advertises
+      // as `layers.layer2_webhook` and what the `rel="subscribe"` Link header
+      // points at. Every member operation lives under `/eep/subscriptions`.
       { method: "POST", path: "/eep/subscribe", operationId: "subscribe", handler: this.getSubscribeHandler() },
-      { method: "GET", path: "/eep/subscribe/:subscriptionId", operationId: "subscriptionStatus", handler: this.getSubscriptionStatusHandler() },
-      { method: "DELETE", path: "/eep/subscribe/:subscriptionId", operationId: "unsubscribe", handler: this.getUnsubscribeHandler() },
+      { method: "GET", path: "/eep/subscriptions", operationId: "listSubscriptions", handler: this.getSubscriptionListHandler() },
+      { method: "GET", path: "/eep/subscriptions/:subscriptionId", operationId: "subscriptionStatus", handler: this.getSubscriptionStatusHandler() },
+      { method: "DELETE", path: "/eep/subscriptions/:subscriptionId", operationId: "unsubscribe", handler: this.getUnsubscribeHandler() },
+      { method: "POST", path: "/eep/subscriptions/:subscriptionId/pause", operationId: "pauseSubscription", handler: this.getSubscriptionPauseHandler() },
+      { method: "POST", path: "/eep/subscriptions/:subscriptionId/resume", operationId: "resumeSubscription", handler: this.getSubscriptionResumeHandler() },
+      { method: "POST", path: "/eep/subscriptions/:subscriptionId/test", operationId: "testSubscriptionDelivery", handler: this.getSubscriptionTestHandler() },
+
+      // Deprecated 0.1.x aliases for the member operations, which shipped
+      // under `/eep/subscribe/:id` before §5.1.1 existed. Remove at 0.2.
+      { method: "GET", path: "/eep/subscribe/:subscriptionId", operationId: "subscriptionStatusDeprecated", handler: this.getSubscriptionStatusHandler() },
+      { method: "DELETE", path: "/eep/subscribe/:subscriptionId", operationId: "unsubscribeDeprecated", handler: this.getUnsubscribeHandler() },
       { method: "GET", path: "/eep/audit-log", operationId: "auditLog", handler: this.getAuditLogHandler() },
       { method: "GET", path: "/eep/pulse", operationId: "pulseUpgrade", handler: this.getPulseUpgradeHandler() }
     ];

@@ -1,5 +1,6 @@
 import { EEPSigner } from "@eep-dev/signer";
 import { matchesAnyPattern } from "@eep-dev/validator";
+import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
 import type {
   CloudEvent,
   DBAdapter,
@@ -167,13 +168,24 @@ export class WebhookDispatcher {
   }
 
   private isTarget(sub: SubscriptionRecord, event: CloudEvent): boolean {
-    return (
+    const deliverable =
       sub.delivery_method === "webhook" &&
       sub.status === "active" &&
       typeof sub.callback_url === "string" &&
-      sub.callback_url.length > 0 &&
-      matchesAnyPattern(event.type, sub.event_types)
-    );
+      sub.callback_url.length > 0;
+    if (!deliverable) return false;
+
+    // A synthetic test delivery is addressed to ONE subscription and must not
+    // fan out. It also deliberately bypasses `event_types`: the whole point is
+    // to exercise the signed delivery path for a subscriber whose patterns
+    // would never match `com.eep.subscription.test`. See SPECIFICATION.md
+    // §5.1.1.
+    if (event.type === TEST_DELIVERY_EVENT_TYPE) {
+      const target = (event.data as { subscription_id?: unknown } | undefined)?.subscription_id;
+      return typeof target === "string" && target === sub.subscription_id;
+    }
+
+    return matchesAnyPattern(event.type, sub.event_types);
   }
 
   private async deliverWithRetry(event: CloudEvent, sub: SubscriptionRecord): Promise<DeliveryResult> {

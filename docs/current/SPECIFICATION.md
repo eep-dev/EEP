@@ -320,6 +320,30 @@ Content-Type: application/json
 
 The subscription sits in the `pending_verification` status until WebSub intent verification completes (see §10).
 
+#### 5.1.1 Subscription management endpoints (normative)
+
+`POST /eep/subscribe` creates a subscription and is the URL advertised as `layers.layer2_webhook` in the manifest (§12.3) and as `rel="subscribe"` in the `Link` header (§12.1). Every other operation on an existing subscription is addressed as a member of the `/eep/subscriptions` collection:
+
+| Method | Path | Operation | Success | Scope |
+|---|---|---|---|---|
+| `POST` | `/eep/subscribe` | Create a subscription | `201` + subscription object | `write:subscriptions` |
+| `GET` | `/eep/subscriptions` | List the caller's own subscriptions | `200` + `{ "subscriptions": [...] }` | `read:subscriptions` |
+| `GET` | `/eep/subscriptions/{subscription_id}` | Read one subscription's status | `200` + subscription object | `read:subscriptions` |
+| `DELETE` | `/eep/subscriptions/{subscription_id}` | Cancel a subscription | `204` | `write:subscriptions` |
+| `POST` | `/eep/subscriptions/{subscription_id}/pause` | Pause an `active` subscription | `200` + subscription object | `write:subscriptions` |
+| `POST` | `/eep/subscriptions/{subscription_id}/resume` | Resume a `paused` subscription | `200` + subscription object | `write:subscriptions` |
+| `POST` | `/eep/subscriptions/{subscription_id}/test` | Trigger a synthetic test delivery | `202` | `write:subscriptions` |
+
+Publishers MUST NOT return the `delivery_secret` on any of these responses; it is disclosed exactly once, in the `201` body of the creating `POST /eep/subscribe`.
+
+Publishers MUST scope every operation to the authenticated caller and MUST return `404` — not `403` — for a `subscription_id` that exists but belongs to another subscriber, so the collection cannot be enumerated.
+
+**Test deliveries.** `POST /eep/subscriptions/{subscription_id}/test` makes an `active` subscription's delivery path independently checkable: the publisher MUST send a normal, fully signed webhook to the registered `delivery_url` carrying an event of type `com.eep.subscription.test`, and MUST return `202 Accepted` once enqueued. The event MUST be signed and framed exactly like production traffic (§5.2, §5.3) — that is the entire point of the endpoint, and `@eep-dev/compliance-cli` relies on it to verify Standard Webhooks headers and HMAC correctness without waiting for organic traffic. Publishers MUST return `409 Conflict` when the subscription is not `active`, and MUST rate-limit this endpoint at least as tightly as subscription creation (§13).
+
+This table makes normative the API that [How to subscribe](../guides/how-to-subscribe.md#managing-subscriptions) has documented since v0.1; previously the guide was the only place these operations were written down.
+
+> **Compatibility note (v0.1).** Reference middleware released before this section served the member operations under `/eep/subscribe/{subscription_id}`. Implementations SHOULD continue to accept those paths as deprecated aliases through the `0.1.x` line and SHOULD advertise only the `/eep/subscriptions` forms.
+
 ### 5.2 Webhook delivery format
 
 The publisher MUST `POST` the following payload to the `delivery_url`:
@@ -648,7 +672,7 @@ EEP event types follow a reverse-domain dot notation pattern:
 ## 10. Subscription lifecycle
 
 ```
-POST /subscribe
+POST /eep/subscribe
       │
       ▼
   [pending_verification]
@@ -661,14 +685,18 @@ POST /subscribe
       │                             │
    Failure                   event delivery
       ▼                             │
-  [rejected]             5 consecutive failures
+  [rejected]             5 consecutive failed deliveries
                                     ▼
                               [paused]
                                     │
-                          POST /subscriptions/:id/resume
+      POST /eep/subscriptions/{subscription_id}/resume
                                     ▼
                               [active]
 ```
+
+A "failed delivery" is one that exhausted the full §5.4 retry schedule. The
+counter is consecutive and resets on the next delivery that the subscriber
+acknowledges with a 2xx. Endpoint paths are normative in §5.1.1.
 
 ### WebSub intent verification
 
@@ -1028,7 +1056,7 @@ Suitable for: read-only publishers, IoT sensors, knowledge bases.
 Superset of Core. Suitable for: B2B data APIs, financial feeds, subscription services.
 
 - [x] All Core requirements above, plus:
-- [x] Webhook subscription endpoint (`POST /eep/subscribe`) with full lifecycle (create/pause/resume/delete)
+- [x] Webhook subscription endpoints per §5.1.1: create (`POST /eep/subscribe`), read, list, resume, test and cancel under `/eep/subscriptions`
 - [x] WebSub intent verification before activating any webhook subscription
 - [x] HMAC-SHA256 signature on all webhook deliveries (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature` per §5)
 - [x] Exponential backoff retry policy for failed webhook deliveries (min 5 attempts, max 24h window)
