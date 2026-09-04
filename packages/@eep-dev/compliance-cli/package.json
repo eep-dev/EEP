@@ -36,7 +36,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/bundle-schemas.mjs",
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "test": "vitest run"
@@ -50,5 +50,9 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   }
 }
