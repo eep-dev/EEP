@@ -21,6 +21,8 @@ import {
     checkWebhookHeaders,
     verifyWebhookSignature,
 } from './helpers.js';
+import { loadSchemaRegistry, SCHEMA_MANIFEST, SCHEMA_EVENT_ENVELOPE } from './schemas.js';
+import { findFixturesDir, runFixtures } from './fixtures.js';
 
 // ─── CLI Argument Parsing ────────────────────────────────────────────────────
 
@@ -34,13 +36,15 @@ const { values } = parseArgs({
         'report-json': { type: 'string' },
         'report-md': { type: 'string' },
         'report-html': { type: 'string' },
+        fixtures: { type: 'string' },
+        schemas: { type: 'string' },
         help: { type: 'boolean', short: 'h', default: false },
     },
     strict: true,
     args: process.argv.slice(2),
 });
 
-if (values.help || !values.target) {
+if (values.help || (!values.target && values.fixtures === undefined)) {
     console.log(`
 EEP Compliance CLI — Test your platform's EEP conformance
 
@@ -56,18 +60,28 @@ OPTIONS:
   --report-json <path>      Write machine-readable audit report JSON
   --report-md   <path>      Write human-readable audit report markdown
   --report-html <path>      Write self-contained HTML audit report
+  --fixtures  [dir]         Run the offline conformance vectors instead of
+                            probing a live target. No network, no API key.
+                            Defaults to ./tests/conformance-fixtures.
+  --schemas   <dir>         Override the schemas/v0.1 directory used for
+                            JSON Schema validation.
   --help,     -h            Show this help message
 
 EXAMPLES:
   npx @eep-dev/compliance-cli --target https://api.example.com --api-key sk_... --entity u/acme-corp
   npx @eep-dev/compliance-cli --target https://localhost:3000 --api-key sk_... --entity u/test --level core
+
+  # Offline: replay the released conformance vectors, no publisher required
+  tar xzf eep-conformance-vectors-v0.1.0.tar.gz
+  npx @eep-dev/compliance-cli --fixtures ./conformance-fixtures
 `);
     process.exit(values.help ? 0 : 1);
 }
 
 // ─── Test Runner ─────────────────────────────────────────────────────────────
 
-const TARGET = normalizeTarget(values.target!);
+// `--fixtures` runs offline, so a target is optional in that mode.
+const TARGET = values.target ? normalizeTarget(values.target) : '';
 const API_KEY = values['api-key'] || '';
 const ENTITY = values.entity || '';
 const TEST_PORT = parseInt(values.port!, 10);
@@ -75,6 +89,13 @@ const LEVEL = values.level!;
 const REPORT_JSON_PATH = values['report-json'] || '';
 const REPORT_MD_PATH = values['report-md'] || '';
 const REPORT_HTML_PATH = values['report-html'] || '';
+const FIXTURES_ARG = values.fixtures;
+const SCHEMAS_DIR_ARG = values.schemas || undefined;
+
+// Load the normative schemas once. `null` means we could not find them, in
+// which case every schema probe SKIPs with an explicit reason rather than
+// silently passing — an unvalidated run must never look like a clean one.
+const SCHEMAS = loadSchemaRegistry(SCHEMAS_DIR_ARG);
 
 const runner = createTestRunner();
 const { pass, fail, skip, results } = runner;
@@ -115,11 +136,16 @@ const RECOMMENDATIONS: Record<string, string> = {
     'Webhook delivery received': 'Implement deterministic test event trigger and retry-safe outbound delivery.',
     'Standard Webhooks headers present': 'Include webhook-id, webhook-timestamp, and webhook-signature on every webhook delivery.',
     'HMAC-SHA256 signature is valid': 'Sign webhook payloads using Standard Webhooks v1 content format and timing-safe verification.',
+    'Webhook timestamp is fresh (\u00a75.3)': 'Send a current webhook-timestamp on every delivery and re-sign retries, so deliveries land inside the subscriber 60s replay window.',
+    'manifest validates against eep-manifest.json': 'Serve a /.well-known/eep.json that validates against schemas/v0.1/eep-manifest.json in full, not just the headline fields.',
+    'event validates against event.envelope.json': 'Emit event envelopes that validate against schemas/v0.1/event.envelope.json.',
     'CloudEvents specversion is 1.0': 'Emit CloudEvents v1.0 envelopes for all events.',
     'Event id field present': 'Include a stable id field in every event envelope.',
     'Event source field present': 'Include canonical source identifier in every event envelope.',
     'EEP extension attributes present': 'Emit eep_version (and related EEP extension metadata).',
     'SSE stream endpoint': 'Expose authenticated SSE endpoint with Content-Type: text/event-stream.',
+    'SSE heartbeat (\u00a74.4)': 'Emit an SSE comment heartbeat (a line starting with ":") at least every 15 seconds so subscribers can detect stale connections.',
+    'SSE Last-Event-ID replay (\u00a74.3)': 'Honour the Last-Event-ID header (or last_event_id query param) by replaying events strictly after that id, with at least a 24h retention window.',
     'Rate limit headers present': 'Return X-RateLimit-* headers for protected endpoints.',
     '/.well-known/eep.json manifest reachable': 'Serve eep manifest with stable URL and valid JSON contract.',
     'manifest.did field present': 'Include did in manifest and keep it resolvable.',
@@ -457,6 +483,27 @@ async function runTests() {
                 } else {
                     fail('HMAC-SHA256 signature is valid', result.reason);
                 }
+
+                // §5.3 requires receivers to reject a `webhook-timestamp`
+                // more than 60s from now. That is only enforceable if the
+                // publisher SENDS a fresh one — including on retries, which
+                // MUST be re-signed rather than replayed with the original
+                // timestamp. This is the publisher-side half of that MUST,
+                // and it was previously unprobed.
+                const sentAt = Number.parseInt(headers['webhook-timestamp'] ?? '', 10);
+                if (!Number.isFinite(sentAt)) {
+                    logFail('Webhook timestamp is fresh (§5.3)', `webhook-timestamp is not an integer: ${headers['webhook-timestamp']}`);
+                } else {
+                    const skew = Math.abs(Math.floor(Date.now() / 1000) - sentAt);
+                    if (skew <= 60) {
+                        logPass('Webhook timestamp is fresh (§5.3)', `${skew}s skew`);
+                    } else {
+                        logFail(
+                            'Webhook timestamp is fresh (§5.3)',
+                            `${skew}s skew exceeds the 60s replay window — a conformant subscriber would reject this delivery`,
+                        );
+                    }
+                }
             } else {
                 fail('Standard Webhooks headers present', `missing: ${[!hasId && 'id', !hasTimestamp && 'timestamp', !hasSignature && 'signature'].filter(Boolean).join(', ')}`);
                 if (hasSignature) {
@@ -466,6 +513,22 @@ async function runTests() {
 
             // Validate CloudEvents headers
             const event = receivedWebhook as any;
+
+            // Whole-envelope validation against schemas/v0.1/event.envelope.json.
+            // The per-field probes below stay because they name the exact
+            // missing attribute, which reads better in a report than a
+            // schema error path — but they are no longer the only check.
+            if (SCHEMAS) {
+                const v = SCHEMAS.validate(SCHEMA_EVENT_ENVELOPE, event);
+                if (v.valid) {
+                    logPass('event validates against event.envelope.json', SCHEMA_EVENT_ENVELOPE);
+                } else {
+                    logFail('event validates against event.envelope.json', v.errors.join('; '));
+                }
+            } else {
+                logSkip('event validates against event.envelope.json', 'schemas/v0.1 not found');
+            }
+
             if (event.specversion === '1.0') pass('CloudEvents specversion is 1.0');
             else fail('CloudEvents specversion is 1.0', `got: ${event.specversion}`);
 
@@ -528,6 +591,90 @@ async function runTests() {
             skip('SSE stream endpoint', 'requires --api-key and --entity');
         }
 
+        // ── §4.3 / §4.4: replay and heartbeat ────────────────────────────
+        //
+        // These are normative MUSTs and were previously unprobed: the SSE
+        // check above only asserted a Content-Type. Replay is EEP's headline
+        // reliability claim over plain webhooks, so "the endpoint exists"
+        // is not evidence that it works.
+        if (ENTITY && API_KEY) {
+            // Read a slice of the live stream once, and use it for both the
+            // heartbeat check and to learn a real event id for the replay probe.
+            const readStream = async (extraHeaders: Record<string, string>, ms: number): Promise<string> => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), ms);
+                try {
+                    const res = await fetch(`${TARGET}/eep/stream?source=${ENTITY}`, {
+                        headers: {
+                            Authorization: `Bearer ${API_KEY}`,
+                            Accept: 'text/event-stream',
+                            ...extraHeaders,
+                        },
+                        signal: controller.signal,
+                    });
+                    if (!res.body) return '';
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    while (buffer.length < 64_000) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                    }
+                    return buffer;
+                } catch {
+                    return '';
+                } finally {
+                    clearTimeout(timer);
+                }
+            };
+
+            // §4.4 — heartbeat every 15s. We sample ~18s so a compliant
+            // publisher emits at least one comment frame within the window.
+            const sample = await readStream({}, 18_000);
+            if (sample.length === 0) {
+                logSkip('SSE heartbeat (§4.4)', 'no stream bytes received within 18s');
+                logSkip('SSE Last-Event-ID replay (§4.3)', 'no stream bytes received within 18s');
+            } else {
+                // A heartbeat is an SSE comment line (starts with ':').
+                const hasHeartbeat = sample.split('\n').some((line) => line.startsWith(':'));
+                if (hasHeartbeat) {
+                    logPass('SSE heartbeat (§4.4)', 'comment frame observed within 18s');
+                } else {
+                    logFail(
+                        'SSE heartbeat (§4.4)',
+                        'no `:` comment frame in 18s — §4.4 requires a heartbeat every 15 seconds',
+                    );
+                }
+
+                // §4.3 — reconnect with Last-Event-ID and expect replay.
+                const ids = [...sample.matchAll(/^id:\s*(\S+)\s*$/gm)].map((m) => m[1]!);
+                if (ids.length === 0) {
+                    logSkip('SSE Last-Event-ID replay (§4.3)', 'stream carried no `id:` frames to resume from');
+                } else {
+                    const resumeFrom = ids[0]!;
+                    const replayed = await readStream({ 'Last-Event-ID': resumeFrom }, 8_000);
+                    const replayedIds = [...replayed.matchAll(/^id:\s*(\S+)\s*$/gm)].map((m) => m[1]!);
+                    if (replayedIds.length === 0) {
+                        logFail(
+                            'SSE Last-Event-ID replay (§4.3)',
+                            `reconnected with Last-Event-ID: ${resumeFrom} but received no events; §4.3 requires replay with >=24h retention`,
+                        );
+                    } else if (replayedIds.includes(resumeFrom)) {
+                        logFail(
+                            'SSE Last-Event-ID replay (§4.3)',
+                            `replay re-sent the cursor event ${resumeFrom}; §4.3 requires events strictly AFTER the given id`,
+                        );
+                    } else {
+                        logPass('SSE Last-Event-ID replay (§4.3)', `resumed after ${resumeFrom}, got ${replayedIds.length} event(s)`);
+                    }
+                }
+            }
+        } else {
+            logSkip('SSE heartbeat (§4.4)', 'requires --api-key and --entity');
+            logSkip('SSE Last-Event-ID replay (§4.3)', 'requires --api-key and --entity');
+        }
+
         // Rate limit headers
         if (API_KEY) {
             try {
@@ -557,7 +704,25 @@ async function runTests() {
                 const json = await res.json() as any;
                 pass('/.well-known/eep.json manifest reachable', `HTTP ${res.status}`);
 
-                // Check required fields
+                // Validate the whole document against the normative schema
+                // rather than spot-checking a handful of fields. This is the
+                // difference between "has a `did` key" and "is a conformant
+                // manifest": schemas/v0.1/eep-manifest.json constrains 24
+                // properties, their types, formats and nested shapes.
+                if (SCHEMAS) {
+                    const v = SCHEMAS.validate(SCHEMA_MANIFEST, json);
+                    if (v.valid) {
+                        logPass('manifest validates against eep-manifest.json', `${SCHEMA_MANIFEST}`);
+                    } else {
+                        logFail('manifest validates against eep-manifest.json', v.errors.join('; '));
+                    }
+                } else {
+                    logSkip('manifest validates against eep-manifest.json', 'schemas/v0.1 not found');
+                }
+
+                // Field-level probes are retained because they name the
+                // specific field in the report, which is more actionable
+                // than a schema error path for the common misses.
                 if (json.did) pass('manifest.did field present', json.did);
                 else fail('manifest.did field present', 'missing');
 
@@ -881,6 +1046,13 @@ async function runTests() {
     const conformanceLevel = runner.conformanceLabel(LEVEL);
     console.log(`   ${conformanceLevel}\n`);
 
+    await writeReports();
+
+    process.exit(failed > 0 ? 1 : 0);
+}
+
+async function writeReports(): Promise<void> {
+    const auditReport = toAuditReport();
     if (REPORT_JSON_PATH) {
         await writeFile(REPORT_JSON_PATH, JSON.stringify(auditReport, null, 2), 'utf8');
         console.log(`   Wrote JSON report: ${REPORT_JSON_PATH}`);
@@ -893,13 +1065,46 @@ async function runTests() {
         await writeFile(REPORT_HTML_PATH, toHtmlReport(auditReport), 'utf8');
         console.log(`   Wrote HTML report: ${REPORT_HTML_PATH}`);
     }
+}
 
+/**
+ * `--fixtures` mode: replay the released conformance vectors offline.
+ *
+ * No local webhook receiver, no network, no API key — so this must not
+ * touch `server`. Exit code matches the live path: non-zero on any failure.
+ */
+async function runFixtureMode(): Promise<never> {
+    const dir = findFixturesDir(FIXTURES_ARG && FIXTURES_ARG.length > 0 ? FIXTURES_ARG : undefined);
+    if (!dir) {
+        console.error(
+            'No conformance fixtures found.\n' +
+            'Pass a directory: --fixtures ./conformance-fixtures\n' +
+            'Vectors ship with every EEP release as eep-conformance-vectors-vX.Y.Z.tar.gz.'
+        );
+        process.exit(2);
+    }
+
+    console.log(`\n🧪 EEP OFFLINE CONFORMANCE VECTORS\n`);
+    console.log(`   Fixtures: ${dir}`);
+    console.log(`   Schemas:  ${SCHEMAS ? `${SCHEMAS.dir} (${SCHEMAS.count} loaded)` : 'not found — schema probes will skip'}\n`);
+
+    const { specVersion, total } = runFixtures(dir, { pass: logPass, fail: logFail, skip: logSkip }, SCHEMAS_DIR_ARG);
+
+    const { passed, failed, skipped } = runner.summary();
+    console.log('\n' + '─'.repeat(60));
+    console.log(`\n📊 Vectors (spec v${specVersion}): ${passed} passed | ${failed} failed | ${skipped} skipped (${total} declared)\n`);
+    await writeReports();
     process.exit(failed > 0 ? 1 : 0);
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
-server.listen(TEST_PORT, () => {
-    runTests()
-        .catch(console.error)
-        .finally(() => server.close());
-});
+if (FIXTURES_ARG !== undefined) {
+    // Offline mode never binds a port.
+    await runFixtureMode();
+} else {
+    server.listen(TEST_PORT, () => {
+        runTests()
+            .catch(console.error)
+            .finally(() => server.close());
+    });
+}

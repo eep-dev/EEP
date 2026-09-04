@@ -154,6 +154,13 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx vitest run --coverage
+      # Exercise the published entry point in offline mode. This is what a
+      # downstream implementor runs against the released vector tarball, so
+      # a break here means the shipped CLI is broken even though the unit
+      # tests pass.
+      - name: Replay conformance vectors through the built CLI (--fixtures)
+        working-directory: .
+        run: node packages/@eep-dev/compliance-cli/dist/index.js --fixtures ./tests/conformance-fixtures
 
   test-discovery:
     runs-on: ubuntu-latest
