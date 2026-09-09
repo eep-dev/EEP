@@ -439,6 +439,20 @@ jobs:
   # ────────────────────────────────────────────────────────────────────
   # Schema → types drift gate
   # ────────────────────────────────────────────────────────────────────
+  # The Internet-Draft is the document this project intends to submit for
+  # standardisation. It described a different manifest than the one that
+  # ships — different field names, different required set — and nothing
+  # compared them. This gate makes that class of drift a build failure.
+  draft-schema-parity:
+    name: IETF draft ↔ schema parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7 # renovate: pin
+      - uses: actions/setup-node@v7 # renovate: pin
+        with:
+          node-version: '22'
+      - run: node scripts/check-draft-schema-parity.mjs
+
   schema-types-drift:
     name: Schema types drift gate
     runs-on: ubuntu-latest
