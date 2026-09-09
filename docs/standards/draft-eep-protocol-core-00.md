@@ -133,35 +133,59 @@ Pulse channel:
 
 A conforming publisher MUST expose a discovery document at
 `/.well-known/eep.json` per {{RFC9110}}. The document MUST be a JSON
-object that includes:
+object conforming to the `eep-manifest.json` schema in {{EEP-SPEC}}.
+The fields relevant to the Core tier are:
 
+<!-- BEGIN manifest-fields (checked by scripts/check-draft-schema-parity.mjs) -->
 | Field | Type | Required | Description |
 |---|---|---|---|
+| `did` | string | yes | An absolute DID URI per {{W3C.DID}} identifying the publisher. |
 | `eep_version` | string | yes | The EEP version supported, e.g. `"0.1"`. |
-| `publisher_did` | string | yes | An absolute DID URI per {{W3C.DID}}. |
-| `endpoints.discovery` | string (URI) | yes | Absolute https URL of this document. |
-| `endpoints.subscribe` | string (URI) | yes | Absolute https URL for subscribe / unsubscribe. |
-| `endpoints.stream` | string (URI) | yes | Absolute https URL for SSE stream. |
-| `endpoints.pulse` | string (URI) | no | Absolute wss URL for pulse channel, when supported. |
-| `supported_layers` | array | yes | Subset of `{state_resolution, signal_stream, network_pulse}`. |
-| `delivery_methods` | array | yes | Subset of `{sse, webhook}`. |
-| `conformance_level` | string | yes | One of `Core`, `Standard`, `Full`. |
+| `layers` | object | yes | Endpoint URLs per layer; see below. |
+| `supported_content_types` | array | yes | Media types the Layer 1 entity endpoint can serve, e.g. `["application/json", "text/markdown"]`. |
+| `pqc_ready` | boolean | yes | Whether the publisher can verify post-quantum signature algorithms. |
+| `x402_enabled` | boolean | yes | Whether the publisher supports HTTP 402 payment gating. |
+| `gates_url` | string (URI) | no | Absolute https URL of the gate configuration document. |
+| `services_url` | string (URI) | no | Absolute https URL of the service catalog. |
+| `updated_at` | string | no | RFC 3339 timestamp of the last manifest change. |
+<!-- END manifest-fields -->
+
+The `layers` object carries the endpoint URLs:
+
+| Member | Type | Required | Description |
+|---|---|---|---|
+| `layer1` | string (URI) | yes | Absolute https URL of the Layer 1 entity resolution endpoint. |
+| `layer2_sse` | string (URI) | no | Absolute https URL of the SSE stream. |
+| `layer2_webhook` | string (URI) | no | Absolute https URL for subscription creation. |
+| `layer3_ws` | string (URI) | no | Absolute wss URL of the pulse channel, when supported. |
+
+A publisher MUST populate at least one of `layers.layer2_sse` or
+`layers.layer2_webhook`, because {#layer-2} is the only mandatory
+transport.
 
 Subscribers MUST be able to fetch this document with a single HTTPS
 GET. Publishers MUST serve it over TLS.
+
+The full manifest surface — including `signing_algorithms`,
+`conformance_credential`, `reputation`, `data_residency` and the
+discovery hints — is specified in {{EEP-SPEC}} and constrained by
+`eep-manifest.json`. This document restates only what a Core-tier
+implementation must produce; it does not redefine the schema, and
+`scripts/check-draft-schema-parity.mjs` in the EEP repository fails the
+build if the table above drifts from it.
 
 # Layer 2: Signal Stream {#layer-2}
 
 The signal stream is the only mandatory transport. A Core-conformant
 publisher MUST implement at least one of:
 
-- Server-Sent Events ({{W3C.SSE}}) at `endpoints.stream`, OR
+- Server-Sent Events ({{W3C.SSE}}) at `layers.layer2_sse`, OR
 - Outbound HTTPS Webhooks signed per {#signing}.
 
 ## Subscription
 
 A subscriber MAY register for events by POSTing to
-`endpoints.subscribe` a JSON body conforming to the
+`layers.layer2_webhook` a JSON body conforming to the
 `subscription.request.json` schema in {{EEP-SPEC}}. Required fields are
 `source_did`, `event_types`, and `delivery_method`; webhook
 subscriptions also require `delivery_url`.
@@ -173,13 +197,32 @@ resolves to a private, link-local, loopback, or cloud-metadata address
 
 ## Event envelope {#envelope}
 
-EEP events use the CloudEvents v1.0.2 envelope {{CLOUDEVENTS}}. In
-addition to the core CloudEvents fields, EEP defines two extension
-attributes:
+EEP events use the CloudEvents v1.0.2 envelope {{CLOUDEVENTS}},
+constrained by the `event.envelope.json` schema in {{EEP-SPEC}}. The
+core attributes `specversion`, `id`, `source`, `type`, `time` and
+`datacontenttype` are all REQUIRED.
 
-- `eepversion` (string, REQUIRED): the spec version the publisher used,
+In addition, EEP defines the following extension attribute for the Core
+tier:
+
+- `eep_version` (string, REQUIRED): the spec version the publisher used,
   matching the `EEP-Version` response header.
-- `eepdelivery` (string, OPTIONAL): one of `webhook`, `sse`, `pulse`.
+
+Further `eep_`-prefixed extension attributes (`eep_subscription_id`,
+`eep_trust_score`, `eep_actor_type`, `eep_tier` and others) are defined
+in {{EEP-SPEC}} for the Standard and Full tiers.
+
+> **Editor's note (to be resolved before submission).** CloudEvents
+> v1.0.2 restricts context attribute names to lowercase ASCII letters
+> and digits, which excludes the underscore. The attribute names above
+> are the ones shipped and deployed today, but they do not satisfy that
+> rule, and the divergence becomes load-bearing in CloudEvents *binary*
+> content mode, where attributes are carried as `ce-`-prefixed HTTP
+> headers. Options are (a) rename to `eepversion` and friends with a
+> deprecation window, or (b) carry the underscore names only in
+> structured mode and define a binary-mode mapping. This draft
+> deliberately documents what exists rather than a name no
+> implementation emits.
 
 EEP event types MUST follow reverse-DNS naming, e.g.
 `com.example.entity.updated`. Event types MAY use a trailing wildcard
