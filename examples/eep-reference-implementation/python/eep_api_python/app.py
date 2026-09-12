@@ -313,15 +313,26 @@ def gates() -> Dict[str, Any]:
     return serialize_gate_config(GATE_CONFIG)
 
 
-@app.post("/eep/subscribe")
+@app.post("/eep/subscribe", status_code=201)
 def subscribe(payload: Dict[str, Any]) -> Dict[str, Any]:
     method = "webhook" if payload.get("delivery_method") == "webhook" else "sse"
     subscription_id = f"sub_ref_{int(time.time() * 1000)}"
+    # The wire field is `delivery_url` — that is what
+    # schemas/v0.1/subscription.request.json defines and what every
+    # conformant subscriber sends. `callback_url` is this stack's own
+    # internal column name and was never part of the request body; reading
+    # it here silently discarded the delivery target.
+    delivery_url = payload.get("delivery_url")
+    if not isinstance(delivery_url, str):
+        # Deprecated alias, accepted for older demos.
+        delivery_url = payload.get("callback_url")
+    if not isinstance(delivery_url, str):
+        delivery_url = None
     entry = {
         "subscription_id": subscription_id,
         "source_did": payload.get("source_did", "did:web:api.eep.dev:u:acme-corp"),
         "delivery_method": method,
-        "callback_url": payload.get("callback_url"),
+        "callback_url": delivery_url,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     SUBSCRIPTIONS.save(entry)
@@ -329,6 +340,10 @@ def subscribe(payload: Dict[str, Any]) -> Dict[str, Any]:
         "subscription_id": subscription_id,
         "status": "pending_verification" if method == "webhook" else "active",
         "source_did": entry["source_did"],
+        # Echo the stored target so a subscriber (and the conformance
+        # suite) can confirm it was actually recorded.
+        "delivery_url": entry["callback_url"],
+        "created_at": entry["created_at"],
     }
 
 

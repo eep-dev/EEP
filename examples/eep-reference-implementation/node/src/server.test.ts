@@ -40,12 +40,48 @@ describe("EEP node reference", () => {
       body: JSON.stringify({
         source_did: "did:web:test",
         delivery_method: "webhook",
-        callback_url: "https://example.com/hook",
+        event_types: ["com.example.entity.updated"],
+        delivery_url: "https://example.com/hook",
       }),
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.status).toBe("pending_verification");
+  });
+
+  // `delivery_url` is the field schemas/v0.1/subscription.request.json
+  // defines. Reading `callback_url` instead meant a conformant subscriber's
+  // delivery target was silently dropped: the subscription was created but
+  // could never receive a webhook.
+  it("records the delivery_url from the request body", async () => {
+    const res = await fetch(`${baseUrl}/eep/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source_did: "did:web:test",
+        delivery_method: "webhook",
+        event_types: ["com.example.entity.updated"],
+        delivery_url: "https://agent.example.com/hooks/eep",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.delivery_url).toBe("https://agent.example.com/hooks/eep");
+  });
+
+  it("still accepts the deprecated callback_url alias", async () => {
+    const res = await fetch(`${baseUrl}/eep/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source_did: "did:web:test",
+        delivery_method: "webhook",
+        callback_url: "https://legacy.example.com/hooks/eep",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.delivery_url).toBe("https://legacy.example.com/hooks/eep");
   });
 
   it("resolves entity and link headers", async () => {
@@ -63,7 +99,7 @@ describe("EEP node reference", () => {
       headers: { "Content-Type": "application/json" },
       body: "",
     });
-    expect(sub.status).toBe(200);
+    expect(sub.status).toBe(201);
     const payload = await sub.json();
     expect(payload.status).toBe("active");
     expect(payload.source_did).toContain("did:web:api.eep.dev");

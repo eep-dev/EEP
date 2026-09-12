@@ -51,8 +51,41 @@ def test_registry_manifest_has_economics():
 
 def test_subscribe():
     res = client.post("/eep/subscribe", json={"source_did": "did:web:test", "delivery_method": "webhook"})
-    assert res.status_code == 200
+    assert res.status_code == 201
     assert res.json()["status"] == "pending_verification"
+
+
+def test_subscribe_records_the_delivery_url_from_the_request_body():
+    """`delivery_url` is the field subscription.request.json defines.
+
+    Reading `callback_url` instead meant a conformant subscriber's delivery
+    target was silently dropped: the subscription was created but could
+    never receive a webhook.
+    """
+    res = client.post(
+        "/eep/subscribe",
+        json={
+            "source_did": "did:web:test",
+            "delivery_method": "webhook",
+            "event_types": ["com.example.entity.updated"],
+            "delivery_url": "https://agent.example.com/hooks/eep",
+        },
+    )
+    assert res.status_code == 201
+    assert res.json()["delivery_url"] == "https://agent.example.com/hooks/eep"
+
+
+def test_subscribe_still_accepts_the_deprecated_callback_url_alias():
+    res = client.post(
+        "/eep/subscribe",
+        json={
+            "source_did": "did:web:test",
+            "delivery_method": "webhook",
+            "callback_url": "https://legacy.example.com/hooks/eep",
+        },
+    )
+    assert res.status_code == 201
+    assert res.json()["delivery_url"] == "https://legacy.example.com/hooks/eep"
 
 
 def test_entity_resolution_headers():
