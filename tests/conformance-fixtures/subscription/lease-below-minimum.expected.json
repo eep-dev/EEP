@@ -1,0 +1,4 @@
+{
+  "valid": false,
+  "reason": "lease_seconds below the schema minimum of 300"
+}

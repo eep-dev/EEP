@@ -649,6 +649,16 @@ EEP event types follow a reverse-domain dot notation pattern:
 | `com.example.agent.task.completed` | An A2A task completed successfully |
 | `com.example.agent.task.failed` | An A2A task failed |
 
+### Subscription lifecycle
+| Event Type | Description |
+|------------|-------------|
+| `com.example.subscription.created` | A subscription was created and verified |
+| `com.example.subscription.paused` | Delivery was suspended (see §10) |
+| `com.example.subscription.resumed` | Delivery resumed after a pause |
+| `com.example.subscription.expiring` | The lease is close to elapsing; renew to keep receiving (§10.2) |
+| `com.example.subscription.expired` | The lease elapsed without renewal; terminal |
+| `com.example.subscription.cancelled` | The subscription was cancelled; terminal (§10.1) |
+
 ### Commerce and marketplace
 | Event Type | Description |
 |------------|-------------|
@@ -681,22 +691,90 @@ POST /eep/subscribe
       ▼
   [Challenge Response from Subscriber]
       │
-   Success ──────────────────► [active]
-      │                             │
-   Failure                   event delivery
-      ▼                             │
-  [rejected]             5 consecutive failed deliveries
-                                    ▼
-                              [paused]
-                                    │
-      POST /eep/subscriptions/{subscription_id}/resume
-                                    ▼
-                              [active]
+   Success ──────────────────► [active] ◄──────────────┐
+      │                          │  │  │               │
+   Failure                       │  │  │  re-subscribe (lease renewal)
+      ▼                          │  │  └───────────────┘
+  [rejected]                     │  │
+                                 │  └── lease elapses ──► [expired]   (terminal)
+                                 │
+                    5 consecutive failed deliveries
+                                 ▼
+                             [paused]
+                                 │
+     POST /eep/subscriptions/{id}/resume
+                                 ▼
+                             [active]
+
+  Any non-terminal state ── DELETE /eep/subscriptions/{id} ──► [cancelled] (terminal)
 ```
+
+| State | Meaning | Terminal |
+|---|---|---|
+| `pending_verification` | Created; awaiting WebSub intent verification | no |
+| `active` | Verified and receiving deliveries | no |
+| `paused` | Delivery suspended after repeated failures, or by request | no |
+| `rejected` | Intent verification failed or timed out | **yes** |
+| `expired` | The lease elapsed without renewal | **yes** |
+| `cancelled` | Cancelled by the subscriber or the publisher | **yes** |
 
 A "failed delivery" is one that exhausted the full §5.4 retry schedule. The
 counter is consecutive and resets on the next delivery that the subscriber
 acknowledges with a 2xx. Endpoint paths are normative in §5.1.1.
+
+Publishers MUST NOT deliver events for a subscription in `paused`, `rejected`,
+`expired` or `cancelled`.
+
+### 10.1 Cancellation (normative)
+
+`DELETE /eep/subscriptions/{subscription_id}` cancels a subscription. On success
+the publisher MUST:
+
+1. Respond `204 No Content`. The operation is idempotent — a second `DELETE` of
+   an already-cancelled subscription MUST also return `204`, not `404`, so a
+   retrying client converges.
+2. Stop delivering immediately. Deliveries already in flight MAY complete;
+   retries for them MUST NOT be scheduled.
+3. Move the subscription to `cancelled`, a terminal state. A cancelled
+   `subscription_id` MUST NOT be reusable — a subscriber that wants delivery
+   again creates a new subscription.
+4. Discard the `delivery_secret`.
+
+Publishers MAY cancel a subscription unilaterally (for example when the
+underlying entity is deleted, or an agreement gate is revoked). When they do,
+they SHOULD emit `com.example.subscription.cancelled` on any other channel the
+subscriber holds, and MUST include a `reason`.
+
+Cancellation is how a subscriber exercises data-minimisation obligations over
+the delivery relationship itself; `data_request`-style erasure of already
+delivered payloads is covered separately in §16.
+
+### 10.2 Lease lifetime and renewal (normative)
+
+Intent verification carries `hub.lease_seconds` (see below). That value is a
+contract, not decoration: **a subscription is time-bounded and expires unless
+renewed.** Without expiry, an abandoned `delivery_url` receives traffic forever
+and a publisher has no defined way to garbage-collect it.
+
+- Publishers MUST treat `hub.lease_seconds` as the lifetime of the
+  subscription, starting from successful verification.
+- The `201` creation response and every subscription representation (§5.1.1)
+  MUST carry `expires_at`, an RFC 3339 timestamp.
+- A subscriber renews by re-subscribing with the same `source_did`,
+  `event_types` and `delivery_url`. The publisher MUST perform intent
+  verification again and, on success, extend the existing subscription rather
+  than creating a duplicate — the `subscription_id` is preserved.
+- When the lease elapses without renewal, the publisher MUST move the
+  subscription to `expired` and stop delivering.
+- Publishers SHOULD emit `com.example.subscription.expiring` to the subscriber
+  ahead of expiry — at least 24 hours before, or at 10% of the lease remaining,
+  whichever is sooner — carrying `subscription_id` and `expires_at`.
+
+A subscriber MAY request a lease by sending `lease_seconds` in the subscription
+request. Publishers MAY clamp it to their own policy and MUST report the value
+actually granted in `expires_at`. Publishers that do not implement expiry MUST
+NOT advertise a `hub.lease_seconds` they will not honour; they SHOULD omit the
+parameter instead of sending a value that means nothing.
 
 ### WebSub intent verification
 
@@ -715,6 +793,29 @@ When creating a webhook subscription, the publisher MUST perform intent verifica
 3. If the subscriber does not respond within 10 seconds, the subscription changes to `rejected`.
 
 Intent verification prevents malicious actors from registering unauthorized URLs to bounce traffic through the publisher.
+
+`hub.lease_seconds` is the lifetime the publisher is granting; see §10.2. A
+publisher that sends it MUST enforce it.
+
+### Unsubscribe verification
+
+`DELETE /eep/subscriptions/{subscription_id}` (§10.1) is authenticated by the
+caller's API key, so it needs no callback round-trip.
+
+A publisher MAY additionally accept WebSub-style unsubscribe, where the request
+is not authenticated as the subscription's owner. In that case the publisher
+MUST verify intent exactly as it does for `subscribe`, with `hub.mode` set to
+`unsubscribe`:
+
+```
+?hub.mode=unsubscribe
+&hub.topic=did:web:example.com:u:acme-corp
+&hub.challenge=random_secure_string_32_chars
+```
+
+The subscriber endpoint MUST echo `hub.challenge`. Without this round-trip an
+unauthenticated caller could cancel another subscriber's delivery by guessing a
+`subscription_id`, so publishers MUST NOT act on an unverified unsubscribe.
 
 ---
 

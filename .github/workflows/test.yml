@@ -439,6 +439,52 @@ jobs:
   # ────────────────────────────────────────────────────────────────────
   # Schema → types drift gate
   # ────────────────────────────────────────────────────────────────────
+  # The reference stacks ship test suites (Node vitest, Python pytest with a
+  # 100% coverage gate) that no job ran. README calls this the stack
+  # "contributors and CI use to exercise Layer 1 discovery, Layer 2
+  # subscribe/stream, Layer 3 pulse and the gate endpoints" — so it needs to
+  # actually run. A subscribe handler reading the wrong request field shipped
+  # undetected because nothing here executed these tests.
+  test-reference-implementation-node:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/eep-reference-implementation/node
+    steps:
+      - uses: actions/checkout@v7 # renovate: pin
+      - uses: actions/setup-node@v7 # renovate: pin
+        with:
+          node-version: '22'
+      - name: Build linked workspace dependencies
+        run: |
+          for dep in gates signer validator; do
+            (cd "../../../packages/@eep-dev/$dep" && npm ci && npm run build)
+          done
+      - run: npm install
+      - run: npx vitest run
+
+  test-reference-implementation-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/eep-reference-implementation/python
+    steps:
+      - uses: actions/checkout@v7 # renovate: pin
+      - uses: actions/setup-python@v6 # renovate: pin
+        with:
+          python-version: '3.11'
+      # Install the workspace sources, not the published wheels. Otherwise
+      # this job tests whatever is currently on PyPI rather than the tree the
+      # PR changes, and a regression here would go unnoticed until release.
+      - name: Install workspace EEP packages from source
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ../../../packages/eep-gates-python
+          pip install -e ../../../packages/eep-signer-python
+          pip install -e ../../../packages/eep-validator-python
+      - run: pip install -e . pytest pytest-cov httpx
+      - run: python -m pytest tests/ -q
+
   # The Internet-Draft is the document this project intends to submit for
   # standardisation. It described a different manifest than the one that
   # ships — different field names, different required set — and nothing

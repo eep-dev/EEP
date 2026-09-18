@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseGateConfig, type GateProof, type ProofVerifier } from "@eep-dev/gates";
 import { EEPServer } from "./eep-server.js";
-import { TEST_DELIVERY_EVENT_TYPE } from "./request-handler.js";
+import {
+  TEST_DELIVERY_EVENT_TYPE,
+  DEFAULT_LEASE_SECONDS,
+  MIN_LEASE_SECONDS,
+  MAX_LEASE_SECONDS
+} from "./request-handler.js";
 import type { EventBusAdapter, DBAdapter, SubscriptionRecord, SubscriptionUpdate } from "./request-handler.js";
 
 // Prevent real DNS resolution during subscribe validation tests.
@@ -595,6 +600,88 @@ describe("EEPServer", () => {
     });
   });
 
+  // SPECIFICATION.md §10.2 — a subscription is time-bounded. `hub.lease_seconds`
+  // was advertised during intent verification but never enforced, which made
+  // it decorative: an abandoned delivery_url received traffic forever.
+  describe("lease lifetime (§10.2)", () => {
+    const makeServer = () => {
+      const db = new RecordingDBAdapter();
+      const bus = new RecordingEventBusAdapter();
+      const server = new EEPServer({
+        baseUrl: "https://api.example.com",
+        did: "did:web:example.com",
+        dbAdapter: db,
+        eventBusAdapter: bus
+      });
+      return { db, bus, server };
+    };
+
+    const subscribe = async (server: EEPServer, extra: Record<string, unknown> = {}) =>
+      server.getSubscribeHandler()({
+        method: "POST",
+        path: "/eep/subscribe",
+        headers: {},
+        body: {
+          source_did: "did:web:agent.example",
+          delivery_method: "webhook",
+          delivery_url: "https://hook.example/notify",
+          event_types: ["com.example.entity.updated"],
+          ...extra
+        }
+      });
+
+    it("grants the default 30-day lease when none is requested", async () => {
+      const { server } = makeServer();
+      const res = await subscribe(server);
+      const body = res.body as { expires_at: string; created_at: string };
+      const seconds = (Date.parse(body.expires_at) - Date.parse(body.created_at)) / 1000;
+      expect(seconds).toBe(DEFAULT_LEASE_SECONDS);
+    });
+
+    it("honours a requested lease within policy", async () => {
+      const { server } = makeServer();
+      const res = await subscribe(server, { lease_seconds: 3600 });
+      const body = res.body as { expires_at: string; created_at: string };
+      expect((Date.parse(body.expires_at) - Date.parse(body.created_at)) / 1000).toBe(3600);
+    });
+
+    it("clamps a lease below the minimum rather than rejecting the subscription", async () => {
+      const { server } = makeServer();
+      const res = await subscribe(server, { lease_seconds: 1 });
+      const body = res.body as { expires_at: string; created_at: string };
+      expect(res.status).toBe(201);
+      expect((Date.parse(body.expires_at) - Date.parse(body.created_at)) / 1000).toBe(MIN_LEASE_SECONDS);
+    });
+
+    it("clamps a lease above the maximum", async () => {
+      const { server } = makeServer();
+      const res = await subscribe(server, { lease_seconds: 99_999_999 });
+      const body = res.body as { expires_at: string; created_at: string };
+      expect((Date.parse(body.expires_at) - Date.parse(body.created_at)) / 1000).toBe(MAX_LEASE_SECONDS);
+    });
+
+    it("falls back to the default for a non-numeric lease", async () => {
+      const { server } = makeServer();
+      const res = await subscribe(server, { lease_seconds: "forever" });
+      const body = res.body as { expires_at: string; created_at: string };
+      expect(res.status).toBe(201);
+      expect((Date.parse(body.expires_at) - Date.parse(body.created_at)) / 1000).toBe(DEFAULT_LEASE_SECONDS);
+    });
+
+    it("reports expires_at on the subscription representation", async () => {
+      const { server } = makeServer();
+      const created = await subscribe(server);
+      const id = (created.body as { subscription_id: string }).subscription_id;
+      const status = await server.getSubscriptionStatusHandler()({
+        method: "GET",
+        path: `/eep/subscriptions/${id}`,
+        headers: {},
+        params: { subscriptionId: id }
+      });
+      expect(typeof (status.body as { expires_at?: string }).expires_at).toBe("string");
+    });
+  });
+
   // SPECIFICATION.md §5.1.1 — list / resume / test-delivery member operations.
   describe("subscription collection operations (§5.1.1)", () => {
     const makeServer = () => {
@@ -813,7 +900,7 @@ describe("EEPServer", () => {
       expect(res.status).toBe(400);
     });
 
-    it("deletes the subscription and publishes subscription.deleted", async () => {
+    it("cancels the subscription and publishes subscription.cancelled", async () => {
       const { server, db, bus } = makeServer();
       const id = await createSubscription(server);
       expect(db.rows.length).toBe(1);
@@ -821,25 +908,56 @@ describe("EEPServer", () => {
 
       const res = await server.getUnsubscribeHandler()({
         method: "DELETE",
-        path: `/eep/subscribe/${id}`,
+        path: `/eep/subscriptions/${id}`,
         headers: {},
         params: { subscriptionId: id }
       });
       expect(res.status).toBe(204);
       expect(db.rows.length).toBe(0);
-      expect(bus.published).toEqual(["subscription.deleted"]);
+      expect(bus.published).toEqual(["subscription.cancelled"]);
+      expect(bus.events.at(-1)?.data).toMatchObject({
+        subscription_id: id,
+        reason: expect.any(String)
+      });
     });
 
-    it("returns 404 when DELETE targets an unknown id and skips publish", async () => {
+    // §10.1: cancellation is idempotent. Returning 404 on the second DELETE
+    // would tell a retrying client its own successful cancellation failed.
+    it("returns 204 for an unknown id and publishes nothing", async () => {
       const { server, bus } = makeServer();
       const res = await server.getUnsubscribeHandler()({
         method: "DELETE",
-        path: "/eep/subscribe/sub_missing",
+        path: "/eep/subscriptions/sub_missing",
         headers: {},
         params: { subscriptionId: "sub_missing" }
       });
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(204);
       expect(bus.published).toEqual([]);
+    });
+
+    it("is idempotent across repeated cancellation", async () => {
+      const { server, db, bus } = makeServer();
+      const id = await createSubscription(server);
+      bus.published.length = 0;
+
+      const first = await server.getUnsubscribeHandler()({
+        method: "DELETE",
+        path: `/eep/subscriptions/${id}`,
+        headers: {},
+        params: { subscriptionId: id }
+      });
+      const second = await server.getUnsubscribeHandler()({
+        method: "DELETE",
+        path: `/eep/subscriptions/${id}`,
+        headers: {},
+        params: { subscriptionId: id }
+      });
+
+      expect(first.status).toBe(204);
+      expect(second.status).toBe(204);
+      expect(db.rows.length).toBe(0);
+      // The lifecycle event fires once, for the transition that happened.
+      expect(bus.published).toEqual(["subscription.cancelled"]);
     });
 
     it("returns 400 when DELETE has no subscription id param", async () => {

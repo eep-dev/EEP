@@ -169,6 +169,28 @@
       "asserts_valid": false
     },
     {
+      "id": "subscription-lease-request",
+      "category": "subscription",
+      "tier": "Standard",
+      "spec_section": "\u00a710.2 Lease lifetime and renewal",
+      "schema": "schemas/v0.1/subscription.request.json",
+      "input": "subscription/lease-request.input.json",
+      "expected": "subscription/lease-request.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": true
+    },
+    {
+      "id": "subscription-lease-below-minimum",
+      "category": "subscription",
+      "tier": "Standard",
+      "spec_section": "\u00a710.2 Lease lifetime and renewal",
+      "schema": "schemas/v0.1/subscription.request.json",
+      "input": "subscription/lease-below-minimum.input.json",
+      "expected": "subscription/lease-below-minimum.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
+    },
+    {
       "id": "discovery-crosswalk-host-bundle",
       "category": "discovery",
       "tier": "Informative",
