@@ -2556,6 +2556,10 @@ export interface EEPSubscriptionRequest {
    */
   delivery_format?: 'cloudevents/v1.0';
   /**
+   * Optional. Requested subscription lifetime in seconds, starting from successful intent verification (SPECIFICATION.md §10.2). The publisher MAY clamp this to its own policy and reports the value actually granted as `expires_at` on the subscription. Omit to accept the publisher's default lease.
+   */
+  lease_seconds?: number;
+  /**
    * Optional subscriber-defined metadata attached to this subscription for internal tracking.
    */
   metadata?: {

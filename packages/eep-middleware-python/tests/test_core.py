@@ -3,7 +3,13 @@ from typing import Any, Dict, List
 import pytest
 
 from eep_gates import ProofVerifier
-from eep_middleware.core import EEPServer
+from eep_middleware.core import (
+    DEFAULT_LEASE_SECONDS,
+    MAX_LEASE_SECONDS,
+    MIN_LEASE_SECONDS,
+    EEPServer,
+    clamp_lease_seconds,
+)
 
 
 class _PaymentVerifier(ProofVerifier):
@@ -185,3 +191,44 @@ async def test_sse_subscription_skips_ssrf_and_audits() -> None:
     await server.subscribe_to_events("subscription.*", lambda event: events.append(event.event_type))
     audit = await server.audit_payload()
     assert audit["subscriptions_count"] == 1
+
+
+# ── Lease lifetime (SPECIFICATION.md §10.2) ───────────────────────────────
+#
+# `hub.lease_seconds` was advertised during intent verification and never
+# enforced, which made it decorative: an abandoned delivery_url received
+# traffic forever and a publisher had no defined way to garbage-collect it.
+
+
+def test_clamp_lease_seconds_defaults_when_absent_or_non_numeric():
+    assert clamp_lease_seconds(None) == DEFAULT_LEASE_SECONDS
+    assert clamp_lease_seconds("forever") == DEFAULT_LEASE_SECONDS
+    # `bool` is an `int` subclass in Python; a flag is not a lease.
+    assert clamp_lease_seconds(True) == DEFAULT_LEASE_SECONDS
+
+
+def test_clamp_lease_seconds_clamps_to_policy_bounds():
+    assert clamp_lease_seconds(1) == MIN_LEASE_SECONDS
+    assert clamp_lease_seconds(99_999_999) == MAX_LEASE_SECONDS
+
+
+def test_clamp_lease_seconds_honours_a_value_within_bounds():
+    assert clamp_lease_seconds(3600) == 3600
+    # Fractional seconds are truncated, not rejected.
+    assert clamp_lease_seconds(3600.9) == 3600
+
+
+@pytest.mark.asyncio
+async def test_create_subscription_reports_the_granted_lease():
+    server = EEPServer(base_url="https://api.example.com", did="did:web:example.com")
+    status, body = await server.create_subscription(
+        {
+            "source_did": "did:web:agent.example",
+            "delivery_method": "sse",
+            "event_types": ["com.example.entity.updated"],
+        }
+    )
+    assert status == 201
+    # A subscription is time-bounded; the publisher reports what it granted.
+    assert isinstance(body["expires_at"], str)
+    assert body["expires_at"] > body["created_at"]

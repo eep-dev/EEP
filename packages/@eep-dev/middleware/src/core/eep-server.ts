@@ -10,7 +10,12 @@ import {
   type ProofVerifier
 } from "@eep-dev/gates";
 import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
-import { TEST_DELIVERY_EVENT_TYPE } from "./request-handler.js";
+import {
+  TEST_DELIVERY_EVENT_TYPE,
+  DEFAULT_LEASE_SECONDS,
+  MIN_LEASE_SECONDS,
+  MAX_LEASE_SECONDS
+} from "./request-handler.js";
 import type {
   AuthAdapter,
   CloudEvent,
@@ -89,6 +94,24 @@ class HeaderProofAuthAdapter implements AuthAdapter {
       return [];
     }
   }
+}
+
+/**
+ * Clamp a requested `lease_seconds` into publisher policy (§10.2).
+ *
+ * A non-integer, out-of-range or absent value falls back to the default rather
+ * than being rejected: the lease is the publisher's to grant, and a subscriber
+ * asking for something unreasonable should still get a working subscription
+ * with an honest `expires_at`.
+ */
+function clampLeaseSeconds(requested: unknown): number {
+  if (typeof requested !== "number" || !Number.isFinite(requested)) {
+    return DEFAULT_LEASE_SECONDS;
+  }
+  const seconds = Math.floor(requested);
+  if (seconds < MIN_LEASE_SECONDS) return MIN_LEASE_SECONDS;
+  if (seconds > MAX_LEASE_SECONDS) return MAX_LEASE_SECONDS;
+  return seconds;
 }
 
 const DEFAULT_GATE_CONFIG = parseGateConfig({
@@ -334,6 +357,14 @@ export class EEPServer {
       // Returned to the subscriber once, on creation, and never again.
       const deliverySecret = deliveryMethod === "webhook" ? randomBytes(24).toString("base64url") : undefined;
 
+      // Subscriptions are time-bounded (§10.2). A subscriber MAY request a
+      // lease; the publisher clamps it to policy and reports what it actually
+      // granted as `expires_at`. Advertising a lease and not enforcing it is
+      // what made `hub.lease_seconds` decorative.
+      const leaseSeconds = clampLeaseSeconds(body.lease_seconds);
+      const createdAt = new Date();
+      const expiresAt = new Date(createdAt.getTime() + leaseSeconds * 1000);
+
       const subscription: SubscriptionRecord = {
         subscription_id: `sub_${Date.now()}`,
         source_did: sourceDid,
@@ -342,10 +373,11 @@ export class EEPServer {
         event_types: rawEventTypes,
         status: "active",
         failure_count: 0,
+        expires_at: expiresAt.toISOString(),
         delivery_secret: deliverySecret,
         metadata,
         tier,
-        created_at: new Date().toISOString()
+        created_at: createdAt.toISOString()
       };
 
       await this.dbAdapter.saveSubscription(subscription);
@@ -539,20 +571,19 @@ export class EEPServer {
           body: { error: "invalid_request", message: "subscription_id is required" }
         };
       }
+      // §10.1: cancellation is idempotent. A second DELETE of an
+      // already-cancelled subscription returns 204, not 404, so a retrying
+      // client converges instead of treating its own success as a failure.
       const deleted = await this.dbAdapter.deleteSubscription(subscriptionId);
-      if (!deleted) {
-        return {
-          status: 404,
-          body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` }
-        };
+      if (deleted) {
+        await this.eventBusAdapter.publish({
+          id: `evt_${Date.now()}`,
+          type: "subscription.cancelled",
+          source: this.did,
+          time: new Date().toISOString(),
+          data: { subscription_id: subscriptionId, reason: "cancelled_by_subscriber" }
+        });
       }
-      await this.eventBusAdapter.publish({
-        id: `evt_${Date.now()}`,
-        type: "subscription.deleted",
-        source: this.did,
-        time: new Date().toISOString(),
-        data: { subscription_id: subscriptionId }
-      });
       return { status: 204, body: null };
     };
   }
