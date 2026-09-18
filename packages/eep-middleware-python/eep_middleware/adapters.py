@@ -14,6 +14,10 @@ class SubscriptionRecord:
     delivery_method: str
     callback_url: str | None
     created_at: str
+    #: RFC 3339 instant at which the lease elapses (SPECIFICATION.md §10.2).
+    #: A subscription past this instant MUST NOT receive deliveries. ``None``
+    #: means the publisher granted an unbounded lease.
+    expires_at: str | None = None
 
 
 @dataclass(slots=True)

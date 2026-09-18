@@ -34,14 +34,48 @@ export type RouteDefinition = {
  */
 export const TEST_DELIVERY_EVENT_TYPE = "com.eep.subscription.test";
 
+/**
+ * Subscription lifecycle states (SPECIFICATION.md §10).
+ *
+ * `rejected`, `expired` and `cancelled` are terminal: a subscription in one of
+ * them never delivers again and its id is not reusable.
+ */
+export type SubscriptionStatus =
+  | "pending_verification"
+  | "active"
+  | "paused"
+  | "rejected"
+  | "expired"
+  | "cancelled";
+
+/** States in which a publisher MUST NOT deliver events. */
+export const TERMINAL_SUBSCRIPTION_STATUSES: readonly SubscriptionStatus[] = [
+  "rejected",
+  "expired",
+  "cancelled",
+];
+
+/** Default lease granted when the subscriber does not request one: 30 days. */
+export const DEFAULT_LEASE_SECONDS = 2_592_000;
+
+/** Bounds a publisher will clamp a requested `lease_seconds` into. */
+export const MIN_LEASE_SECONDS = 300;
+export const MAX_LEASE_SECONDS = 31_536_000;
+
 export type SubscriptionRecord = {
   subscription_id: string;
   source_did: string;
   delivery_method: "sse" | "webhook";
   callback_url?: string;
   event_types: string[];
-  status: "active" | "paused";
+  status: SubscriptionStatus;
   failure_count: number;
+  /**
+   * RFC 3339 timestamp at which the lease elapses (SPECIFICATION.md §10.2).
+   * A subscription past this instant MUST NOT receive deliveries; it moves to
+   * `expired`. Absent means the publisher grants an unbounded lease.
+   */
+  expires_at?: string;
   /** Per-subscription HMAC secret returned to the subscriber on creation. */
   delivery_secret?: string;
   /** Subscriber-defined metadata (passed through, not interpreted). */
@@ -68,7 +102,9 @@ export type EventBusAdapter = {
   subscribe: (pattern: string, handler: (event: CloudEvent) => void) => Promise<void>;
 };
 
-export type SubscriptionUpdate = Partial<Pick<SubscriptionRecord, "status" | "failure_count">>;
+export type SubscriptionUpdate = Partial<
+  Pick<SubscriptionRecord, "status" | "failure_count" | "expires_at">
+>;
 
 export type DBAdapter = {
   saveSubscription: (subscription: SubscriptionRecord) => Promise<void>;

@@ -59,6 +59,71 @@ describe("WebhookDispatcher", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
   });
 
+  // SPECIFICATION.md §10.2: an elapsed lease means no more deliveries. Checked
+  // at delivery time rather than by a sweeper, so the rule holds in a
+  // deployment with no background job — an unenforced lease is no lease.
+  describe("lease enforcement (§10.2)", () => {
+    const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
+
+    it("does not deliver to a subscription whose lease has elapsed", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ expires_at: iso(-1000) }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(event());
+
+      expect(results).toHaveLength(0);
+      expect(calls).toHaveLength(0);
+    });
+
+    it("still delivers while the lease is current", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ expires_at: iso(60_000) }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(event());
+
+      expect(results).toHaveLength(1);
+      expect(calls).toHaveLength(1);
+    });
+
+    it("treats an absent expires_at as an unbounded lease", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription());
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      expect(await dispatcher.dispatch(event())).toHaveLength(1);
+      expect(calls).toHaveLength(1);
+    });
+
+    it("ignores an unparseable expires_at rather than dropping traffic", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ expires_at: "not-a-timestamp" }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      expect(await dispatcher.dispatch(event())).toHaveLength(1);
+      expect(calls).toHaveLength(1);
+    });
+
+    it("does not deliver a test event to an expired subscription either", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ subscription_id: "sub_target", expires_at: iso(-1) }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+
+      const results = await dispatcher.dispatch(
+        event({ id: "evt_test_x", type: TEST_DELIVERY_EVENT_TYPE, data: { subscription_id: "sub_target" } })
+      );
+
+      expect(results).toHaveLength(0);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
   // SPECIFICATION.md §5.1.1: a synthetic test delivery is addressed to ONE
   // subscription. It must reach that subscriber even though
   // `com.eep.subscription.test` matches none of their `event_types`, and it

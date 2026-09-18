@@ -1,0 +1,9 @@
+{
+  "source_did": "did:web:test.eep.dev:u:alice",
+  "event_types": [
+    "com.example.entity.updated"
+  ],
+  "delivery_method": "webhook",
+  "delivery_url": "https://agent.example.com/hooks/eep",
+  "lease_seconds": 2592000
+}
