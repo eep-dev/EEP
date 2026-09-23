@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://eep.dev/schemas/v0.1/event.envelope.json",
   "title": "EEP Event Envelope",
-  "description": "Schema for a valid EEP/CloudEvents v1.0.2 event. All EEP events MUST conform to this schema. This is a superset of the CloudEvents v1.0.2 envelope with EEP-specific extensions. See SPECIFICATION.md §13 for the canonical event type registry.",
+  "description": "Schema for a valid EEP/CloudEvents v1.0.2 event. All EEP events MUST conform to this schema. This is a superset of the CloudEvents v1.0.2 envelope with EEP-specific extensions. See SPECIFICATION.md \u00a713 for the canonical event type registry.",
   "type": "object",
   "required": [
     "specversion",
@@ -38,7 +38,7 @@
     },
     "type": {
       "type": "string",
-      "description": "The event type in reverse-domain dot notation. Format: {reverse-domain}.{entity-type}.{action}. Well-known EEP event types are listed in eep_known_event_types below and documented normatively in SPECIFICATION.md §13.",
+      "description": "The event type in reverse-domain dot notation. Format: {reverse-domain}.{entity-type}.{action}. Well-known EEP event types are listed in eep_known_event_types below and documented normatively in SPECIFICATION.md \u00a713.",
       "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)+$",
       "minLength": 5,
       "examples": [
@@ -62,9 +62,48 @@
       "description": "MIME type of the data field. MUST be 'application/json' for EEP events.",
       "const": "application/json"
     },
+    "subject": {
+      "type": "string",
+      "description": "CloudEvents v1.0.2 OPTIONAL context attribute. Identifies the subject of the event within the context of `source` \u2014 for example the specific resource that changed. Subscribers can filter on it without parsing `data`, which is why publishers SHOULD set it whenever an event concerns one addressable thing.",
+      "minLength": 1,
+      "maxLength": 256,
+      "examples": [
+        "profile/bio",
+        "listing/8241"
+      ]
+    },
+    "dataschema": {
+      "type": "string",
+      "description": "CloudEvents v1.0.2 OPTIONAL context attribute. Absolute URI of a schema describing `data`. Lets a subscriber validate or typed-decode the payload before touching it, and lets an agent discover the payload contract without out-of-band documentation.",
+      "format": "uri",
+      "examples": [
+        "https://example.com/schemas/entity.updated/v2.json"
+      ]
+    },
+    "dataref": {
+      "type": "string",
+      "description": "CloudEvents Claim Check extension. Absolute URI at which the full payload can be retrieved. Lets a publisher send a small reference instead of a large body; when present without `data`, the subscriber MUST fetch this URI to obtain the payload. Retrieval is subject to the entity's gates.",
+      "format": "uri",
+      "examples": [
+        "https://api.example.com/eep/payloads/01HN3QK7GX"
+      ]
+    },
+    "traceparent": {
+      "type": "string",
+      "description": "CloudEvents Distributed Tracing extension, carrying a W3C Trace Context `traceparent`. Propagating it across the publisher/subscriber boundary is what keeps an agent's causal chain intact through a multi-hop workflow.",
+      "pattern": "^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+      "examples": [
+        "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+      ]
+    },
+    "tracestate": {
+      "type": "string",
+      "description": "CloudEvents Distributed Tracing extension, carrying a W3C Trace Context `tracestate`. Vendor-specific trace data accompanying `traceparent`.",
+      "maxLength": 512
+    },
     "data": {
       "type": "object",
-      "description": "The event payload. Structure varies by event type. Refer to the Event Catalog in SPECIFICATION.md §13 for the normative schema of each event type."
+      "description": "The event payload. Structure varies by event type. Refer to the Event Catalog in SPECIFICATION.md \u00a713 for the normative schema of each event type."
     },
     "eep_version": {
       "type": "string",
@@ -125,9 +164,9 @@
       ]
     },
     "eep_known_event_types": {
-      "$comment": "NORMATIVE REFERENCE — not a data field. This enum lists all canonical EEP event type suffixes as defined in SPECIFICATION.md §13 (Event Type Registry). The full type value prefixes these with a reverse-domain (e.g., 'com.example.session.revoked'). Publishers MAY define custom event types but MUST NOT reuse these suffixes with different semantics.",
+      "$comment": "NORMATIVE REFERENCE \u2014 not a data field. This enum lists all canonical EEP event type suffixes as defined in SPECIFICATION.md \u00a713 (Event Type Registry). The full type value prefixes these with a reverse-domain (e.g., 'com.example.session.revoked'). Publishers MAY define custom event types but MUST NOT reuse these suffixes with different semantics.",
       "type": "string",
-      "description": "NORMATIVE EVENT TYPE REGISTRY (SPECIFICATION.md §13). The suffix portion of canonical EEP event types. Publishers use these as the action portion of their typed events.",
+      "description": "NORMATIVE EVENT TYPE REGISTRY (SPECIFICATION.md \u00a713). The suffix portion of canonical EEP event types. Publishers use these as the action portion of their typed events.",
       "enum": [
         "entity.updated",
         "entity.state.changed",
