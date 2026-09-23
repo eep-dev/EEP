@@ -1,0 +1,4 @@
+{
+  "valid": false,
+  "reason": "traceparent must match the W3C Trace Context format; a malformed value roots subscriber spans under a trace that does not exist"
+}
