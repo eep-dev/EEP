@@ -137,6 +137,11 @@ const RECOMMENDATIONS: Record<string, string> = {
     'Standard Webhooks headers present': 'Include webhook-id, webhook-timestamp, and webhook-signature on every webhook delivery.',
     'HMAC-SHA256 signature is valid': 'Sign webhook payloads using Standard Webhooks v1 content format and timing-safe verification.',
     'Webhook timestamp is fresh (\u00a75.3)': 'Send a current webhook-timestamp on every delivery and re-sign retries, so deliveries land inside the subscriber 60s replay window.',
+    'manifest sends ETag (\u00a73.2.1)': 'Emit an ETag on every Layer 1 GET so agents can revalidate instead of re-downloading.',
+    'manifest honours If-None-Match (\u00a73.2.1)': 'Return 304 Not Modified when the client presents a matching validator.',
+    'manifest ETag is stable across requests (\u00a73.2.1)': 'Serialise deterministically (e.g. sorted keys) so the ETag changes only when the representation does.',
+    'manifest sends Cache-Control (\u00a73.2.1)': 'Send Cache-Control with a max-age reflecting how volatile the resource actually is.',
+    'manifest honours Accept-Encoding (\u00a73.2.2)': 'Offer at least gzip on Layer 1 responses.',
     'manifest validates against eep-manifest.json': 'Serve a /.well-known/eep.json that validates against schemas/v0.1/eep-manifest.json in full, not just the headline fields.',
     'event validates against event.envelope.json': 'Emit event envelopes that validate against schemas/v0.1/event.envelope.json.',
     'CloudEvents specversion is 1.0': 'Emit CloudEvents v1.0 envelopes for all events.',
@@ -766,6 +771,81 @@ async function runTests() {
             }
         } catch (e) {
             fail('/.well-known/eep.json manifest reachable', String(e));
+        }
+
+        // ── §3.2.1: conditional requests on Layer 1 ────────────────────
+        //
+        // Layer 1 is the polled surface. An agent tracking many entities
+        // re-reads the manifest far more often than it changes, so ETag +
+        // 304 is the cheapest byte reduction available to a publisher.
+        try {
+            const first = await fetch(`${TARGET}/.well-known/eep.json`, {
+                headers: { Accept: 'application/json' },
+                signal: AbortSignal.timeout(5000),
+            });
+            const etag = first.headers.get('etag');
+            const cacheControl = first.headers.get('cache-control');
+
+            if (etag) {
+                logPass('manifest sends ETag (\u00a73.2.1)', etag);
+                const second = await fetch(`${TARGET}/.well-known/eep.json`, {
+                    headers: { Accept: 'application/json', 'If-None-Match': etag },
+                    signal: AbortSignal.timeout(5000),
+                });
+                if (second.status === 304) {
+                    logPass('manifest honours If-None-Match (\u00a73.2.1)', 'HTTP 304 Not Modified');
+                } else {
+                    logFail(
+                        'manifest honours If-None-Match (\u00a73.2.1)',
+                        `re-sent the full body as HTTP ${second.status}; \u00a73.2.1 requires 304`,
+                    );
+                }
+
+                // A validator that changes every request is worse than none:
+                // the client pays for the round-trip and still gets a body.
+                const third = await fetch(`${TARGET}/.well-known/eep.json`, {
+                    headers: { Accept: 'application/json' },
+                    signal: AbortSignal.timeout(5000),
+                });
+                const etagAgain = third.headers.get('etag');
+                if (etagAgain === etag) {
+                    logPass('manifest ETag is stable across requests (\u00a73.2.1)');
+                } else {
+                    logFail(
+                        'manifest ETag is stable across requests (\u00a73.2.1)',
+                        `got ${etag} then ${etagAgain}; an unstable validator never produces a cache hit`,
+                    );
+                }
+            } else {
+                logFail('manifest sends ETag (\u00a73.2.1)', 'no ETag header');
+                logSkip('manifest honours If-None-Match (\u00a73.2.1)', 'no ETag to revalidate with');
+                logSkip('manifest ETag is stable across requests (\u00a73.2.1)', 'no ETag');
+            }
+
+            if (cacheControl) logPass('manifest sends Cache-Control (\u00a73.2.1)', cacheControl);
+            else logFail('manifest sends Cache-Control (\u00a73.2.1)', 'no Cache-Control header');
+        } catch (e) {
+            logFail('manifest sends ETag (\u00a73.2.1)', String(e));
+        }
+
+        // ── §3.2.2: content coding ─────────────────────────────────────
+        try {
+            const res = await fetch(`${TARGET}/.well-known/eep.json`, {
+                headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip' },
+                signal: AbortSignal.timeout(5000),
+            });
+            // `fetch` transparently decodes, but reports what was negotiated.
+            const encoding = res.headers.get('content-encoding');
+            if (encoding && encoding.includes('gzip')) {
+                logPass('manifest honours Accept-Encoding (\u00a73.2.2)', `Content-Encoding: ${encoding}`);
+            } else {
+                logFail(
+                    'manifest honours Accept-Encoding (\u00a73.2.2)',
+                    'served uncompressed despite Accept-Encoding: gzip',
+                );
+            }
+        } catch (e) {
+            logFail('manifest honours Accept-Encoding (\u00a73.2.2)', String(e));
         }
 
         // Test: 403 response for non-payment gate failures (G6)

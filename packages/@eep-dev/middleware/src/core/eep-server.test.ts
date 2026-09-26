@@ -600,6 +600,97 @@ describe("EEPServer", () => {
     });
   });
 
+  // SPECIFICATION.md §3.2.1 — Layer 1 is the polled surface, and nothing
+  // emitted ETag or honoured If-None-Match, so every poll re-downloaded the
+  // whole document.
+  describe("Layer 1 conditional requests (§3.2.1)", () => {
+    const server = () =>
+      new EEPServer({ baseUrl: "https://api.example.com", did: "did:web:example.com" });
+
+    const layer1 = [
+      {
+        name: "manifest",
+        call: (s: EEPServer, headers: Record<string, string | undefined>) =>
+          s.getManifestHandler()({ method: "GET" as const, path: "/.well-known/eep.json", headers }),
+        cacheControl: "public, max-age=300"
+      },
+      {
+        name: "entity",
+        call: (s: EEPServer, headers: Record<string, string | undefined>) =>
+          s.getEntityHandler()({
+            method: "GET" as const,
+            path: "/u/u/alice",
+            headers,
+            params: { entityType: "u", entityId: "alice" }
+          }),
+        cacheControl: "public, max-age=60"
+      },
+      {
+        name: "gates",
+        call: (s: EEPServer, headers: Record<string, string | undefined>) =>
+          s.getGatesHandler()({ method: "GET" as const, path: "/eep/gates", headers }),
+        // Gate config describes who may access what; a shared cache must not
+        // hand one agent's view to another.
+        cacheControl: "private, max-age=60"
+      },
+      {
+        name: "services",
+        call: (s: EEPServer, headers: Record<string, string | undefined>) =>
+          s.getServicesHandler()({ method: "GET" as const, path: "/eep/services", headers }),
+        cacheControl: "public, max-age=60"
+      }
+    ];
+
+    it.each(layer1)("$name emits ETag and Cache-Control", async ({ call, cacheControl }) => {
+      const res = await call(server(), {});
+      expect(res.status).toBe(200);
+      expect(res.headers?.ETag).toMatch(/^"[A-Za-z0-9_-]+"$/);
+      expect(res.headers?.["Cache-Control"]).toBe(cacheControl);
+    });
+
+    it.each(layer1)("$name returns 304 for a matching If-None-Match", async ({ call }) => {
+      const s = server();
+      const first = await call(s, {});
+      const second = await call(s, { "if-none-match": first.headers!.ETag! });
+      expect(second.status).toBe(304);
+      expect(second.body).toBeNull();
+      expect(second.headers?.ETag).toBe(first.headers!.ETag);
+    });
+
+    it.each(layer1)("$name returns a body for a stale validator", async ({ call }) => {
+      const res = await call(server(), { "if-none-match": '"stale-validator"' });
+      expect(res.status).toBe(200);
+      expect(res.body).not.toBeNull();
+    });
+
+    // A validator that changes on every request is worse than none: the
+    // client pays for the round-trip and still gets a body.
+    it("emits the same ETag across repeated identical requests", async () => {
+      const s = server();
+      const a = await s.getManifestHandler()({ method: "GET", path: "/.well-known/eep.json", headers: {} });
+      const b = await s.getManifestHandler()({ method: "GET", path: "/.well-known/eep.json", headers: {} });
+      expect(a.headers?.ETag).toBe(b.headers?.ETag);
+    });
+
+    it("emits different ETags for different entities", async () => {
+      const s = server();
+      const alice = await s.getEntityHandler()({
+        method: "GET", path: "/u/u/alice", headers: {}, params: { entityType: "u", entityId: "alice" }
+      });
+      const bob = await s.getEntityHandler()({
+        method: "GET", path: "/u/u/bob", headers: {}, params: { entityType: "u", entityId: "bob" }
+      });
+      expect(alice.headers?.ETag).not.toBe(bob.headers?.ETag);
+    });
+
+    it("keeps the discovery Link header on entity responses", async () => {
+      const res = await server().getEntityHandler()({
+        method: "GET", path: "/u/u/alice", headers: {}, params: { entityType: "u", entityId: "alice" }
+      });
+      expect(res.headers?.Link).toContain('rel="subscribe"');
+    });
+  });
+
   // SPECIFICATION.md §10.2 — a subscription is time-bounded. `hub.lease_seconds`
   // was advertised during intent verification but never enforced, which made
   // it decorative: an abandoned delivery_url received traffic forever.

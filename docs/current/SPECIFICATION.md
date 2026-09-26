@@ -111,13 +111,66 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 EEP-Version: 0.1
 EEP-Entity-DID: did:web:example.com:u:acme-corp
+ETag: "a3f1c9e2"
+Last-Modified: Sat, 22 Feb 2026 14:30:00 GMT
+Cache-Control: public, max-age=300
 Link: <https://api.example.com/eep/subscribe>; rel="subscribe"; type="application/json"
 Link: <https://api.example.com/eep/stream?source=acme-corp>; rel="monitor"
 Link: </.well-known/agent.json>; rel="agent-card"
 ```
 The `Link` header with `rel="subscribe"` MUST be present on all entity resolution responses. This is the primary EEP discovery mechanism.
 
-### 3.2.2 Agent Request Headers
+### 3.2.1 Conditional requests and caching (normative)
+
+Layer 1 is the **polled** surface of EEP: `/.well-known/eep.json`, entity
+resolution, `/eep/gates`, `/eep/services` and the capability query endpoint.
+An agent tracking many entities re-reads these documents far more often than
+they change, and a manifest is not small — `eep-manifest.json` constrains 24
+properties including nested `x402`, `compliance`, `data_residency` and
+`discovery_hints` objects.
+
+Publishers MUST therefore make these responses conditionally retrievable:
+
+1. Every `2xx` response to a `GET` on a Layer 1 resource MUST carry an `ETag`.
+   The entity-tag MUST change whenever the representation changes and MUST NOT
+   change when it does not. A strong validator is RECOMMENDED; a publisher that
+   cannot guarantee byte-stability (for example because it serialises maps in
+   nondeterministic order) MUST use a weak validator (`W/"…"`) rather than a
+   strong one it cannot honour.
+2. Publishers MUST honour `If-None-Match` and MUST respond `304 Not Modified`,
+   with no body, when the validator matches.
+3. Publishers SHOULD send `Last-Modified` and honour `If-Modified-Since`.
+4. Publishers MUST send `Cache-Control`. `max-age` SHOULD reflect how volatile
+   the resource actually is; a manifest that changes rarely SHOULD NOT be
+   marked `no-store`.
+5. A `304` MUST repeat `ETag` and `Cache-Control`, and MUST NOT be sent in
+   response to a request that carried no conditional header.
+
+Gated resources (§3.4) MUST be marked `Cache-Control: private` at minimum, so a
+shared cache never serves gated content to an agent that did not satisfy the
+gate. Publishers MUST evaluate gates **before** returning `304`: a subscriber
+whose access was revoked must not keep validating a cached copy.
+
+### 3.2.2 Content coding (normative)
+
+Layer 1 documents and the Layer 2 SSE stream are highly compressible — the SSE
+stream is near-identical JSON repeated indefinitely.
+
+- Publishers MUST honour `Accept-Encoding` on Layer 1 responses and SHOULD
+  offer at least `gzip`.
+- Publishers SHOULD honour `Accept-Encoding` on the SSE stream. A publisher
+  that compresses an event stream MUST flush the compressor at every event
+  boundary; otherwise events sit in the compressor's buffer and the stream
+  stops being a stream. A publisher that cannot flush per event MUST serve the
+  stream uncompressed rather than break delivery latency.
+- Publishers MAY negotiate `permessage-deflate` on the Layer 3 pulse channel.
+- Publishers MUST NOT compress a response whose body is empty, including
+  `304`.
+
+Compression and conditional requests compose: a `304` avoids the body
+entirely, and compression reduces what is left when a body must be sent.
+
+### 3.2.3 Agent Request Headers
 
 When an agent accesses restricted entity resources (e.g., submitting proofs to a gate, or posting to a protected inbox), the agent MUST include specific `EEP-` prefixed HTTP headers to identify itself and securely sign the request.
 
