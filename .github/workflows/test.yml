@@ -470,7 +470,7 @@ jobs:
         working-directory: examples/eep-reference-implementation/python
     steps:
       - uses: actions/checkout@v7 # renovate: pin
-      - uses: actions/setup-python@v6 # renovate: pin
+      - uses: actions/setup-python@v7 # renovate: pin
         with:
           python-version: '3.11'
       # Install the workspace sources, not the published wheels. Otherwise
