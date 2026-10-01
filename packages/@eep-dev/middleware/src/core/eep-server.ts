@@ -12,6 +12,12 @@ import {
 import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
 import { withConditional } from "./conditional.js";
 import {
+  InMemoryEventStore,
+  RetentionWindowExceededError,
+  clampLimit,
+  type EventStore
+} from "./event-store.js";
+import {
   TEST_DELIVERY_EVENT_TYPE,
   DEFAULT_LEASE_SECONDS,
   MIN_LEASE_SECONDS,
@@ -40,6 +46,12 @@ export type EEPServerOptions = {
   eventBusAdapter?: EventBusAdapter;
   dbAdapter?: DBAdapter;
   proofVerifiers?: ProofVerifier[];
+  /**
+   * Retained event history and delivery log (SPECIFICATION.md §5.1.2).
+   * Defaults to an in-process store; back it with durable storage to
+   * survive a restart.
+   */
+  eventStore?: EventStore;
 };
 
 class InMemoryDBAdapter implements DBAdapter {
@@ -115,6 +127,9 @@ function clampLeaseSeconds(requested: unknown): number {
   return seconds;
 }
 
+/** Per-request cap on redelivery ids (§5.1.2). */
+const MAX_REDELIVER_IDS = 100;
+
 const DEFAULT_GATE_CONFIG = parseGateConfig({
   default_tier: "public",
   tiers: {
@@ -135,6 +150,7 @@ export class EEPServer {
   private readonly dbAdapter: DBAdapter;
   private readonly eventBusAdapter: EventBusAdapter;
   private readonly verifierRegistry: ProofVerifierRegistry;
+  private readonly eventStore: EventStore;
 
   constructor(options: EEPServerOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
@@ -145,6 +161,7 @@ export class EEPServer {
     this.authAdapter = options.authAdapter ?? new HeaderProofAuthAdapter();
     this.dbAdapter = options.dbAdapter ?? new InMemoryDBAdapter();
     this.eventBusAdapter = options.eventBusAdapter ?? new NullEventBusAdapter();
+    this.eventStore = options.eventStore ?? new InMemoryEventStore();
     this.verifierRegistry = new ProofVerifierRegistry();
     for (const verifier of options.proofVerifiers ?? []) {
       this.verifierRegistry.register(verifier);
@@ -637,6 +654,134 @@ export class EEPServer {
     }));
   }
 
+
+  /**
+   * `GET /eep/events` — event history for catch-up (§5.1.2).
+   *
+   * This is what a webhook subscriber uses after an outage: SSE has
+   * `Last-Event-ID` and Layer 3 has `system`/`replay`, and webhooks had
+   * nothing, so resuming a `paused` subscription silently lost the events
+   * from the outage that caused the pause.
+   */
+  getEventHistoryHandler(): RequestHandler {
+    return async (request) => {
+      const query = request.query ?? {};
+      const limitRaw = query.limit === undefined ? undefined : Number.parseInt(query.limit, 10);
+      try {
+        const page = await this.eventStore.history({
+          source: query.source,
+          since: query.since,
+          until: query.until,
+          limit: clampLimit(limitRaw)
+        });
+        return { status: 200, body: page };
+      } catch (err) {
+        if (err instanceof RetentionWindowExceededError) {
+          // 410, not an empty page: an empty page is indistinguishable from
+          // "you are up to date", which would let the subscriber believe it
+          // caught up while silently losing events.
+          return {
+            status: 410,
+            body: {
+              error: "retention_window_exceeded",
+              message: err.message,
+              oldest_retained_event_id: err.oldestRetainedId
+            }
+          };
+        }
+        throw err;
+      }
+    };
+  }
+
+  /**
+   * `POST /eep/subscriptions/:subscriptionId/redeliver` — re-send specific
+   * events (§5.1.2).
+   *
+   * Redelivered events keep their original `id` so a subscriber that already
+   * processed one discards it by the ordinary idempotency rule rather than
+   * double-processing.
+   */
+  getRedeliverHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return { status: 400, body: { error: "invalid_request", message: "subscription_id is required" } };
+      }
+      const subscription = await this.dbAdapter.getSubscription(subscriptionId);
+      if (!subscription) {
+        return { status: 404, body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` } };
+      }
+
+      const body = (request.body ?? {}) as { event_ids?: unknown };
+      const ids = Array.isArray(body.event_ids)
+        ? body.event_ids.filter((id): id is string => typeof id === "string")
+        : [];
+      if (ids.length === 0) {
+        return { status: 400, body: { error: "invalid_request", message: "event_ids must be a non-empty array of event ids" } };
+      }
+      if (ids.length > MAX_REDELIVER_IDS) {
+        return {
+          status: 400,
+          body: {
+            error: "invalid_request",
+            message: `event_ids exceeds the per-request cap of ${MAX_REDELIVER_IDS}`
+          }
+        };
+      }
+
+      const events = await this.eventStore.getByIds(ids);
+      const found = new Set(events.map((e) => e.id));
+      const missing = ids.filter((id) => !found.has(id));
+
+      for (const event of events) {
+        await this.eventBusAdapter.publish(event);
+      }
+
+      return {
+        status: 202,
+        body: {
+          status: "accepted",
+          subscription_id: subscriptionId,
+          redelivered: events.map((e) => e.id),
+          // Named explicitly rather than silently dropped: an id outside the
+          // retention window is something the subscriber needs to know about.
+          unavailable: missing
+        }
+      };
+    };
+  }
+
+  /** `GET /eep/subscriptions/:subscriptionId/delivery-log` (§5.1.2). */
+  getDeliveryLogHandler(): RequestHandler {
+    return async (request) => {
+      const subscriptionId = request.params?.subscriptionId;
+      if (!subscriptionId) {
+        return { status: 400, body: { error: "invalid_request", message: "subscription_id is required" } };
+      }
+      const subscription = await this.dbAdapter.getSubscription(subscriptionId);
+      if (!subscription) {
+        return { status: 404, body: { error: "not_found", message: `subscription ${subscriptionId} does not exist` } };
+      }
+      const limitRaw = request.query?.limit;
+      const entries = await this.eventStore.deliveryLog(
+        subscriptionId,
+        limitRaw === undefined ? undefined : Number.parseInt(limitRaw, 10)
+      );
+      return { status: 200, body: { subscription_id: subscriptionId, attempts: entries } };
+    };
+  }
+
+  /** Record an event in history so it is available for catch-up (§5.1.2). */
+  async recordEvent(event: CloudEvent): Promise<void> {
+    await this.eventStore.append(event);
+  }
+
+  /** The store backing history and the delivery log. */
+  getEventStore(): EventStore {
+    return this.eventStore;
+  }
+
   getRouteDefinitions(): RouteDefinition[] {
     return [
       { method: "GET", path: "/.well-known/eep.json", operationId: "manifest", handler: this.getManifestHandler() },
@@ -662,6 +807,9 @@ export class EEPServer {
       // under `/eep/subscribe/:id` before §5.1.1 existed. Remove at 0.2.
       { method: "GET", path: "/eep/subscribe/:subscriptionId", operationId: "subscriptionStatusDeprecated", handler: this.getSubscriptionStatusHandler() },
       { method: "DELETE", path: "/eep/subscribe/:subscriptionId", operationId: "unsubscribeDeprecated", handler: this.getUnsubscribeHandler() },
+      { method: "GET", path: "/eep/events", operationId: "eventHistory", handler: this.getEventHistoryHandler() },
+      { method: "POST", path: "/eep/subscriptions/:subscriptionId/redeliver", operationId: "redeliver", handler: this.getRedeliverHandler() },
+      { method: "GET", path: "/eep/subscriptions/:subscriptionId/delivery-log", operationId: "deliveryLog", handler: this.getDeliveryLogHandler() },
       { method: "GET", path: "/eep/audit-log", operationId: "auditLog", handler: this.getAuditLogHandler() },
       { method: "GET", path: "/eep/pulse", operationId: "pulseUpgrade", handler: this.getPulseUpgradeHandler() }
     ];
