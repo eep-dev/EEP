@@ -1,6 +1,7 @@
 import { EEPSigner } from "@eep-dev/signer";
 import { matchesAnyPattern } from "@eep-dev/validator";
 import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
+import type { EventStore } from "../core/event-store.js";
 import type {
   CloudEvent,
   DBAdapter,
@@ -89,6 +90,13 @@ export type WebhookDispatcherOptions = {
   deliveryTimeoutMs?: number;
   /** Optional observer invoked once per subscription after its retries end. */
   onDeliveryResult?: (result: DeliveryResult) => void;
+  /**
+   * Records every delivery attempt for `GET
+   * /eep/subscriptions/:id/delivery-log` (SPECIFICATION.md §5.1.2). This is
+   * how a subscriber tells "the publisher never sent it" apart from "my
+   * endpoint rejected it" — otherwise unanswerable from its side.
+   */
+  eventStore?: EventStore;
 };
 
 const defaultHttpClient: WebhookHttpClient = async (url, { headers, body, signal }) => {
@@ -150,6 +158,7 @@ export class WebhookDispatcher {
   private readonly pauseAfterFailures: number;
   private readonly deliveryTimeoutMs: number;
   private readonly onDeliveryResult?: (result: DeliveryResult) => void;
+  private readonly eventStore?: EventStore;
   private stopped = false;
 
   constructor(options: WebhookDispatcherOptions) {
@@ -163,6 +172,7 @@ export class WebhookDispatcher {
     this.pauseAfterFailures = options.pauseAfterFailures ?? DEFAULT_PAUSE_AFTER_FAILURES;
     this.deliveryTimeoutMs = options.deliveryTimeoutMs ?? DEFAULT_DELIVERY_TIMEOUT_MS;
     this.onDeliveryResult = options.onDeliveryResult;
+    this.eventStore = options.eventStore;
   }
 
   /**
@@ -246,8 +256,12 @@ export class WebhookDispatcher {
         });
       }
 
+      const startedAt = Date.now();
       const outcome = await this.attemptDelivery(event, sub);
       lastStatus = outcome.status;
+      await this.logAttempt(sub, event, attempt + 1, outcome, Date.now() - startedAt, {
+        isFinalAttempt: attempt === this.retrySchedule.length - 1
+      });
       if (outcome.ok) {
         await this.recordSuccess(sub.subscription_id);
         return this.report({
@@ -324,6 +338,41 @@ export class WebhookDispatcher {
   }
 
   /** Reset the consecutive-failure counter after a delivery lands. */
+  /**
+   * Append one attempt to the delivery log.
+   *
+   * `undeliverable` is reserved for the last attempt of an exhausted schedule:
+   * an interim failure is `failed` because a later attempt may still succeed,
+   * and conflating them would make the log read as if every retry were fatal.
+   */
+  private async logAttempt(
+    sub: SubscriptionRecord,
+    event: CloudEvent,
+    attempt: number,
+    outcome: { ok: boolean; status?: number },
+    elapsedMs: number,
+    context: { isFinalAttempt: boolean }
+  ): Promise<void> {
+    if (!this.eventStore) return;
+    try {
+      await this.eventStore.recordDelivery({
+        subscription_id: sub.subscription_id,
+        event_id: event.id,
+        attempt,
+        timestamp: new Date().toISOString(),
+        ...(outcome.status === undefined ? {} : { status_code: outcome.status }),
+        response_time_ms: elapsedMs,
+        final_status: outcome.ok
+          ? "delivered"
+          : context.isFinalAttempt
+            ? "undeliverable"
+            : "failed"
+      });
+    } catch {
+      // Observability must never break delivery.
+    }
+  }
+
   private async recordSuccess(subscriptionId: string): Promise<void> {
     const current = await this.db.getSubscription(subscriptionId);
     if (current && current.failure_count > 0) {

@@ -47,5 +47,18 @@ export { InMemoryEventBusAdapter } from "./event-bus/in-memory.js";
 export { RedisEventBusAdapter, type RedisClientLike } from "./event-bus/redis.js";
 export { KafkaEventBusAdapter, type KafkaProducerLike, type KafkaConsumerLike } from "./event-bus/kafka.js";
 
+export {
+  InMemoryEventStore,
+  RetentionWindowExceededError,
+  MIN_EVENT_RETENTION_MS,
+  MIN_DELIVERY_LOG_RETENTION_MS,
+  DEFAULT_HISTORY_LIMIT,
+  MAX_HISTORY_LIMIT,
+  type EventStore,
+  type StoredEvent,
+  type DeliveryLogEntry,
+  type EventHistoryPage
+} from "./core/event-store.js";
+
 export { InMemoryDBAdapter } from "./db/in-memory.js";
 export { PostgresDBAdapter, type SQLClientLike } from "./db/postgres.js";
