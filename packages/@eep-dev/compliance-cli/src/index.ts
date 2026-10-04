@@ -155,9 +155,9 @@ const RECOMMENDATIONS: Record<string, string> = {
     '/.well-known/eep.json manifest reachable': 'Serve eep manifest with stable URL and valid JSON contract.',
     'manifest.did field present': 'Include did in manifest and keep it resolvable.',
     'manifest.eep_version field present': 'Publish supported eep_version in manifest.',
-    'manifest.reputation (ERC-8004) field present': 'Add reputation block with contract information when claiming full-tier readiness.',
-    'manifest.pqc_ready flag present': 'Publish pqc_ready boolean in manifest.',
-    'manifest.x402_enabled flag present': 'Publish x402_enabled boolean in manifest.',
+    'manifest.reputation (ERC-8004) field present': 'Optional. Add a reputation block with contract information only if you use on-chain reputation; it is not required for any conformance tier.',
+    'manifest.pqc_ready flag present': 'Optional. Publish pqc_ready only if you advertise post-quantum signature verification; absent means false.',
+    'manifest.x402_enabled flag present': 'Optional. Publish x402_enabled only if you support HTTP 402 payment gating; absent means false.',
     'HTTP 403 response for non-payment gate': 'Return RFC-consistent 403 response body for non-payment gate denials.',
     'Federation registry economics metadata': 'Publish optional `economics` on `/.well-known/eep-registry.json` (registration fee, query quota, staking/challenge policy).',
     'Cold-start trust status endpoint': 'Expose GET /eep/trust-status?agent_did=… returning trust_state cold_start or standard (reference stacks).',
@@ -734,25 +734,37 @@ async function runTests() {
                 if (json.eep_version) pass('manifest.eep_version field present', json.eep_version);
                 else fail('manifest.eep_version field present', 'missing');
 
-                // ERC-8004 reputation field (G3)
+                // ERC-8004 reputation field (G3).
+                //
+                // OPTIONAL in eep-manifest.json, so failing a publisher for
+                // its absence made the conformance bar stricter than the
+                // schema — and made an Ethereum reputation registry a
+                // prerequisite for Full conformance. A publisher with no
+                // blockchain involvement could not reach Full. Report it,
+                // don't fail on it.
                 if (json.reputation && json.reputation.contract) {
-                    pass('manifest.reputation (ERC-8004) field present', json.reputation.contract);
+                    logPass('manifest.reputation (ERC-8004) field present', json.reputation.contract);
                 } else {
-                    fail('manifest.reputation (ERC-8004) field present', 'missing or no contract');
+                    logSkip(
+                        'manifest.reputation (ERC-8004) field present',
+                        'optional in eep-manifest.json — only meaningful for publishers using on-chain reputation',
+                    );
                 }
 
-                // PQC readiness flag (G8)
-                if (typeof json.pqc_ready === 'boolean') {
-                    pass('manifest.pqc_ready flag present', String(json.pqc_ready));
-                } else {
-                    fail('manifest.pqc_ready flag present', 'missing or not a boolean');
-                }
-
-                // x402 enabled flag (G2)
-                if (typeof json.x402_enabled === 'boolean') {
-                    pass('manifest.x402_enabled flag present', String(json.x402_enabled));
-                } else {
-                    fail('manifest.x402_enabled flag present', 'missing or not a boolean');
+                // PQC readiness and x402 flags. Both are OPTIONAL with a
+                // documented default of false — a publisher that supports
+                // neither post-quantum verification nor HTTP 402 payment
+                // gating is fully conformant and simply omits them. Report
+                // what is declared; do not require a declaration.
+                for (const flag of ['pqc_ready', 'x402_enabled'] as const) {
+                    const value = json[flag];
+                    if (typeof value === 'boolean') {
+                        logPass(`manifest.${flag} flag present`, String(value));
+                    } else if (value === undefined) {
+                        logSkip(`manifest.${flag} flag present`, 'optional — absent means false');
+                    } else {
+                        logFail(`manifest.${flag} flag present`, `present but not a boolean: ${typeof value}`);
+                    }
                 }
 
                 // Dynamic capability discovery (G5)

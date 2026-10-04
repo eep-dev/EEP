@@ -143,8 +143,8 @@ The fields relevant to the Core tier are:
 | `eep_version` | string | yes | The EEP version supported, e.g. `"0.1"`. |
 | `layers` | object | yes | Endpoint URLs per layer; see below. |
 | `supported_content_types` | array | yes | Media types the Layer 1 entity endpoint can serve, e.g. `["application/json", "text/markdown"]`. |
-| `pqc_ready` | boolean | yes | Whether the publisher can verify post-quantum signature algorithms. |
-| `x402_enabled` | boolean | yes | Whether the publisher supports HTTP 402 payment gating. |
+| `pqc_ready` | boolean | no | Whether the publisher can verify post-quantum signature algorithms. Absent means false. |
+| `x402_enabled` | boolean | no | Whether the publisher supports HTTP 402 payment gating. Absent means false. |
 | `gates_url` | string (URI) | no | Absolute https URL of the gate configuration document. |
 | `services_url` | string (URI) | no | Absolute https URL of the service catalog. |
 | `updated_at` | string | no | RFC 3339 timestamp of the last manifest change. |

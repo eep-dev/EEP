@@ -1080,7 +1080,7 @@ EEP nodes that advertise `pqc_ready: true` in their `/.well-known/eep.json` mani
 | FIPS 204 | ML-DSA-65 | Digital signatures |
 | FIPS 205 | SLH-DSA-128s | Hash-based signatures (stateless) |
 
-Nodes SHOULD advertise supported algorithms in the `pqc_algorithms` array of the manifest. Nodes that are not yet PQC-ready MUST set `pqc_ready: false` (not omit the field).
+Nodes SHOULD advertise supported algorithms in the `pqc_algorithms` array of the manifest. `pqc_ready` is OPTIONAL and defaults to `false`; a node that is not PQC-ready MAY either set it explicitly or omit it. Omission and `false` are equivalent, and neither affects conformance at any tier — PQC readiness is a capability a publisher advertises, not a bar it must clear.
 
 ### 11.7 Signing Algorithm Negotiation (Crypto-Agility)
 
