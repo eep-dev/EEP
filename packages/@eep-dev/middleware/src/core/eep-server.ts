@@ -7,7 +7,8 @@ import {
   type AccessRestrictionResponse,
   type GateConfig,
   type GateProof,
-  type ProofVerifier
+  type ProofVerifier,
+  PROBLEM_JSON_CONTENT_TYPE
 } from "@eep-dev/gates";
 import { SSRFError, validateEventTypePattern, validateSSRF } from "@eep-dev/validator";
 import { withConditional } from "./conditional.js";
@@ -271,7 +272,7 @@ export class EEPServer {
 
       if (!access.granted) {
         const payload = await build402Response(this.gateConfig, resource, proofs);
-        return { status: 402, body: payload };
+        return { status: 402, headers: { "Content-Type": PROBLEM_JSON_CONTENT_TYPE }, body: payload };
       }
 
       return {
@@ -381,7 +382,7 @@ export class EEPServer {
             });
             if (!access.granted) {
               const payload: AccessRestrictionResponse = await build402Response(this.gateConfig, sentinelResource, proofs);
-              return { status: 402, body: payload };
+              return { status: 402, headers: { "Content-Type": PROBLEM_JSON_CONTENT_TYPE }, body: payload };
             }
           }
         }
@@ -650,6 +651,7 @@ export class EEPServer {
   get402Handler(resource: string, proofs: GateProof[]): Promise<OutgoingResponse> {
     return build402Response(this.gateConfig, resource, proofs).then((body) => ({
       status: 402,
+      headers: { "Content-Type": PROBLEM_JSON_CONTENT_TYPE },
       body
     }));
   }
