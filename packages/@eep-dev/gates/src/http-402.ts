@@ -6,6 +6,11 @@
  */
 
 import type { GateConfig, GateProof, AccessRestrictionResponse, RateLimitResponse, Requirement } from './types.js';
+import {
+    PROBLEM_TYPE_PAYMENT_REQUIRED,
+    PROBLEM_TYPE_RATE_LIMITED,
+    PROBLEM_JSON_CONTENT_TYPE,
+} from './types.js';
 import { resolveAccess } from './access-resolver.js';
 import { matchesAny, findTiersForResource } from './resource-matcher.js';
 
@@ -44,6 +49,12 @@ export async function build402Response(
     }
 
     const response: AccessRestrictionResponse = {
+        // RFC 9457 members first: a generic problem-details client reads
+        // these, and the EEP fields below are extension members.
+        type: PROBLEM_TYPE_PAYMENT_REQUIRED,
+        title: 'Payment Required',
+        status: 402,
+        detail: `Access to '${resource}' requires the '${requiredTier}' tier.`,
         error: 'access_restricted',
         resource,
         current_tier: accessResult.tier,
@@ -116,6 +127,10 @@ export async function build429Response(
     const signedChallenge = `${challengePayload}.${toB64(signature)}`;
 
     const body: RateLimitResponse = {
+        type: PROBLEM_TYPE_RATE_LIMITED,
+        title: 'Too Many Requests',
+        status: 429,
+        detail: `Rate limit exceeded for ${agentDid}; retry after ${retryAfterSeconds}s.`,
         error: 'rate_limited',
         did_rate_limit_key: agentDid,
         retry_after_seconds: retryAfterSeconds,
@@ -127,6 +142,7 @@ export async function build429Response(
     };
 
     const headers: Record<string, string> = {
+        'Content-Type': PROBLEM_JSON_CONTENT_TYPE,
         'Retry-After': String(retryAfterSeconds),
         'X-EEP-Rate-Limit-DID': agentDid,
         'X-EEP-Rate-Reset': windowResetAt,

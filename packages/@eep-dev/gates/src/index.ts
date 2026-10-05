@@ -60,7 +60,7 @@ export type {
     // Proof-of-Intent (G4)
     IntentDocument, ProofOfIntent,
     // Access results
-    UnmetRequirement, AccessResult, AccessRestrictionResponse,
+    UnmetRequirement, AccessResult, AccessRestrictionResponse, ProblemDetails,
     // HTTP 403/451 (G6)
     ForbiddenResponse, LegallyRestrictedResponse,
     // EEP Manifest & ERC-8004 (G3/G8)
@@ -145,6 +145,17 @@ export {
 
 // ── HTTP 402 ──────────────────────────────────────────────────────────────────
 export { build402Response, isGatedResource, build429Response } from './http-402.js';
+
+// RFC 9457 problem details (SPECIFICATION.md §3.3.1). Error responses carry
+// these members alongside the EEP-specific fields, which become problem
+// extension members.
+export {
+    PROBLEM_TYPE_PAYMENT_REQUIRED,
+    PROBLEM_TYPE_ACCESS_RESTRICTED,
+    PROBLEM_TYPE_RATE_LIMITED,
+    PROBLEM_TYPE_LEGALLY_RESTRICTED,
+    PROBLEM_JSON_CONTENT_TYPE,
+} from './types.js';
 
 // ── Commerce ──────────────────────────────────────────────────────────────────
 export {

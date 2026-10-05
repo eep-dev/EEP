@@ -1401,9 +1401,29 @@ export interface EEPEventEnvelope {
 // gate.402-response.json
 // ────────────────────────────────────────────────────────
 /**
- * Schema for the HTTP 402 response body returned when an agent requests a resource that requires a higher tier. The response is machine-readable so agents can programmatically determine what requirements to satisfy.
+ * Schema for the HTTP 402 response body returned when an agent requests a resource that requires a higher tier. The response is machine-readable so agents can programmatically determine what requirements to satisfy. Served as `application/problem+json` per RFC 9457; the EEP-specific members below are problem extension members.
  */
 export interface EEPAccessRestrictionResponse402 {
+  /**
+   * RFC 9457 problem type URI identifying what went wrong. Dereferencing it SHOULD yield human-readable documentation. Clients match on this rather than on the HTTP status, which is why it is the stable identifier.
+   */
+  type?: string;
+  /**
+   * RFC 9457 short, human-readable summary of the problem type. MUST NOT change from occurrence to occurrence — vary `detail`, not `title`.
+   */
+  title?: string;
+  /**
+   * RFC 9457 HTTP status code, repeated in the body so the problem document survives being logged or forwarded away from its response.
+   */
+  status?: 402;
+  /**
+   * RFC 9457 human-readable explanation specific to this occurrence. Intended for a developer reading a log, not for an end user.
+   */
+  detail?: string;
+  /**
+   * RFC 9457 URI reference identifying this specific occurrence.
+   */
+  instance?: string;
   /**
    * Error code. Always 'access_restricted'.
    */
@@ -1461,9 +1481,29 @@ export interface EEPAccessRestrictionResponse402 {
 // gate.403-response.json
 // ────────────────────────────────────────────────────────
 /**
- * Returned when a credential, agreement, identity, or allowlist gate prevents access
+ * Returned when a credential, agreement, identity, or allowlist gate prevents access Served as `application/problem+json` per RFC 9457; the EEP-specific members below are problem extension members.
  */
 export interface EEPGate403ForbiddenResponse {
+  /**
+   * RFC 9457 problem type URI identifying what went wrong. Dereferencing it SHOULD yield human-readable documentation. Clients match on this rather than on the HTTP status, which is why it is the stable identifier.
+   */
+  type?: string;
+  /**
+   * RFC 9457 short, human-readable summary of the problem type. MUST NOT change from occurrence to occurrence — vary `detail`, not `title`.
+   */
+  title?: string;
+  /**
+   * RFC 9457 HTTP status code, repeated in the body so the problem document survives being logged or forwarded away from its response.
+   */
+  status?: 403;
+  /**
+   * RFC 9457 human-readable explanation specific to this occurrence. Intended for a developer reading a log, not for an end user.
+   */
+  detail?: string;
+  /**
+   * RFC 9457 URI reference identifying this specific occurrence.
+   */
+  instance?: string;
   /**
    * Fixed error code distinguishing from payment restriction (402)
    */
@@ -1511,9 +1551,29 @@ export interface EEPGate403ForbiddenResponse {
 // gate.429-response.json
 // ────────────────────────────────────────────────────────
 /**
- * Schema for HTTP 429 Too Many Requests response body returned by EEP publishers implementing DID-based token-bucket rate limiting. See SPECIFICATION.md §3.4.6 and Whitepaper §10.5.
+ * Schema for HTTP 429 Too Many Requests response body returned by EEP publishers implementing DID-based token-bucket rate limiting. See SPECIFICATION.md §3.4.6 and Whitepaper §10.5. Served as `application/problem+json` per RFC 9457; the EEP-specific members below are problem extension members.
  */
 export interface EEPRateLimitResponse429 {
+  /**
+   * RFC 9457 problem type URI identifying what went wrong. Dereferencing it SHOULD yield human-readable documentation. Clients match on this rather than on the HTTP status, which is why it is the stable identifier.
+   */
+  type?: string;
+  /**
+   * RFC 9457 short, human-readable summary of the problem type. MUST NOT change from occurrence to occurrence — vary `detail`, not `title`.
+   */
+  title?: string;
+  /**
+   * RFC 9457 HTTP status code, repeated in the body so the problem document survives being logged or forwarded away from its response.
+   */
+  status?: 429;
+  /**
+   * RFC 9457 human-readable explanation specific to this occurrence. Intended for a developer reading a log, not for an end user.
+   */
+  detail?: string;
+  /**
+   * RFC 9457 URI reference identifying this specific occurrence.
+   */
+  instance?: string;
   /**
    * Machine-readable error code. Always 'rate_limited' for 429 responses.
    */
@@ -1552,9 +1612,29 @@ export interface EEPRateLimitResponse429 {
 // gate.451-response.json
 // ────────────────────────────────────────────────────────
 /**
- * Returned when a resource is unavailable for legal reasons (EU AI Act, DORA, judicial orders, etc.)
+ * Returned when a resource is unavailable for legal reasons (EU AI Act, DORA, judicial orders, etc.) Served as `application/problem+json` per RFC 9457; the EEP-specific members below are problem extension members.
  */
 export interface EEPGate451LegallyRestrictedResponse {
+  /**
+   * RFC 9457 problem type URI identifying what went wrong. Dereferencing it SHOULD yield human-readable documentation. Clients match on this rather than on the HTTP status, which is why it is the stable identifier.
+   */
+  type?: string;
+  /**
+   * RFC 9457 short, human-readable summary of the problem type. MUST NOT change from occurrence to occurrence — vary `detail`, not `title`.
+   */
+  title?: string;
+  /**
+   * RFC 9457 HTTP status code, repeated in the body so the problem document survives being logged or forwarded away from its response.
+   */
+  status?: 451;
+  /**
+   * RFC 9457 human-readable explanation specific to this occurrence. Intended for a developer reading a log, not for an end user.
+   */
+  detail?: string;
+  /**
+   * RFC 9457 URI reference identifying this specific occurrence.
+   */
+  instance?: string;
   /**
    * Fixed error code for HTTP 451 legal restriction
    */
