@@ -151,7 +151,9 @@ const RECOMMENDATIONS: Record<string, string> = {
     'SSE stream endpoint': 'Expose authenticated SSE endpoint with Content-Type: text/event-stream.',
     'SSE heartbeat (\u00a74.4)': 'Emit an SSE comment heartbeat (a line starting with ":") at least every 15 seconds so subscribers can detect stale connections.',
     'SSE Last-Event-ID replay (\u00a74.3)': 'Honour the Last-Event-ID header (or last_event_id query param) by replaying events strictly after that id, with at least a 24h retention window.',
-    'Rate limit headers present': 'Return X-RateLimit-* headers for protected endpoints.',
+    'RateLimit header present (\u00a713)': 'Return the standards-track RateLimit field (e.g. `RateLimit: "sub"; r=87; t=120`) on protected endpoints.',
+    'RateLimit-Policy header present (\u00a713)': 'Advertise the quota policy (e.g. `RateLimit-Policy: "sub"; q=100; w=3600`).',
+    'X-RateLimit-* compatibility headers (\u00a713)': 'Optionally also send X-RateLimit-* for clients that read the de-facto form; when both are sent they MUST describe the same quota.',
     '/.well-known/eep.json manifest reachable': 'Serve eep manifest with stable URL and valid JSON contract.',
     'manifest.did field present': 'Include did in manifest and keep it resolvable.',
     'manifest.eep_version field present': 'Publish supported eep_version in manifest.',
@@ -680,19 +682,46 @@ async function runTests() {
             logSkip('SSE Last-Event-ID replay (§4.3)', 'requires --api-key and --entity');
         }
 
-        // Rate limit headers
+        // Rate limit headers (§13).
+        //
+        // The standards-track form (`RateLimit` / `RateLimit-Policy`) is
+        // required; `X-RateLimit-*` is a compatibility SHOULD. Probing only
+        // for the `X-` form would have kept EEP pinned to header names
+        // discouraged since RFC 6648.
         if (API_KEY) {
             try {
                 const res = await fetch(`${TARGET}/eep/subscriptions`, {
                     headers: { Authorization: `Bearer ${API_KEY}` },
                 });
-                if (res.headers.has('x-ratelimit-limit')) pass('Rate limit headers present', 'X-RateLimit-* headers found');
-                else fail('Rate limit headers present', 'X-RateLimit-Limit header missing');
+
+                const rateLimit = res.headers.get('ratelimit');
+                const policy = res.headers.get('ratelimit-policy');
+                if (rateLimit) {
+                    logPass('RateLimit header present (§13)', rateLimit);
+                } else {
+                    logFail('RateLimit header present (§13)', 'no RateLimit header; §13 requires the standards-track form');
+                }
+                if (policy) {
+                    logPass('RateLimit-Policy header present (§13)', policy);
+                } else {
+                    logFail('RateLimit-Policy header present (§13)', 'no RateLimit-Policy header');
+                }
+
+                if (res.headers.has('x-ratelimit-limit')) {
+                    logPass('X-RateLimit-* compatibility headers (§13)', 'present');
+                } else {
+                    logSkip(
+                        'X-RateLimit-* compatibility headers (§13)',
+                        'SHOULD, not MUST — only needed for clients that read the de-facto form',
+                    );
+                }
             } catch (e) {
-                fail('Rate limit headers present', String(e));
+                logFail('RateLimit header present (§13)', String(e));
             }
         } else {
-            skip('Rate limit headers', 'requires --api-key');
+            logSkip('RateLimit header present (§13)', 'requires --api-key');
+            logSkip('RateLimit-Policy header present (§13)', 'requires --api-key');
+            logSkip('X-RateLimit-* compatibility headers (§13)', 'requires --api-key');
         }
     }
 
