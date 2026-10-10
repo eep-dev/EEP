@@ -19,14 +19,7 @@
   "x402_enabled": false,
   "event_types": [
     {
-      "type": "com.example.entity.updated",
-      "description": "A field on the entity profile changed.",
-      "dataschema": "https://example.com/schemas/entity.updated/v2.json",
-      "since": "0.1"
-    },
-    {
-      "type": "com.example.trust.changed",
-      "deprecated": true
+      "type": "Com.Example.Entity.Updated"
     }
   ]
 }

@@ -1267,6 +1267,53 @@ Returns the platform-level EEP capabilities document conforming to `schemas/v0.1
 }
 ```
 
+### 12.3.2 Event catalog (normative)
+
+The manifest tells an agent **that** a publisher speaks EEP and **where** its
+endpoints are. Until now it did not tell the agent **what the publisher will
+send** — so an agent had to read human documentation, or subscribe to a
+wildcard and discover the event types empirically.
+
+That undercuts the autonomous-agent story directly. §9's "standard event
+catalog" is a table in this document: not fetchable, not versioned per
+publisher, and not machine-readable. `capabilities_query_url` (§12.4) covers
+gated *capabilities*, not event types. The envelope's `eep_known_event_types`
+puts a discovery concern on the per-event hot path, which is the wrong layer.
+
+Publishers SHOULD declare their event types in the manifest:
+
+```json
+{
+  "event_types": [
+    {
+      "type": "com.example.entity.updated",
+      "description": "A field on the entity profile changed.",
+      "dataschema": "https://example.com/schemas/entity.updated/v2.json",
+      "since": "0.1"
+    },
+    {
+      "type": "com.example.trust.changed",
+      "description": "The entity's trust score was recalculated.",
+      "deprecated": true
+    }
+  ]
+}
+```
+
+- `type` is required and follows the reverse-DNS convention of §8.
+- `dataschema` SHOULD be set, and SHOULD match the `dataschema` attribute the
+  publisher sets on events of that type (§7.1), so the payload contract is
+  discoverable *and* travels with each event.
+- A publisher whose catalog is too large or too volatile to inline SHOULD
+  expose `event_catalog_url` instead, paginated like §12.4. When both are
+  present, `event_types` is a subset and the URL is authoritative.
+- Declaring an event type is not a promise to emit it, and omitting one is not
+  a promise never to. Subscribers MUST tolerate an undeclared event type
+  rather than rejecting the delivery — a catalog is discovery metadata, not a
+  wire constraint.
+- Publishers SHOULD mark a type `deprecated` and keep emitting it for a
+  documented period rather than removing it silently.
+
 ### 12.4 Dynamic Capability Discovery
 
 For entities with large data catalogs or frequently changing capabilities, static manifests become stale. Publishers MAY expose a paginated capability query endpoint:

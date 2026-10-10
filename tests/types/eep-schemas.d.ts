@@ -899,6 +899,37 @@ export interface EEPManifest {
    */
   supported_content_types: [string, ...string[]];
   /**
+   * Event types this publisher emits, with the payload contract for each. Without this an agent can discover THAT a publisher speaks EEP and WHERE its endpoints are, but not WHAT it will send — it must read human documentation or subscribe to a wildcard and find out empirically. Publishers with large or frequently-changing catalogs SHOULD use `event_catalog_url` instead.
+   *
+   * @maxItems 500
+   */
+  event_types?: {
+    /**
+     * The event type, in the reverse-DNS form of SPECIFICATION.md §8.
+     */
+    type: string;
+    /**
+     * Human-readable summary of when this event is emitted.
+     */
+    description?: string;
+    /**
+     * Absolute URI of a schema describing this event type's `data`. Publishers SHOULD set the matching `dataschema` attribute on the events themselves (§7.1) so the contract also travels with each event.
+     */
+    dataschema?: string;
+    /**
+     * EEP or publisher version in which this event type first appeared.
+     */
+    since?: string;
+    /**
+     * Whether this event type is deprecated. Publishers SHOULD keep emitting a deprecated type for a documented period rather than removing it silently.
+     */
+    deprecated?: boolean;
+  }[];
+  /**
+   * Absolute https URL of a paginated event catalog, for publishers whose event list is too large or too volatile to inline. Follows the same pagination shape as `capabilities_query_url` (§12.4). When both are present, `event_types` is a subset and the URL is authoritative.
+   */
+  event_catalog_url?: string;
+  /**
    * Gate configuration endpoint URL
    */
   gates_url?: string;
