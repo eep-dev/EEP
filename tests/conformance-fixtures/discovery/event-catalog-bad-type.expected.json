@@ -1,0 +1,4 @@
+{
+  "valid": false,
+  "reason": "event_types[].type must match the reverse-DNS pattern of SPECIFICATION.md \u00a78"
+}

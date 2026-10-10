@@ -183,6 +183,9 @@ export class EEPServer {
             layer3_ws: `${this.baseUrl.replace(/^http/, "ws")}/eep/pulse`
           },
           supported_content_types: ["application/json", "text/markdown"],
+          // §12.3.2 — declare what this publisher emits so an agent does not
+          // have to subscribe to a wildcard and find out empirically.
+          event_types: this.eventTypes.map((type) => ({ type })),
           gates_url: `${this.baseUrl}/eep/gates`,
           services_url: `${this.baseUrl}/eep/services`,
           pqc_ready: false,

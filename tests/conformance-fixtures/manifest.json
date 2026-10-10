@@ -243,6 +243,17 @@
       "expected": "discovery/crosswalk-host/expected.json",
       "shape": "bundle",
       "asserts_valid": true
+    },
+    {
+      "id": "discovery-event-catalog-bad-type",
+      "category": "discovery",
+      "tier": "Standard",
+      "spec_section": "\u00a712.3.2 Event catalog",
+      "schema": "schemas/v0.1/eep-manifest.json",
+      "input": "discovery/event-catalog-bad-type.input.json",
+      "expected": "discovery/event-catalog-bad-type.expected.json",
+      "shape": "json-pair",
+      "asserts_valid": false
     }
   ]
 }
