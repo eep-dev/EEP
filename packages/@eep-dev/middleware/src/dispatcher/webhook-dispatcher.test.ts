@@ -59,6 +59,64 @@ describe("WebhookDispatcher", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
   });
 
+  // SPECIFICATION.md §5.1.3 — the filter narrows what event_types already
+  // selected. Before this, a subscriber interested in one field of one object
+  // still received every event of that type and discarded the rest, after
+  // paying full delivery cost.
+  describe("subscription filters (§5.1.3)", () => {
+    const dispatchWith = async (
+      filter: Parameters<typeof subscription>[0]["filter"],
+      overrides: Partial<CloudEvent> = {}
+    ) => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription({ filter }));
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+      const results = await dispatcher.dispatch(event({ data: { status: "published" }, ...overrides }));
+      return { results, calls };
+    };
+
+    it("delivers an event that satisfies the filter", async () => {
+      const { calls } = await dispatchWith({
+        match: "all",
+        conditions: [{ path: "data.status", op: "eq", value: "published" }]
+      });
+      expect(calls).toHaveLength(1);
+    });
+
+    it("does not deliver an event that fails the filter", async () => {
+      const { results, calls } = await dispatchWith({
+        match: "all",
+        conditions: [{ path: "data.status", op: "eq", value: "draft" }]
+      });
+      expect(calls).toHaveLength(0);
+      // Not a delivery failure — the event was never a candidate, so it must
+      // not count toward the subscription's failure counter.
+      expect(results).toHaveLength(0);
+    });
+
+    it("delivers everything when no filter is set", async () => {
+      const { calls } = await dispatchWith(undefined);
+      expect(calls).toHaveLength(1);
+    });
+
+    // The filter narrows; it never widens. An event whose type was not
+    // selected stays undelivered however permissive the filter is.
+    it("cannot widen beyond event_types", async () => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(
+        subscription({
+          event_types: ["com.example.other"],
+          filter: { match: "any", conditions: [{ path: "id", op: "exists" }] }
+        })
+      );
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({ db, httpClient: client, retryScheduleMs: NO_DELAY });
+      await dispatcher.dispatch(event());
+      expect(calls).toHaveLength(0);
+    });
+  });
+
   // SPECIFICATION.md §7.1 — W3C Trace Context is mirrored into HTTP headers
   // per the CloudEvents Distributed Tracing extension. EEP is multi-hop by
   // design, and without propagation the causal chain breaks at every
