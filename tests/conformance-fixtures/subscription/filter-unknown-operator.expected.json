@@ -1,0 +1,4 @@
+{
+  "valid": false,
+  "reason": "the filter language has no regex operator; a subscriber must not be able to hand the publisher a backtracking pattern to evaluate on every event"
+}

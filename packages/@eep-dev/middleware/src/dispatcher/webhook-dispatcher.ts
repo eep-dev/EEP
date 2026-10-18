@@ -2,6 +2,7 @@ import { EEPSigner } from "@eep-dev/signer";
 import { matchesAnyPattern } from "@eep-dev/validator";
 import { TEST_DELIVERY_EVENT_TYPE } from "../core/request-handler.js";
 import type { EventStore } from "../core/event-store.js";
+import { eventMatchesFilter } from "../core/event-filter.js";
 import type {
   CloudEvent,
   DBAdapter,
@@ -219,7 +220,12 @@ export class WebhookDispatcher {
       return typeof target === "string" && target === sub.subscription_id;
     }
 
-    return matchesAnyPattern(event.type, sub.event_types);
+    if (!matchesAnyPattern(event.type, sub.event_types)) return false;
+
+    // §5.1.3 — the filter narrows what `event_types` already selected. An
+    // event that fails it is simply not delivered, and does not count toward
+    // the subscription's failure counter.
+    return eventMatchesFilter(event, sub.filter);
   }
 
   /**
