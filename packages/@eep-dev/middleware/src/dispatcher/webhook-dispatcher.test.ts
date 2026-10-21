@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EEPSigner } from "@eep-dev/signer";
+import { EEPSigner, generateSigningKeyPair, verifyEd25519 } from "@eep-dev/signer";
 import { WebhookDispatcher, DEFAULT_RETRY_SCHEDULE_MS, type WebhookHttpClient } from "./webhook-dispatcher.js";
 import { InMemoryDBAdapter } from "../db/in-memory.js";
 import { InMemoryEventBusAdapter } from "../event-bus/in-memory.js";
@@ -57,6 +57,82 @@ const NO_DELAY = [0];
 describe("WebhookDispatcher", () => {
   it("uses the spec's 7-attempt retry schedule by default", () => {
     expect(DEFAULT_RETRY_SCHEDULE_MS).toEqual([0, 5_000, 30_000, 120_000, 900_000, 3_600_000, 21_600_000]);
+  });
+
+  // SPECIFICATION.md §5.3.1 — HMAC proves only that someone holding the
+  // shared secret sent the event, and the subscriber is one of them. Ed25519
+  // makes deliveries attributable and verifiable by third parties.
+  describe("asymmetric delivery signatures (§5.3.1)", () => {
+    const deliver = async (options: { signingPrivateKey?: string; signingKeyId?: string }) => {
+      const db = new InMemoryDBAdapter();
+      await db.saveSubscription(subscription());
+      const { client, calls } = mockClient([200]);
+      const dispatcher = new WebhookDispatcher({
+        db,
+        httpClient: client,
+        retryScheduleMs: NO_DELAY,
+        ...options
+      });
+      await dispatcher.dispatch(event());
+      return calls[0]!;
+    };
+
+    it("signs with HMAC only when no key is configured", async () => {
+      const call = await deliver({});
+      expect(call.headers["webhook-signature"]).toMatch(/^v1,/);
+      expect(call.headers["webhook-signature"]).not.toContain("v1a,");
+    });
+
+    it("dual-signs when an Ed25519 key is configured", async () => {
+      const { privateKey, publicKey } = generateSigningKeyPair();
+      const call = await deliver({ signingPrivateKey: privateKey });
+      const header = call.headers["webhook-signature"]!;
+
+      // Both schemes present, space-delimited.
+      expect(header.split(" ")).toHaveLength(2);
+      // The HMAC token still verifies for subscribers that have not migrated.
+      expect(
+        new EEPSigner(SECRET).verify(
+          call.headers["webhook-id"]!,
+          call.headers["webhook-timestamp"]!,
+          header,
+          call.body
+        )
+      ).toBe(true);
+      // And the Ed25519 token verifies for those that have.
+      expect(
+        verifyEd25519(publicKey, call.headers["webhook-id"]!, call.headers["webhook-timestamp"]!, header, call.body)
+          .valid
+      ).toBe(true);
+    });
+
+    it("carries the configured key id so a receiver can select from the JWKS", async () => {
+      const { privateKey, publicKey } = generateSigningKeyPair();
+      const call = await deliver({ signingPrivateKey: privateKey, signingKeyId: "key-2026-08" });
+      const result = verifyEd25519(
+        publicKey,
+        call.headers["webhook-id"]!,
+        call.headers["webhook-timestamp"]!,
+        call.headers["webhook-signature"]!,
+        call.body
+      );
+      expect(result).toEqual({ valid: true, keyId: "key-2026-08" });
+    });
+
+    it("does not verify under an unrelated public key", async () => {
+      const { privateKey } = generateSigningKeyPair();
+      const other = generateSigningKeyPair();
+      const call = await deliver({ signingPrivateKey: privateKey });
+      expect(
+        verifyEd25519(
+          other.publicKey,
+          call.headers["webhook-id"]!,
+          call.headers["webhook-timestamp"]!,
+          call.headers["webhook-signature"]!,
+          call.body
+        ).valid
+      ).toBe(false);
+    });
   });
 
   // SPECIFICATION.md §5.1.3 — the filter narrows what event_types already
