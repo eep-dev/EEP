@@ -150,3 +150,24 @@ function getHeader(headers: Record<string, string | string[] | undefined>, key: 
     if (!value) return null;
     return Array.isArray(value) ? value[0] : value;
 }
+
+// ── Asymmetric signing (SPECIFICATION.md §5.3.1) ─────────────────────────────
+//
+// HMAC gives integrity but not attribution: publisher and subscriber share the
+// key, so a signature proves only that *someone holding the secret* sent the
+// event. Ed25519 makes deliveries verifiable by third parties and
+// non-repudiable, which matters for the commerce (§15) and audit (§16) events
+// that ride on this signature.
+export {
+    generateSigningKeyPair,
+    signEd25519,
+    verifyEd25519,
+    toJwks,
+    EEPAsymmetricError,
+    PRIVATE_KEY_PREFIX,
+    PUBLIC_KEY_PREFIX,
+    ED25519_SIGNATURE_VERSION,
+    type EEPKeyPair,
+    type Ed25519VerifyResult,
+    type JwksKey,
+} from './asymmetric.js';
