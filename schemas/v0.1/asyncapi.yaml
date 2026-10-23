@@ -1,0 +1,204 @@
+# Canonical AsyncAPI description of the EEP event-driven surface.
+#
+# Nothing in this repository described Layer 2 SSE, outbound webhooks, or the
+# Layer 3 WebSocket pulse in machine-readable form — and those are where EEP's
+# value lives. OpenAPI cannot express them: it models request/response, not a
+# long-lived stream, a server-initiated delivery, or a bidirectional channel.
+# AsyncAPI models exactly those, and the JSON Schemas alongside this file
+# already define every payload.
+#
+# Semantics are normative in SPECIFICATION.md; each channel cites its section.
+asyncapi: 3.0.0
+
+info:
+  title: Entity Engagement Protocol — event-driven surface
+  version: 0.1.0
+  description: |
+    Layer 2 (SSE + outbound webhooks) and Layer 3 (WebSocket pulse) of EEP
+    v0.1.
+
+    The Layer 1 and Layer 2 *request/response* surface is described in
+    `openapi.yaml`. This document covers the parts that are streams or
+    server-initiated deliveries.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  publisherSse:
+    host: api.example.com
+    protocol: https
+    description: Layer 2 SSE stream (§4). Substitute your own origin.
+  publisherPulse:
+    host: api.example.com
+    protocol: wss
+    description: Layer 3 WebSocket pulse channel (§6).
+  subscriberWebhook:
+    host: agent.example.com
+    protocol: https
+    description: |
+      The subscriber's own `delivery_url`. EEP inverts the usual direction
+      here: the publisher is the client and the subscriber is the server.
+
+channels:
+  signalStream:
+    address: /eep/stream
+    servers:
+      - $ref: '#/servers/publisherSse'
+    title: Signal stream (SSE)
+    description: |
+      Server-Sent Events carrying EEP envelopes (§4). Each frame sets `id:` to
+      the event id and `event:` to the event type, so a reconnect with
+      `Last-Event-ID` resumes strictly after that id (§4.3, minimum 24h
+      retention). The publisher sends a comment heartbeat at least every 15
+      seconds (§4.4).
+    messages:
+      eepEvent:
+        $ref: '#/components/messages/eepEvent'
+
+  webhookDelivery:
+    address: '{deliveryUrl}'
+    servers:
+      - $ref: '#/servers/subscriberWebhook'
+    title: Webhook delivery
+    description: |
+      Signed HTTP POST to the subscriber's registered `delivery_url` (§5.2).
+      Retried on the §5.4 schedule; re-signed per attempt so a late retry
+      still lands inside the subscriber's 60-second replay window.
+    parameters:
+      deliveryUrl:
+        description: The `delivery_url` supplied at subscription time.
+    messages:
+      eepEvent:
+        $ref: '#/components/messages/eepEvent'
+
+  intentVerification:
+    address: '{deliveryUrl}'
+    servers:
+      - $ref: '#/servers/subscriberWebhook'
+    title: WebSub intent verification
+    description: |
+      Before delivering, the publisher GETs `delivery_url` with `hub.mode`,
+      `hub.topic`, `hub.challenge` and `hub.lease_seconds`; the subscriber
+      echoes the challenge (§10). The same handshake with
+      `hub.mode=unsubscribe` guards unauthenticated cancellation, without
+      which a caller could cancel another subscriber's delivery by guessing a
+      `subscription_id`.
+    parameters:
+      deliveryUrl:
+        description: The `delivery_url` supplied at subscription time.
+    messages:
+      intentChallenge:
+        $ref: '#/components/messages/intentChallenge'
+
+  pulse:
+    address: /eep/pulse
+    servers:
+      - $ref: '#/servers/publisherPulse'
+    title: Network pulse (WebSocket)
+    description: |
+      Bidirectional channel for low-latency commands and negotiation (§6).
+      Messages carry a monotonic per-channel `seq`; on a detected gap the
+      client requests replay, bounded by the publisher's retained window
+      (§6.3.1).
+    messages:
+      pulseMessage:
+        $ref: '#/components/messages/pulseMessage'
+
+operations:
+  receiveSignalStream:
+    action: receive
+    channel:
+      $ref: '#/channels/signalStream'
+    title: Consume the SSE stream
+    description: A subscriber opens the stream and receives events as they occur.
+    messages:
+      - $ref: '#/channels/signalStream/messages/eepEvent'
+
+  deliverWebhook:
+    action: send
+    channel:
+      $ref: '#/channels/webhookDelivery'
+    title: Deliver an event by webhook
+    description: |
+      The publisher POSTs a signed envelope to the subscriber. The subscriber
+      returns 2xx within 10 seconds or the delivery is treated as failed
+      (§5.3).
+    messages:
+      - $ref: '#/channels/webhookDelivery/messages/eepEvent'
+
+  verifyIntent:
+    action: send
+    channel:
+      $ref: '#/channels/intentVerification'
+    title: Verify subscription intent
+    messages:
+      - $ref: '#/channels/intentVerification/messages/intentChallenge'
+
+  exchangePulse:
+    action: send
+    channel:
+      $ref: '#/channels/pulse'
+    title: Exchange pulse messages
+    messages:
+      - $ref: '#/channels/pulse/messages/pulseMessage'
+
+components:
+  messages:
+    eepEvent:
+      name: eepEvent
+      title: EEP event envelope
+      summary: A CloudEvents v1.0.2 envelope with EEP extension attributes.
+      contentType: application/json
+      headers:
+        type: object
+        properties:
+          webhook-id:
+            type: string
+            description: Stable across retries; the subscriber's deduplication key (§5.2).
+          webhook-timestamp:
+            type: string
+            description: Unix seconds. Rejected outside a 60-second window (§5.3).
+          webhook-signature:
+            type: string
+            description: |
+              Space-delimited signature tokens. `v1,` is HMAC-SHA256; `v1a,` is
+              Ed25519 (§5.3.1). A verifier for one scheme ignores the other's
+              tokens, which is what makes dual-signing a usable migration path.
+          traceparent:
+            type: string
+            description: W3C Trace Context, mirrored from the envelope (§7.1).
+          EEP-Version:
+            type: string
+      payload:
+        $ref: 'https://eep.dev/schemas/v0.1/event.envelope.json'
+
+    intentChallenge:
+      name: intentChallenge
+      title: WebSub intent verification challenge
+      summary: Query parameters sent to the subscriber; the challenge is echoed back.
+      payload:
+        type: object
+        required: [hub.mode, hub.topic, hub.challenge]
+        properties:
+          'hub.mode':
+            type: string
+            enum: [subscribe, unsubscribe]
+          'hub.topic':
+            type: string
+          'hub.challenge':
+            type: string
+          'hub.lease_seconds':
+            type: integer
+            description: |
+              The lease being granted (§10.2). A publisher that sends it MUST
+              enforce it; one that will not enforce a lease MUST omit the
+              parameter rather than send a value that means nothing.
+
+    pulseMessage:
+      name: pulseMessage
+      title: Pulse message
+      summary: A Layer 3 WebSocket frame.
+      contentType: application/json
+      payload:
+        $ref: 'https://eep.dev/schemas/v0.1/ws-message.json'

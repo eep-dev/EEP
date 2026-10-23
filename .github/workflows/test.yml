@@ -485,6 +485,25 @@ jobs:
       - run: pip install -e . pytest pytest-cov httpx
       - run: python -m pytest tests/ -q
 
+  # The canonical OpenAPI description and the reference middleware must
+  # describe the same HTTP surface. Nothing compared them before, which is how
+  # the subscription resource came to be addressed five different ways.
+  openapi-route-parity:
+    name: OpenAPI ↔ middleware parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7 # renovate: pin
+      - uses: actions/setup-node@v7 # renovate: pin
+        with:
+          node-version: '22'
+      - name: Build middleware and its workspace dependencies
+        run: |
+          for dep in gates signer validator; do
+            (cd "packages/@eep-dev/$dep" && npm ci && npm run build)
+          done
+          (cd packages/@eep-dev/middleware && npm install && npm run build)
+      - run: node scripts/check-openapi-routes.mjs
+
   # The Internet-Draft is the document this project intends to submit for
   # standardisation. It described a different manifest than the one that
   # ships — different field names, different required set — and nothing
