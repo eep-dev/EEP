@@ -430,6 +430,9 @@ export class EEPServer {
         failure_count: 0,
         expires_at: expiresAt.toISOString(),
         ...(filter ? { filter } : {}),
+        ...(body.delivery_format === "cloudevents/v1.0-binary"
+          ? { delivery_format: "cloudevents/v1.0-binary" as const }
+          : {}),
         delivery_secret: deliverySecret,
         metadata,
         tier,

@@ -5491,9 +5491,9 @@ export interface EEPSubscriptionRequest {
    */
   delivery_url?: string;
   /**
-   * The event envelope format for delivery. Defaults to CloudEvents v1.0.
+   * The event envelope format for delivery. `cloudevents/v1.0` is structured mode: the whole envelope is one JSON document in the body. `cloudevents/v1.0-binary` is binary content mode, where context attributes travel as protocol metadata and the body carries only `data` (SPECIFICATION.md §5.2.1). Defaults to structured.
    */
-  delivery_format?: 'cloudevents/v1.0';
+  delivery_format?: 'cloudevents/v1.0' | 'cloudevents/v1.0-binary';
   /**
    * Optional. Requested subscription lifetime in seconds, starting from successful intent verification (SPECIFICATION.md §10.2). The publisher MAY clamp this to its own policy and reports the value actually granted as `expires_at` on the subscription. Omit to accept the publisher's default lease.
    */
