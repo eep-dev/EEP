@@ -117,9 +117,10 @@
     },
     "delivery_format": {
       "type": "string",
-      "description": "The event envelope format for delivery. Defaults to CloudEvents v1.0.",
+      "description": "The event envelope format for delivery. `cloudevents/v1.0` is structured mode: the whole envelope is one JSON document in the body. `cloudevents/v1.0-binary` is binary content mode, where context attributes travel as protocol metadata and the body carries only `data` (SPECIFICATION.md \u00a75.2.1). Defaults to structured.",
       "enum": [
-        "cloudevents/v1.0"
+        "cloudevents/v1.0",
+        "cloudevents/v1.0-binary"
       ],
       "default": "cloudevents/v1.0"
     },
