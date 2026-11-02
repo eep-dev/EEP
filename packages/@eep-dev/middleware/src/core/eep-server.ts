@@ -430,6 +430,14 @@ export class EEPServer {
         failure_count: 0,
         expires_at: expiresAt.toISOString(),
         ...(filter ? { filter } : {}),
+        ...(typeof body.max_batch_size === "number" && body.max_batch_size > 1
+          ? {
+              max_batch_size: Math.min(Math.floor(body.max_batch_size), 500),
+              ...(typeof body.max_batch_wait_ms === "number"
+                ? { max_batch_wait_ms: Math.max(0, Math.min(Math.floor(body.max_batch_wait_ms), 30_000)) }
+                : {})
+            }
+          : {}),
         ...(body.delivery_format === "cloudevents/v1.0-binary"
           ? { delivery_format: "cloudevents/v1.0-binary" as const }
           : {}),

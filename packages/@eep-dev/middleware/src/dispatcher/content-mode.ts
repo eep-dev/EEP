@@ -66,3 +66,21 @@ export function renderDelivery(event: CloudEvent, format: DeliveryFormat | undef
 
     return { body, headers };
 }
+
+/** CloudEvents batched JSON media type (SPECIFICATION.md §5.2.2). */
+export const BATCH_CONTENT_TYPE = "application/cloudevents-batch+json";
+
+/**
+ * Render a batch of events as one delivery.
+ *
+ * Batching is structured-mode only: binary content mode maps attributes to
+ * headers, and a batch has many events with different attribute values, so
+ * there is nowhere for them to go. A subscriber asking for both gets
+ * structured batches.
+ */
+export function renderBatch(events: CloudEvent[]): RenderedDelivery {
+    return {
+        body: JSON.stringify(events),
+        headers: { "content-type": BATCH_CONTENT_TYPE },
+    };
+}
