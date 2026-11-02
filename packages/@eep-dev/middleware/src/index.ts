@@ -19,6 +19,7 @@ export {
   DEFAULT_RETRY_SCHEDULE_MS,
   DEFAULT_PAUSE_AFTER_FAILURES,
   DEFAULT_DELIVERY_TIMEOUT_MS,
+  MAX_BATCH_SIZE,
   type WebhookDispatcherOptions,
   type WebhookHttpClient,
   type WebhookHttpResponse,
@@ -48,7 +49,13 @@ export { InMemoryEventBusAdapter } from "./event-bus/in-memory.js";
 export { RedisEventBusAdapter, type RedisClientLike } from "./event-bus/redis.js";
 export { KafkaEventBusAdapter, type KafkaProducerLike, type KafkaConsumerLike } from "./event-bus/kafka.js";
 
-export { renderDelivery, toBinaryAttributeName, type RenderedDelivery } from "./dispatcher/content-mode.js";
+export {
+  renderDelivery,
+  renderBatch,
+  toBinaryAttributeName,
+  BATCH_CONTENT_TYPE,
+  type RenderedDelivery
+} from "./dispatcher/content-mode.js";
 
 export {
   validateFilter,
