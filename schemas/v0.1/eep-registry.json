@@ -1,221 +1,221 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/eep-registry.json",
-    "title": "EEP Registry Federation Manifest",
-    "description": "Served at /.well-known/eep-registry.json. Declares that this domain operates a federated EEP registry. Used by agents to verify registry trust, and by eep.dev to issue Federation Credentials. (§4.5 Registry Federation, Whitepaper).",
-    "type": "object",
-    "required": [
-        "did",
-        "registry_name",
-        "scope",
-        "conformance_tier_required",
-        "federation_credential_url"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "did": {
-            "type": "string",
-            "description": "DID of this registry operator organization.",
-            "pattern": "^did:[a-z0-9]+:.+$",
-            "examples": [
-                "did:web:eep.eu"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/eep-registry.json",
+  "title": "EEP Registry Federation Manifest",
+  "description": "Served at /.well-known/eep-registry.json. Declares that this domain operates a federated EEP registry. Used by agents to verify registry trust, and by eep.dev to issue Federation Credentials. (\u00a74.5 Registry Federation, Whitepaper).",
+  "type": "object",
+  "required": [
+    "did",
+    "registry_name",
+    "scope",
+    "conformance_tier_required",
+    "federation_credential_url"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "did": {
+      "type": "string",
+      "description": "DID of this registry operator organization.",
+      "pattern": "^did:[a-z0-9]+:.+$",
+      "examples": [
+        "did:web:eep.eu"
+      ]
+    },
+    "registry_name": {
+      "type": "string",
+      "description": "Human-readable name for this registry.",
+      "maxLength": 128,
+      "examples": [
+        "EEP European Financial Registry",
+        "EEP Health Sector Registry"
+      ]
+    },
+    "registry_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base URL of this registry's API.",
+      "examples": [
+        "https://registry.eep.eu"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "description": "Scope of entities this registry covers.",
+      "additionalProperties": false,
+      "properties": {
+        "geography": {
+          "type": "array",
+          "description": "ISO 3166-1 alpha-2 country codes or region strings this registry covers.",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "EU",
+              "DE",
+              "FR"
             ]
+          ]
         },
-        "registry_name": {
-            "type": "string",
-            "description": "Human-readable name for this registry.",
-            "maxLength": 128,
-            "examples": [
-                "EEP European Financial Registry",
-                "EEP Health Sector Registry"
+        "sectors": {
+          "type": "array",
+          "description": "Industry sector identifiers this registry specializes in.",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "financial_services",
+              "healthcare",
+              "supply_chain"
             ]
+          ]
         },
-        "registry_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Base URL of this registry's API.",
-            "examples": [
-                "https://registry.eep.eu"
-            ]
-        },
-        "scope": {
-            "type": "object",
-            "description": "Scope of entities this registry covers.",
-            "additionalProperties": false,
-            "properties": {
-                "geography": {
-                    "type": "array",
-                    "description": "ISO 3166-1 alpha-2 country codes or region strings this registry covers.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "examples": [
-                        [
-                            "EU",
-                            "DE",
-                            "FR"
-                        ]
-                    ]
-                },
-                "sectors": {
-                    "type": "array",
-                    "description": "Industry sector identifiers this registry specializes in.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "examples": [
-                        [
-                            "financial_services",
-                            "healthcare",
-                            "supply_chain"
-                        ]
-                    ]
-                },
-                "capabilities": {
-                    "type": "array",
-                    "description": "EEP gate types or capability categories this registry validates.",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "trust_criteria": {
-            "type": "object",
-            "description": "Describes the trust verification methodology this registry applies to registrants.",
-            "additionalProperties": false,
-            "properties": {
-                "did_verification": {
-                    "type": "boolean",
-                    "description": "Whether registrants must prove DID ownership.",
-                    "default": true
-                },
-                "manifest_consistency_check": {
-                    "type": "boolean",
-                    "description": "Whether registrant /.well-known/eep.json is validated for consistency.",
-                    "default": true
-                },
-                "additional_checks": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "examples": [
-                        [
-                            "eidas_identity_verification",
-                            "financial_license_check"
-                        ]
-                    ]
-                }
-            }
-        },
-        "conformance_tier_required": {
-            "type": "string",
-            "description": "Minimum EEP conformance tier required for entities to be listed in this registry. Per Whitepaper §10.2: Core (Layer 1 + SSE), Standard (Core + Webhooks + credential/payment gates), Full (Standard + WS + commerce + agreement + data_request + session). No other tiers are defined.",
-            "enum": [
-                "Core",
-                "Standard",
-                "Full"
-            ]
-        },
-        "federation_credential_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL where this registry's EEP Federation Credential (issued by eep.dev) can be fetched and verified by agents.",
-            "examples": [
-                "https://eep.eu/.well-known/eep-federation-credential.json"
-            ]
-        },
-        "cross_registry_resolution_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "API endpoint implementing cross-registry resolution. When an entity is not found in this registry, queries peer registries.",
-            "examples": [
-                "https://registry.eep.eu/api/resolve"
-            ]
-        },
-        "eep_version": {
-            "type": "string",
-            "description": "EEP protocol version this registry speaks.",
-            "examples": [
-                "0.1",
-                "1.0"
-            ]
-        },
-        "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "ISO 8601 datetime of last manifest update."
-        },
-        "economics": {
-            "type": "object",
-            "description": "Machine-readable sustainability and pricing signals for registry APIs (SPEC §12.6.1).",
-            "additionalProperties": false,
-            "properties": {
-                "registration_fee": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "amount": {
-                            "type": "number",
-                            "minimum": 0
-                        },
-                        "currency": {
-                            "type": "string",
-                            "pattern": "^[A-Z]{3}$"
-                        },
-                        "per": {
-                            "type": "string",
-                            "enum": [
-                                "once",
-                                "year",
-                                "month"
-                            ]
-                        }
-                    }
-                },
-                "query_quota": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "free_requests_per_day": {
-                            "type": "integer",
-                            "minimum": 0
-                        },
-                        "paid_tier_url": {
-                            "type": "string",
-                            "format": "uri"
-                        }
-                    }
-                },
-                "staking_or_challenge": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                        "mode": {
-                            "type": "string",
-                            "enum": [
-                                "none",
-                                "micro_stake",
-                                "proof_of_payment",
-                                "proof_of_work_challenge"
-                            ]
-                        },
-                        "min_amount": {
-                            "type": "number",
-                            "minimum": 0
-                        },
-                        "currency": {
-                            "type": "string",
-                            "pattern": "^[A-Z]{3}$"
-                        },
-                        "challenge_endpoint": {
-                            "type": "string",
-                            "format": "uri"
-                        }
-                    }
-                }
-            }
+        "capabilities": {
+          "type": "array",
+          "description": "EEP gate types or capability categories this registry validates.",
+          "items": {
+            "type": "string"
+          }
         }
+      }
+    },
+    "trust_criteria": {
+      "type": "object",
+      "description": "Describes the trust verification methodology this registry applies to registrants.",
+      "additionalProperties": false,
+      "properties": {
+        "did_verification": {
+          "type": "boolean",
+          "description": "Whether registrants must prove DID ownership.",
+          "default": true
+        },
+        "manifest_consistency_check": {
+          "type": "boolean",
+          "description": "Whether registrant /.well-known/eep.json is validated for consistency.",
+          "default": true
+        },
+        "additional_checks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            [
+              "eidas_identity_verification",
+              "financial_license_check"
+            ]
+          ]
+        }
+      }
+    },
+    "conformance_tier_required": {
+      "type": "string",
+      "description": "Minimum EEP conformance tier required for entities to be listed in this registry. Per Whitepaper \u00a710.2: Core (Layer 1 + SSE), Standard (Core + Webhooks + credential/payment gates), Full (Standard + WS + commerce + agreement + data_request + session). No other tiers are defined.",
+      "enum": [
+        "Core",
+        "Standard",
+        "Full"
+      ]
+    },
+    "federation_credential_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL where this registry's EEP Federation Credential (issued by eep.dev) can be fetched and verified by agents.",
+      "examples": [
+        "https://eep.eu/.well-known/eep-federation-credential.json"
+      ]
+    },
+    "cross_registry_resolution_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "API endpoint implementing cross-registry resolution. When an entity is not found in this registry, queries peer registries.",
+      "examples": [
+        "https://registry.eep.eu/api/resolve"
+      ]
+    },
+    "eep_version": {
+      "type": "string",
+      "description": "EEP protocol version this registry speaks.",
+      "examples": [
+        "0.1",
+        "1.0"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime of last manifest update."
+    },
+    "economics": {
+      "type": "object",
+      "description": "Machine-readable sustainability and pricing signals for registry APIs (SPEC \u00a712.6.1).",
+      "additionalProperties": false,
+      "properties": {
+        "registration_fee": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "type": "number",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "per": {
+              "type": "string",
+              "enum": [
+                "once",
+                "year",
+                "month"
+              ]
+            }
+          }
+        },
+        "query_quota": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "free_requests_per_day": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "paid_tier_url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "staking_or_challenge": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "none",
+                "micro_stake",
+                "proof_of_payment",
+                "proof_of_work_challenge"
+              ]
+            },
+            "min_amount": {
+              "type": "number",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "challenge_endpoint": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      }
     }
+  }
 }
