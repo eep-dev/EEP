@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://eep.dev/schemas/v0.1/eep-manifest.json",
   "title": "EEP Manifest",
   "description": "The /.well-known/eep.json manifest declaring an entity's EEP capabilities",

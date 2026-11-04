@@ -573,14 +573,14 @@ describe('Proof validator: new types in batch validation', () => {
 
     it('proof type pattern includes data_request and agreement in gate.proof.json', () => {
         const schema = loadSchema('gate.proof.json') as any;
-        const pattern = schema.definitions.proof.properties.type.pattern;
+        const pattern = schema.$defs.proof.properties.type.pattern;
         expect(pattern).toContain('data_request');
         expect(pattern).toContain('agreement');
     });
 
     it('gate.config.json type pattern includes data_request and agreement', () => {
         const schema = loadSchema('gate.config.json') as any;
-        const pattern = schema.definitions.requirement.properties.type.pattern;
+        const pattern = schema.$defs.requirement.properties.type.pattern;
         expect(pattern).toContain('data_request');
         expect(pattern).toContain('agreement');
     });

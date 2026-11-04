@@ -1,6 +1,8 @@
 // Copyright 2026 EEP Contributors — Apache-2.0
 import { describe, it, expect, beforeAll } from 'vitest';
-import Ajv, { type ValidateFunction } from 'ajv';
+// Schemas are JSON Schema 2020-12; Ajv's default export only
+// understands draft-07, so the 2020-12 build is required.
+import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,7 +63,7 @@ describe('EEP JSON Schema Validation', () => {
     let ajv: Ajv;
 
     beforeAll(() => {
-        ajv = new Ajv({ allErrors: true, strict: false });
+        ajv = new Ajv2020({ allErrors: true, strict: false });
         addFormats(ajv);
     });
 
@@ -812,7 +814,7 @@ describe('EEP JSON Schema Validation', () => {
         beforeAll(() => {
             const envelopeSchema = loadSchema('event.envelope.json');
             const deliverySchema = loadSchema('delivery.payload.json');
-            const localAjv = new Ajv({ allErrors: true, strict: false });
+            const localAjv = new Ajv2020({ allErrors: true, strict: false });
             addFormats(localAjv);
             localAjv.addSchema(envelopeSchema, './event.envelope.json');
             validate = localAjv.compile(deliverySchema);
@@ -890,11 +892,28 @@ describe('EEP JSON Schema Validation', () => {
             }
         });
 
-        it('all schemas use draft-07', () => {
+        // OpenAPI 3.1's schema dialect IS JSON Schema 2020-12, and setup-cli
+        // emits `openapi: "3.1.0"` documents that $ref these files. While the
+        // schemas declared draft-07, those generated documents referenced
+        // draft-07 schemas from a 2020-12 context — a dialect mismatch that
+        // strict OpenAPI 3.1 tooling trips on.
+        it('all schemas use JSON Schema 2020-12', () => {
             const schemaFiles = fs.readdirSync(SCHEMAS_DIR).filter((f: string) => f.endsWith('.json'));
             for (const file of schemaFiles) {
                 const schema = loadSchema(file) as Record<string, any>;
-                expect(schema.$schema).toBe('http://json-schema.org/draft-07/schema#');
+                expect(schema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
+            }
+        });
+
+        // `definitions` was renamed to `$defs` in 2019-09. A file still using
+        // the old keyword would validate as an unknown annotation rather than
+        // failing loudly, so subschemas would silently stop being reachable.
+        it('uses $defs rather than the draft-07 definitions keyword', () => {
+            const schemaFiles = fs.readdirSync(SCHEMAS_DIR).filter((f: string) => f.endsWith('.json'));
+            for (const file of schemaFiles) {
+                const raw = fs.readFileSync(path.join(SCHEMAS_DIR, file), 'utf-8');
+                expect(raw).not.toContain('"definitions"');
+                expect(raw).not.toContain('#/definitions/');
             }
         });
 

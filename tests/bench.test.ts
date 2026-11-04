@@ -1,6 +1,8 @@
 // Copyright 2026 EEP Contributors — Apache-2.0
 import { describe, it, expect, beforeAll } from 'vitest';
-import Ajv, { type ValidateFunction } from 'ajv';
+// Schemas are JSON Schema 2020-12; Ajv's default export only
+// understands draft-07, so the 2020-12 build is required.
+import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,7 +20,7 @@ describe('EEP Schema Validation Performance', () => {
     let pulseValidate: ValidateFunction;
 
     beforeAll(() => {
-        const ajv = new Ajv({ allErrors: true, strict: false });
+        const ajv = new Ajv2020({ allErrors: true, strict: false });
         addFormats(ajv);
 
         envelopeValidate = ajv.compile(loadSchema('event.envelope.json'));

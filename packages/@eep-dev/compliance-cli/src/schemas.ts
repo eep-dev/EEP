@@ -14,7 +14,9 @@
  * helper. It is the same wiring as `tests/conformance-fixtures.test.ts`,
  * lifted into the published package.
  */
-import Ajv, { type ValidateFunction } from 'ajv';
+// Schemas are JSON Schema 2020-12; Ajv's default export only
+// understands draft-07, so the 2020-12 build is required.
+import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
@@ -87,7 +89,7 @@ export function loadSchemaRegistry(explicitDir?: string): SchemaRegistry | null 
     const dir = findSchemasDir(explicitDir);
     if (!dir) return null;
 
-    const ajv = new Ajv({ strict: false, allErrors: true, allowUnionTypes: true });
+    const ajv = new Ajv2020({ strict: false, allErrors: true, allowUnionTypes: true });
     addFormats(ajv);
 
     const byFile = new Map<string, unknown>();

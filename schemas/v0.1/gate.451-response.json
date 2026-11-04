@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://eep.dev/schemas/v0.1/gate.451-response.json",
   "title": "EEP Gate 451 Legally Restricted Response",
   "description": "Returned when a resource is unavailable for legal reasons (EU AI Act, DORA, judicial orders, etc.) Served as `application/problem+json` per RFC 9457; the EEP-specific members below are problem extension members.",

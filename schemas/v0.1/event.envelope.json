@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://eep.dev/schemas/v0.1/event.envelope.json",
   "title": "EEP Event Envelope",
   "description": "Schema for a valid EEP/CloudEvents v1.0.2 event. All EEP events MUST conform to this schema. This is a superset of the CloudEvents v1.0.2 envelope with EEP-specific extensions. See SPECIFICATION.md \u00a713 for the canonical event type registry.",

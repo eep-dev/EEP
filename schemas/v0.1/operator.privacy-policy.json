@@ -1,107 +1,107 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://eep.dev/schemas/v0.1/operator.privacy-policy.json",
-    "title": "EEP Operator Privacy Policy Profile",
-    "description": "Signed JSON document that defines an agent's standing data-sharing policy. The agent consults this profile before responding to any data_request gate, enabling autonomous privacy decisions within human-defined constraints. (§7.4, Whitepaper).",
-    "type": "object",
-    "required": [
-        "operator_did",
-        "version",
-        "issued_at"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "operator_did": {
-            "type": "string",
-            "description": "DID of the human/organizational operator that authored this policy.",
-            "pattern": "^did:[a-z0-9]+:.+$"
-        },
-        "version": {
-            "type": "string",
-            "description": "Monotonically increasing version identifier for this policy.",
-            "examples": [
-                "1",
-                "2",
-                "2026-03-01"
-            ]
-        },
-        "issued_at": {
-            "type": "string",
-            "description": "ISO 8601 datetime when this policy was issued/signed.",
-            "format": "date-time"
-        },
-        "freely_shareable_claims": {
-            "type": "array",
-            "description": "Claim types the agent may share without any human confirmation.",
-            "items": {
-                "type": "string"
-            },
-            "examples": [
-                [
-                    "org_type",
-                    "industry_sector",
-                    "use_case_category"
-                ]
-            ]
-        },
-        "human_confirmation_required": {
-            "type": "array",
-            "description": "Claim types that require explicit human confirmation before sharing. Agent pauses and surfaces the decision.",
-            "items": {
-                "type": "string"
-            },
-            "examples": [
-                [
-                    "owner_email",
-                    "owner_name",
-                    "billing_address"
-                ]
-            ]
-        },
-        "unconditionally_refused": {
-            "type": "array",
-            "description": "Claim types that must never be shared, regardless of what access they would unlock.",
-            "items": {
-                "type": "string"
-            },
-            "examples": [
-                [
-                    "passport_number",
-                    "medical_records",
-                    "private_keys"
-                ]
-            ]
-        },
-        "max_retention_days": {
-            "type": "integer",
-            "description": "Maximum retention_days the operator will accept in a data_request gate. Requests with higher retention must be refused or confirmed.",
-            "minimum": 0,
-            "maximum": 3650,
-            "default": 90
-        },
-        "allow_unverified_publishers": {
-            "type": "boolean",
-            "description": "Whether the agent may share data with publishers not registered on eep.dev. Set to false for strict privacy.",
-            "default": false
-        },
-        "dpv_purposes_allowed": {
-            "type": "array",
-            "description": "W3C DPV purpose URIs the agent may share data for. Any purpose not in this list requires human confirmation.",
-            "items": {
-                "type": "string",
-                "pattern": "^dpv:[A-Z][a-zA-Z]+$"
-            },
-            "examples": [
-                [
-                    "dpv:ResearchAndDevelopment",
-                    "dpv:ServiceProvision"
-                ]
-            ]
-        },
-        "operator_signature": {
-            "type": "string",
-            "description": "EdDSA signature by operator_did over a canonical JSON serialization of this document (excluding operator_signature). Makes the policy tamper-evident.",
-            "minLength": 16
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eep.dev/schemas/v0.1/operator.privacy-policy.json",
+  "title": "EEP Operator Privacy Policy Profile",
+  "description": "Signed JSON document that defines an agent's standing data-sharing policy. The agent consults this profile before responding to any data_request gate, enabling autonomous privacy decisions within human-defined constraints. (\u00a77.4, Whitepaper).",
+  "type": "object",
+  "required": [
+    "operator_did",
+    "version",
+    "issued_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operator_did": {
+      "type": "string",
+      "description": "DID of the human/organizational operator that authored this policy.",
+      "pattern": "^did:[a-z0-9]+:.+$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Monotonically increasing version identifier for this policy.",
+      "examples": [
+        "1",
+        "2",
+        "2026-03-01"
+      ]
+    },
+    "issued_at": {
+      "type": "string",
+      "description": "ISO 8601 datetime when this policy was issued/signed.",
+      "format": "date-time"
+    },
+    "freely_shareable_claims": {
+      "type": "array",
+      "description": "Claim types the agent may share without any human confirmation.",
+      "items": {
+        "type": "string"
+      },
+      "examples": [
+        [
+          "org_type",
+          "industry_sector",
+          "use_case_category"
+        ]
+      ]
+    },
+    "human_confirmation_required": {
+      "type": "array",
+      "description": "Claim types that require explicit human confirmation before sharing. Agent pauses and surfaces the decision.",
+      "items": {
+        "type": "string"
+      },
+      "examples": [
+        [
+          "owner_email",
+          "owner_name",
+          "billing_address"
+        ]
+      ]
+    },
+    "unconditionally_refused": {
+      "type": "array",
+      "description": "Claim types that must never be shared, regardless of what access they would unlock.",
+      "items": {
+        "type": "string"
+      },
+      "examples": [
+        [
+          "passport_number",
+          "medical_records",
+          "private_keys"
+        ]
+      ]
+    },
+    "max_retention_days": {
+      "type": "integer",
+      "description": "Maximum retention_days the operator will accept in a data_request gate. Requests with higher retention must be refused or confirmed.",
+      "minimum": 0,
+      "maximum": 3650,
+      "default": 90
+    },
+    "allow_unverified_publishers": {
+      "type": "boolean",
+      "description": "Whether the agent may share data with publishers not registered on eep.dev. Set to false for strict privacy.",
+      "default": false
+    },
+    "dpv_purposes_allowed": {
+      "type": "array",
+      "description": "W3C DPV purpose URIs the agent may share data for. Any purpose not in this list requires human confirmation.",
+      "items": {
+        "type": "string",
+        "pattern": "^dpv:[A-Z][a-zA-Z]+$"
+      },
+      "examples": [
+        [
+          "dpv:ResearchAndDevelopment",
+          "dpv:ServiceProvision"
+        ]
+      ]
+    },
+    "operator_signature": {
+      "type": "string",
+      "description": "EdDSA signature by operator_did over a canonical JSON serialization of this document (excluding operator_signature). Makes the policy tamper-evident.",
+      "minLength": 16
     }
+  }
 }
