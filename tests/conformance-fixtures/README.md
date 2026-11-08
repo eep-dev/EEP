@@ -20,7 +20,7 @@ tests/conformance-fixtures/
 ├── envelope/                ← EEP/CloudEvents event envelope shapes
 ├── signature/               ← HMAC sign + verify, replay window, multi-signature
 ├── gates/                   ← 402 / 403 / 429 / 451 response shapes; access resolution
-└── subscription/            ← subscribe/unsubscribe request and response shapes
+└── subscription/            ← subscribe request shapes, SSRF rejection, leases, filters
 ```
 
 Every fixture directory contains either:
