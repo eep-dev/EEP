@@ -30,7 +30,7 @@ MCP, A2A, webhooks and ActivityPub standards solve different problems. EEP compo
 
 - **MCP** lets an LLM *call a tool*. EEP lets an LLM *follow an entity over time* — discover it, subscribe and react to verified events from it.
 - **A2A** lets two agents *collaborate on a task*. EEP defines how either agent learns that an entity changed at all.
-- **Plain webhooks** require a custom protocol per publisher (auth, signing, retries, replay window). EEP is one wire format with HMAC-signed delivery, SSE and a 60-second replay window — implemented once, reusable everywhere.
+- **Plain webhooks** require a custom protocol per publisher (auth, signing, retries, replay window). EEP is one wire format with signed delivery, SSE, and event replay with a minimum 24-hour retention window — implemented once, reusable everywhere.
 - **ActivityPub** federates accounts in a social graph. EEP delivers state-change events from any entity (person org, agent, product, listing) to authorized subscribers, with optional payment / credential / identity gates.
 - **DIDs and Verifiable Credentials** identify *who* an entity is. EEP defines *what they tell their subscribers* and *how subscribers verify it*.
 
